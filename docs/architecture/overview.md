@@ -17,7 +17,7 @@ flowchart LR
         MODS[Modules: accounts, contacts, engagement,<br/>opportunities, talent, contracts, imports,<br/>reporting, admin]
         API --> MODS
     end
-    APP -->|JDBC| DB[(MySQL 8.4)]
+    APP -->|JDBC| DB[(MySQL 8.4<br/>Railway)]
     APP -->|OIDC sign-in| G[Google Workspace]
     APP -.->|release 2| GM[Gmail and Calendar APIs]
     APP -.->|release 3| AI[Claude API]
@@ -34,7 +34,7 @@ flowchart LR
 | Spreadsheet parsing | Apache POI (XLSX) and Commons CSV |
 | Sign-in | Google Workspace OpenID Connect, restricted to the CodeWalnut domain (ADR-0004) |
 | Tests | JUnit 5, Testcontainers (MySQL), Vitest, Playwright for key journeys |
-| Build and run | Maven, one container image, GitHub Actions |
+| Build and run | Maven, one container image, GitHub Actions for tests, Railway for deployment |
 
 ## Modules
 
@@ -61,12 +61,11 @@ module reads another's tables directly. Spring Modulith tests enforce this.
   (NFR-BD-03), in the same transaction as the change.
 - **Configuration over code**: stages, personas, picklists and alert
   thresholds are data (FR-ADM-02, NFR-BD-11).
-- **Hosting**: an India cloud region (NFR-BD-04). The provider is an open
-  question; the application is a single container plus a managed MySQL
-  instance, so it runs on any of the major clouds.
+- **Hosting**: Railway for now (ADR-0007): one service built from the
+  repository's Dockerfile, plus Railway's MySQL service. The application is a
+  single container plus MySQL, so it can move to AWS, Azure or Google Cloud
+  later without code changes.
 
 ## Open questions
 
-1. Cloud provider and account (AWS, Azure or Google Cloud, Mumbai or
-   Hyderabad region).
-2. Who operates the application day to day: CodeWalnut's own engineers?
+1. Who operates the application day to day: CodeWalnut's own engineers?

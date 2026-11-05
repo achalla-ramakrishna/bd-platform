@@ -12,7 +12,9 @@ Guidance for Claude Code sessions in this repository.
 - Record decisions that are costly to reverse as ADRs in `docs/adr/`, numbered
   sequentially, in the format of the existing records.
 - Target stack: Java 25, Spring Boot 4, React 19 + TypeScript, MySQL 8.4,
-  Flyway, one deployable (a modular monolith). See ADR-0002 and ADR-0003.
+  Flyway, one deployable (a modular monolith), hosted on Railway. See
+  ADR-0002, ADR-0003 and ADR-0007.
+- All amounts are in INR. Bill rates can be monthly, daily or hourly.
 - **Never commit real data.** No client names, contact details, contract
   values, rates or engineer personal data in code, tests, fixtures, docs or
   commit messages. Use obviously fictional examples (`example-gcc.test`,

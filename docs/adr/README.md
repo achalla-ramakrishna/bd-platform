@@ -14,5 +14,6 @@ Status values: **Proposed** (under review), **Accepted**, **Superseded by ADR-nn
 | [0004](0004-google-workspace-sign-in.md) | Google Workspace sign-in, roles held in the application | Proposed |
 | [0005](0005-no-linkedin-automation.md) | No LinkedIn automation or scraping | Proposed |
 | [0006](0006-spreadsheet-upload.md) | Starting data through validated spreadsheet upload | Proposed |
+| [0007](0007-hosting-on-railway.md) | Host on Railway for now | Accepted |
 
 Template: Context → Decision → Alternatives considered → Consequences.

@@ -65,12 +65,13 @@ erDiagram
 ### Opportunity (module `opportunities`)
 
 - Account, type (`STAFF_AUGMENTATION` or `PROJECT`; `AI_POD` in release 3),
-  name, owner, stage, value, currency, probability, expected close date, loss
+  name, owner, stage, value (INR), probability, expected close date, loss
   reason.
 - **Stages** (configurable, FR-OPP-04): Lead → Qualified → Discovery → Proposal
   → Negotiation → Won | Lost.
 - **Requirement** (staff augmentation only): role, skills, seniority, count,
-  location or remote, start date, duration in months, rate, rate unit.
+  location or remote, start date, duration in months, allocation, rate, rate
+  unit (month, day or hour).
 - **Project details** (project only): scope summary, pricing model (fixed
   price or time and materials), estimate, team shape, timeline.
 - Invariants:
@@ -98,18 +99,23 @@ erDiagram
 ### Contract and deployment (module `contracts`)
 
 - **Contract**: reference, account, type (`MSA` or `SOW`), parent MSA (for a
-  SOW), work type (staff augmentation or project), pricing model, currency,
-  value, start, end and renewal dates, status (`DRAFT`, `ACTIVE`, `ENDED`),
+  SOW), work type (staff augmentation or project), pricing model, value (INR), start, end and renewal dates, status (`DRAFT`, `ACTIVE`, `ENDED`),
   client permission to be named (BR-BD-11).
 - **Deployment**: an engineer working at a client: engineer, account, SOW,
   team or project, role, client manager name, bill rate, rate unit, currency,
-  start date, expected end date, actual end date, status (`PLANNED`, `ACTIVE`,
-  `ENDED`).
+  allocation (percentage of the engineer's time, default 100), start date,
+  expected end date, actual end date, status (`PLANNED`, `ACTIVE`, `ENDED`).
+- Bill rates can be monthly, daily or hourly (`rate_unit`). All amounts are in
+  INR.
 - Alerts: owners are notified 60 days before a SOW or deployment ends
   (FR-GRO-02).
-- Invariants: a deployment's dates fall within its SOW's dates; an engineer has
-  at most one active full-time deployment at a time (to confirm: can engineers
-  be split across clients?).
+- Invariants:
+  - A deployment's dates fall within its SOW's dates.
+  - An engineer's active deployments never add up to more than 100%
+    allocation on any day.
+  - Junior and mid-level engineers work for one client at a time. Senior, lead
+    and principal engineers may work part-time for at most two clients at
+    once (BR-BD-14). The limit per seniority is configuration, not code.
 - Bill rates and contract values are visible only to Leadership, BD lead and
   Delivery (FR-EXI-08).
 
@@ -128,8 +134,7 @@ erDiagram
 
 ## Open questions
 
-1. Can an engineer be deployed part-time to two clients at once?
-2. Is a centre in two cities one account or two? (Proposed: two accounts under
+1. Is a centre in two cities one account or two? (Proposed: two accounts under
    one parent, matching BR-BD-01.)
-3. Should opportunities be possible against a parent company before a specific
+2. Should opportunities be possible against a parent company before a specific
    centre is known?

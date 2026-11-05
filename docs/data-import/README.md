@@ -22,8 +22,7 @@ its key update it; nothing is duplicated.
 - Lists inside one cell (skills, tech stack): separate with `;`, for example
   `Java;React;AWS`.
 - Picklist columns accept only the values listed below (case does not matter).
-- Money: numbers only, no commas or currency symbols; currency in its own
-  column as a three-letter code (`INR`, `USD`, `EUR`, `GBP`).
+- Money: numbers only, in INR, with no commas or currency symbols.
 - An account is identified by `website_domain` + `city` everywhere
   (BR-BD-01). Use the domain only: `example.com`, not `https://www.example.com/`.
 
@@ -76,8 +75,7 @@ first).
 | parent_msa_ref | For SOWs, if an MSA exists | `contract_ref` of the MSA |
 | work_type | For SOWs | `staff_augmentation`, `project` |
 | pricing_model | For SOWs | `monthly_rate`, `time_and_materials`, `fixed_price` |
-| currency | With a value | `INR`, `USD`, `EUR`, `GBP` |
-| total_value | No | Number |
+| total_value | No | Number, in INR |
 | start_date | Yes | |
 | end_date | For SOWs | |
 | renewal_date | No | |
@@ -115,9 +113,9 @@ One row per engineer per client assignment, current and recently ended.
 | team_or_project | No | Client team or project name |
 | role | Yes | Role at the client |
 | client_manager_name | No | |
-| bill_rate | No | Number |
+| allocation_percent | No | 1 to 100; default 100. Junior and mid-level engineers: one client only. Senior and above: at most two clients at once, adding up to 100 or less (BR-BD-14). |
+| bill_rate | No | Number, in INR |
 | rate_unit | With a rate | `month`, `day`, `hour` |
-| currency | With a rate | `INR`, `USD`, `EUR`, `GBP` |
 | start_date | Yes | |
 | expected_end_date | No | Drives end-date alerts |
 | status | Yes | `planned`, `active`, `ended` |

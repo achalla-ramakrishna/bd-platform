@@ -20,14 +20,14 @@ application, and the team runs its pipeline there instead of in spreadsheets.
 | Contacts | FR-CON-01, FR-CON-02, FR-CON-04, FR-CON-06 | Personas, warm paths, consent and source |
 | Activity log | FR-ENG-01, FR-ENG-07 | Every touch on any channel, logged by people; referral tracking |
 | Opportunities | FR-OPP-01 to FR-OPP-07 | Staff augmentation (with requirement lines) and projects; board and table |
-| Existing clients | FR-GRO-01, FR-GRO-02, FR-GRO-03, FR-EXI-06, FR-EXI-08 | Deployed teams per client, end-date alerts at 60 days |
+| Existing clients | FR-GRO-01, FR-GRO-02, FR-GRO-03, FR-EXI-06, FR-EXI-08 | Deployed teams per client, part-time allocation, end-date alerts at 60 days |
 | Bench | FR-TAL-01, FR-TAL-03 | Engineer list, availability, proposing engineers to requirements |
 | Contracts | FR-PRO-06 | MSAs and SOWs with dates and values |
 | Reports | FR-REP-01, FR-REP-02, FR-REP-04, FR-REP-05 | Funnel, forecast, bench utilisation, CSV export |
 | Audit | FR-ADM-03, NFR-BD-03 | Who changed what and when |
 | Configuration | FR-ADM-02 | Stages, personas, picklists |
 
-Business rules enforced in release 1: BR-BD-01, 02, 03, 07, 08, 10, 11, 12, 13.
+Business rules enforced in release 1: BR-BD-01, 02, 03, 07, 08, 10, 11, 12, 13, 14.
 
 ## Release 2: Engage and sell
 
@@ -57,11 +57,19 @@ Business rules enforced in release 1: BR-BD-01, 02, 03, 07, 08, 10, 11, 12, 13.
 Invoicing, timesheets, payroll, a client or engineer portal, recruitment of
 new engineers, and any automated LinkedIn activity.
 
+## Decisions taken (5 November 2026)
+
+- Opportunity stages: Lead, Qualified, Discovery, Proposal, Negotiation, Won,
+  Lost (FR-OPP-04).
+- Bill rates can be monthly, daily or hourly.
+- All amounts are in INR.
+- Junior and mid-level engineers work for one client at a time; senior
+  engineers and above may work part-time for up to two clients (BR-BD-14).
+- Hosting on Railway for now (ADR-0007).
+
 ## Open questions
 
 1. Confirm which of the six roles the 10 users hold, and whether one person
    can hold several.
-2. Confirm the opportunity stages and their exit criteria (FR-OPP-04).
-3. Confirm the 60-day end-date alert (FR-GRO-02).
-4. Bill rates: monthly only, or also daily and hourly?
-5. Which currencies are used in contracts (INR, USD, others)?
+2. Confirm the 60-day end-date alert (FR-GRO-02).
+3. Confirm that mid-level engineers follow the junior rule (one client only).
