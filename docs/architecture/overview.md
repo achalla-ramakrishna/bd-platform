@@ -1,0 +1,72 @@
+# Architecture overview
+
+Status: **draft for review**.
+
+## Shape
+
+One Spring Boot application serves a REST API and the built React front end,
+backed by one MySQL database. With about 10 users, there is no case for
+microservices, a message broker or a separate identity server (ADR-0003).
+
+```mermaid
+flowchart LR
+    U[CodeWalnut users<br/>browser] -->|HTTPS| APP
+    subgraph APP[BD Platform: one Spring Boot deployable]
+        UI[React 19 + TypeScript<br/>static bundle]
+        API[REST API /api/v1]
+        MODS[Modules: accounts, contacts, engagement,<br/>opportunities, talent, contracts, imports,<br/>reporting, admin]
+        API --> MODS
+    end
+    APP -->|JDBC| DB[(MySQL 8.4)]
+    APP -->|OIDC sign-in| G[Google Workspace]
+    APP -.->|release 2| GM[Gmail and Calendar APIs]
+    APP -.->|release 3| AI[Claude API]
+```
+
+## Technology stack (ADR-0002)
+
+| Layer | Choice |
+|---|---|
+| Back end | Java 25, Spring Boot 4, Spring Security, Spring Data JPA, Spring Modulith for module boundaries |
+| Database | MySQL 8.4, Flyway migrations |
+| Front end | React 19, TypeScript, Vite, TanStack Query, a component library to be chosen in the screens step |
+| API contract | OpenAPI 3.1, written first; TypeScript client generated from it |
+| Spreadsheet parsing | Apache POI (XLSX) and Commons CSV |
+| Sign-in | Google Workspace OpenID Connect, restricted to the CodeWalnut domain (ADR-0004) |
+| Tests | JUnit 5, Testcontainers (MySQL), Vitest, Playwright for key journeys |
+| Build and run | Maven, one container image, GitHub Actions |
+
+## Modules
+
+Each module owns its tables and exposes a Java API to other modules; no
+module reads another's tables directly. Spring Modulith tests enforce this.
+
+| Module | Owns | Requirement areas |
+|---|---|---|
+| `accounts` | Parent companies, accounts (centres), owners, saved lists | 1 |
+| `contacts` | Contacts, personas, warm paths, consent | 2 |
+| `engagement` | Activities (touches), referrals; cadences in release 2 | 3 |
+| `opportunities` | Opportunities, requirement lines, stages, forecast | 4 |
+| `talent` | Engineers, skills, availability, proposals of engineers to requirements | 5 |
+| `contracts` | MSAs, SOWs, deployments of engineers to clients | 6, 7, 11 |
+| `imports` | Upload batches, validation, row errors, commit (ADR-0006) | 11 |
+| `reporting` | Read-only queries for dashboards and CSV export | 9 |
+| `admin` | Users, roles, picklists, stage definitions, audit log | 10 |
+
+## Cross-cutting
+
+- **Authorisation**: role checks on every endpoint; field-level restriction of
+  bill rates, contract values and engineer personal data (FR-EXI-08).
+- **Audit**: every write records who, when and the changed fields
+  (NFR-BD-03), in the same transaction as the change.
+- **Configuration over code**: stages, personas, picklists and alert
+  thresholds are data (FR-ADM-02, NFR-BD-11).
+- **Hosting**: an India cloud region (NFR-BD-04). The provider is an open
+  question; the application is a single container plus a managed MySQL
+  instance, so it runs on any of the major clouds.
+
+## Open questions
+
+1. Cloud provider and account (AWS, Azure or Google Cloud, Mumbai or
+   Hyderabad region).
+2. Who operates the application day to day: CodeWalnut's own engineers?
