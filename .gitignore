@@ -1,0 +1,25 @@
+# Real business data never goes in this repository (see CLAUDE.md).
+/data/
+*.xlsx
+*.xls
+*.csv
+!docs/data-import/templates/*.csv
+.env
+.env.*
+
+# Java / Maven / Gradle
+target/
+build/
+.gradle/
+*.class
+
+# Node / front end
+node_modules/
+dist/
+coverage/
+
+# IDE and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
