@@ -1,0 +1,14 @@
+# Local development: form login instead of Google, plain HTTP cookies.
+# Run with SPRING_PROFILES_ACTIVE=local and sign in as any address in ALLOWED_DOMAIN
+# with the password "local".
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
+app:
+  security:
+    allowed-domain: example-gcc.test
+    bootstrap-admins: admin@example-gcc.test
+    dev-login: true
+    dev-password: local

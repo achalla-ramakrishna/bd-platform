@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: ${TEST_DATABASE_URL:jdbc:mysql://localhost:3306/bd_platform_test}
+    username: ${TEST_DATABASE_USERNAME:bd}
+    password: ${TEST_DATABASE_PASSWORD:bd}
+app:
+  security:
+    allowed-domain: example-gcc.test
+    bootstrap-admins: admin@example-gcc.test
+    dev-login: true
+    dev-password: test

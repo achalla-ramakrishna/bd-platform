@@ -1,0 +1,54 @@
+# Configuration comes from environment variables in every environment (ADR-0007).
+spring:
+  application:
+    name: bd-platform
+  datasource:
+    url: ${DATABASE_URL:jdbc:mysql://localhost:3306/bd_platform}
+    username: ${DATABASE_USERNAME:bd}
+    password: ${DATABASE_PASSWORD:bd}
+  flyway:
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:not-configured}
+            client-secret: ${GOOGLE_CLIENT_SECRET:not-configured}
+            scope: openid,email,profile
+        provider:
+          google:
+            user-name-attribute: email
+  jackson:
+    time-zone: Asia/Kolkata
+
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        secure: ${SESSION_COOKIE_SECURE:true}
+        same-site: lax
+      timeout: 12h
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+app:
+  security:
+    allowed-domain: ${ALLOWED_DOMAIN:codewalnut.com}
+    bootstrap-admins: ${BOOTSTRAP_ADMINS:}
+    dev-login: ${DEV_LOGIN:false}
+    dev-password: ${DEV_PASSWORD:}

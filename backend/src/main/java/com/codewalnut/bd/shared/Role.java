@@ -1,0 +1,20 @@
+package com.codewalnut.bd.shared;
+
+import java.util.EnumSet;
+import java.util.Set;
+
+/** Application roles (business requirements, "Users and roles"). */
+public enum Role {
+    LEADERSHIP,
+    BD_LEAD,
+    ACCOUNT_EXECUTIVE,
+    DELIVERY,
+    SOLUTIONS,
+    ADMIN;
+
+    /** May see bill rates, contract values and engineer personal data (FR-EXI-08). */
+    public static final Set<Role> RESTRICTED_VIEWERS = EnumSet.of(LEADERSHIP, BD_LEAD, DELIVERY, ADMIN);
+
+    /** May upload spreadsheets (ADR-0006). */
+    public static final Set<Role> IMPORTERS = EnumSet.of(BD_LEAD, DELIVERY, ADMIN);
+}

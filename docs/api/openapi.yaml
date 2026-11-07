@@ -1,0 +1,804 @@
+openapi: 3.1.0
+info:
+  title: CodeWalnut BD Platform API
+  version: 0.1.0
+  description: |
+    REST API for release 1 (docs/scope.md). Served under /api/v1 by the single
+    Spring Boot application (ADR-0003). Authentication is a session cookie set
+    by Google Workspace sign-in (ADR-0004); state-changing calls need the
+    XSRF-TOKEN cookie echoed in the X-XSRF-TOKEN header.
+
+    All amounts are INR. Fields marked "restricted" (contract values, bill
+    rates) are null unless the caller holds LEADERSHIP, BD_LEAD, DELIVERY or
+    ADMIN (FR-EXI-08).
+
+    `x-slice` on each operation says which build slice delivers it:
+    1 = sign-in and upload (first slice), 2 = pipeline and activities,
+    3 = reports and alerts.
+servers:
+  - url: /api/v1
+tags:
+  - name: me
+  - name: imports
+  - name: accounts
+  - name: contacts
+  - name: contracts
+  - name: talent
+  - name: engagement
+  - name: opportunities
+  - name: reports
+  - name: admin
+paths:
+  /me:
+    get:
+      tags: [me]
+      operationId: getMe
+      x-slice: 1
+      summary: The signed-in user and their roles
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /reference:
+    get:
+      tags: [admin]
+      operationId: getReferenceData
+      x-slice: 1
+      summary: Stages, seniority rules and picklists for forms
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReferenceData' }
+
+  /imports/{entityType}/validate:
+    post:
+      tags: [imports]
+      operationId: validateImport
+      x-slice: 1
+      summary: Check a file without saving anything (ADR-0006)
+      parameters:
+        - $ref: '#/components/parameters/EntityType'
+      requestBody:
+        $ref: '#/components/requestBodies/ImportFile'
+      responses:
+        '200':
+          description: Validation report. `valid` is false when any row fails.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportReport' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /imports/{entityType}/commit:
+    post:
+      tags: [imports]
+      operationId: commitImport
+      x-slice: 1
+      summary: Validate again and save every row in one transaction, or nothing
+      description: |
+        The client sends the same file it validated; the server does not keep
+        files between calls. Returns 422 with the report if any row fails.
+      parameters:
+        - $ref: '#/components/parameters/EntityType'
+      requestBody:
+        $ref: '#/components/requestBodies/ImportFile'
+      responses:
+        '200':
+          description: Committed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportReport' }
+        '422':
+          description: Rows failed validation; nothing was saved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportReport' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /imports:
+    get:
+      tags: [imports]
+      operationId: listImportBatches
+      x-slice: 1
+      summary: Past uploads, newest first
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ImportBatch' }
+
+  /accounts:
+    get:
+      tags: [accounts]
+      operationId: listAccounts
+      summary: List accounts
+      x-slice: 1
+      parameters:
+        - { name: q, in: query, schema: { type: string }, description: 'Name, parent or domain contains' }
+        - { name: relationship, in: query, schema: { $ref: '#/components/schemas/Relationship' } }
+        - { name: city, in: query, schema: { type: string } }
+        - { name: ownerId, in: query, schema: { type: integer, format: int64 } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountPage' }
+    post:
+      tags: [accounts]
+      operationId: createAccount
+      summary: Create account
+      x-slice: 2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AccountInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Account' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /accounts/{id}:
+    get:
+      tags: [accounts]
+      operationId: getAccount
+      x-slice: 1
+      summary: One account with its contacts, contracts and deployed team
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountDetail' }
+        '404': { $ref: '#/components/responses/Problem' }
+    patch:
+      tags: [accounts]
+      operationId: updateAccount
+      summary: Update account
+      x-slice: 2
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AccountInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Account' }
+
+  /contacts:
+    get:
+      tags: [contacts]
+      operationId: listContacts
+      summary: List contacts
+      x-slice: 1
+      parameters:
+        - { name: accountId, in: query, schema: { type: integer, format: int64 } }
+        - { name: persona, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Contact' }
+
+  /contracts:
+    get:
+      tags: [contracts]
+      operationId: listContracts
+      summary: List contracts
+      x-slice: 1
+      parameters:
+        - { name: accountId, in: query, schema: { type: integer, format: int64 } }
+        - { name: status, in: query, schema: { type: string, enum: [DRAFT, ACTIVE, ENDED] } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Contract' }
+
+  /engineers:
+    get:
+      tags: [talent]
+      operationId: listEngineers
+      summary: List engineers
+      x-slice: 1
+      parameters:
+        - { name: availability, in: query, schema: { type: string, enum: [DEPLOYED, BENCH, NOTICE, LEAVE] } }
+        - { name: seniority, in: query, schema: { $ref: '#/components/schemas/Seniority' } }
+        - { name: skill, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Engineer' }
+
+  /deployments:
+    get:
+      tags: [contracts]
+      operationId: listDeployments
+      summary: List deployments
+      x-slice: 1
+      parameters:
+        - { name: accountId, in: query, schema: { type: integer, format: int64 } }
+        - { name: engineerId, in: query, schema: { type: integer, format: int64 } }
+        - { name: status, in: query, schema: { type: string, enum: [PLANNED, ACTIVE, ENDED] } }
+        - { name: endingWithinDays, in: query, schema: { type: integer, minimum: 1 }, description: FR-GRO-02 end-date view }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Deployment' }
+
+  /activities:
+    get:
+      tags: [engagement]
+      operationId: listActivities
+      summary: List activities
+      x-slice: 2
+      parameters:
+        - { name: accountId, in: query, schema: { type: integer, format: int64 } }
+        - { name: contactId, in: query, schema: { type: integer, format: int64 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Activity' }
+    post:
+      tags: [engagement]
+      operationId: logActivity
+      x-slice: 2
+      summary: Log a touch on any channel (FR-ENG-01). LinkedIn steps are done by people (BR-BD-03).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ActivityInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Activity' }
+
+  /opportunities:
+    get:
+      tags: [opportunities]
+      operationId: listOpportunities
+      summary: List opportunities
+      x-slice: 2
+      parameters:
+        - { name: accountId, in: query, schema: { type: integer, format: int64 } }
+        - { name: ownerId, in: query, schema: { type: integer, format: int64 } }
+        - { name: type, in: query, schema: { $ref: '#/components/schemas/OpportunityType' } }
+        - { name: stage, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Opportunity' }
+    post:
+      tags: [opportunities]
+      operationId: createOpportunity
+      summary: Create opportunity
+      x-slice: 2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OpportunityInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Opportunity' }
+
+  /opportunities/{id}:
+    get:
+      tags: [opportunities]
+      operationId: getOpportunity
+      summary: Get opportunity
+      x-slice: 2
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Opportunity' }
+    patch:
+      tags: [opportunities]
+      operationId: updateOpportunity
+      summary: Update opportunity
+      x-slice: 2
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OpportunityInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Opportunity' }
+
+  /opportunities/{id}/stage:
+    post:
+      tags: [opportunities]
+      operationId: moveOpportunityStage
+      x-slice: 2
+      summary: Move to another stage, enforcing BR-BD-07, BR-BD-08, BR-BD-12 and BR-BD-13
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stage]
+              properties:
+                stage: { type: string }
+                lossReasonCode: { type: string, description: Required when stage is LOST }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Opportunity' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /reports/funnel:
+    get:
+      tags: [reports]
+      operationId: getFunnel
+      summary: Get funnel
+      x-slice: 3
+      responses:
+        '200': { description: Counts per stage by owner and month (FR-REP-01) }
+  /reports/forecast:
+    get:
+      tags: [reports]
+      operationId: getForecast
+      summary: Get forecast
+      x-slice: 3
+      responses:
+        '200': { description: Weighted INR by month and type (FR-REP-02) }
+  /reports/bench:
+    get:
+      tags: [reports]
+      operationId: getBench
+      summary: Get bench
+      x-slice: 3
+      responses:
+        '200': { description: Utilisation and upcoming roll-offs (FR-REP-04) }
+
+  /admin/users:
+    get:
+      tags: [admin]
+      operationId: listUsers
+      summary: List users
+      x-slice: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/User' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admin/users/{id}/roles:
+    put:
+      tags: [admin]
+      operationId: setUserRoles
+      summary: Set user roles
+      x-slice: 1
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: '#/components/schemas/Role' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+components:
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+    Page: { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+    Size: { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+    EntityType:
+      name: entityType
+      in: path
+      required: true
+      schema: { type: string, enum: [accounts, contacts, contracts, engineers, deployments] }
+
+  requestBodies:
+    ImportFile:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [file]
+            properties:
+              file:
+                type: string
+                format: binary
+                description: CSV or XLSX in the template's column layout, at most 5 MB
+
+  responses:
+    Unauthorized: { description: Not signed in }
+    Forbidden: { description: Signed in but the role does not allow this }
+    Problem:
+      description: Error (RFC 9457 problem details)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+
+  schemas:
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+
+    Role:
+      type: string
+      enum: [LEADERSHIP, BD_LEAD, ACCOUNT_EXECUTIVE, DELIVERY, SOLUTIONS, ADMIN]
+    Seniority:
+      type: string
+      enum: [JUNIOR, MID, SENIOR, LEAD, PRINCIPAL]
+    Relationship:
+      type: string
+      enum: [PROSPECT, CLIENT, PAST_CLIENT]
+    OpportunityType:
+      type: string
+      enum: [STAFF_AUGMENTATION, PROJECT]
+    RateUnit:
+      type: string
+      enum: [MONTH, DAY, HOUR]
+
+    Me:
+      type: object
+      required: [id, email, name, roles, canSeeRestricted]
+      properties:
+        id: { type: integer, format: int64 }
+        email: { type: string }
+        name: { type: string }
+        roles: { type: array, items: { $ref: '#/components/schemas/Role' } }
+        canSeeRestricted: { type: boolean, description: May see rates and contract values }
+        canImport: { type: boolean }
+
+    User:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        email: { type: string }
+        name: { type: string }
+        active: { type: boolean }
+        roles: { type: array, items: { $ref: '#/components/schemas/Role' } }
+        lastLoginAt: { type: string, format: date-time }
+
+    ReferenceData:
+      type: object
+      properties:
+        stages:
+          type: array
+          items:
+            type: object
+            properties:
+              code: { type: string }
+              label: { type: string }
+              defaultProbability: { type: integer }
+              outcome: { type: string, enum: [OPEN, WON, LOST] }
+        seniorityRules:
+          type: array
+          items:
+            type: object
+            properties:
+              seniority: { $ref: '#/components/schemas/Seniority' }
+              maxConcurrentClients: { type: integer }
+        picklists:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              properties:
+                code: { type: string }
+                label: { type: string }
+
+    ImportReport:
+      type: object
+      required: [entityType, fileName, totalRows, valid, errors]
+      properties:
+        entityType: { type: string }
+        fileName: { type: string }
+        totalRows: { type: integer }
+        valid: { type: boolean }
+        toCreate: { type: integer }
+        toUpdate: { type: integer }
+        committed: { type: boolean }
+        batchId: { type: integer, format: int64 }
+        errors:
+          type: array
+          items: { $ref: '#/components/schemas/RowError' }
+    RowError:
+      type: object
+      required: [row, message]
+      properties:
+        row: { type: integer, description: 'Spreadsheet row number; the header is row 1' }
+        column: { type: string }
+        value: { type: string }
+        message: { type: string }
+    ImportBatch:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        entityType: { type: string }
+        fileName: { type: string }
+        status: { type: string, enum: [FAILED, COMMITTED] }
+        totalRows: { type: integer }
+        createdCount: { type: integer }
+        updatedCount: { type: integer }
+        failedCount: { type: integer }
+        uploadedBy: { type: string }
+        uploadedAt: { type: string, format: date-time }
+
+    Account:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        parentCompany: { type: string }
+        parentHqCountry: { type: string }
+        city: { type: string }
+        websiteDomain: { type: string }
+        industry: { type: string }
+        headcountBand: { type: string }
+        yearEstablished: { type: integer }
+        techStack: { type: array, items: { type: string } }
+        relationship: { $ref: '#/components/schemas/Relationship' }
+        ownerId: { type: integer, format: int64 }
+        ownerName: { type: string }
+        source: { type: string }
+        notes: { type: string }
+        activeEngineers: { type: integer }
+    AccountInput:
+      type: object
+      required: [name, parentCompany, city, websiteDomain, relationship, ownerId, source]
+      properties:
+        name: { type: string }
+        parentCompany: { type: string }
+        parentHqCountry: { type: string }
+        city: { type: string }
+        websiteDomain: { type: string }
+        industry: { type: string }
+        headcountBand: { type: string }
+        yearEstablished: { type: integer }
+        techStack: { type: array, items: { type: string } }
+        relationship: { $ref: '#/components/schemas/Relationship' }
+        ownerId: { type: integer, format: int64 }
+        source: { type: string }
+        notes: { type: string }
+    AccountPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Account' } }
+        page: { type: integer }
+        size: { type: integer }
+        total: { type: integer, format: int64 }
+    AccountDetail:
+      allOf:
+        - $ref: '#/components/schemas/Account'
+        - type: object
+          properties:
+            contacts: { type: array, items: { $ref: '#/components/schemas/Contact' } }
+            contracts: { type: array, items: { $ref: '#/components/schemas/Contract' } }
+            deployments: { type: array, items: { $ref: '#/components/schemas/Deployment' } }
+            monthlyBillingInr:
+              type: number
+              description: Restricted. Sum of active monthly-equivalent bill rates.
+
+    Contact:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        accountId: { type: integer, format: int64 }
+        accountName: { type: string }
+        fullName: { type: string }
+        title: { type: string }
+        persona: { type: string }
+        linkedinUrl: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        city: { type: string }
+        source: { type: string }
+        consentBasis: { type: string, enum: [EXISTING_RELATIONSHIP, BUSINESS_CONTACT, CONSENTED] }
+        optedOut: { type: boolean }
+
+    Contract:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        contractRef: { type: string }
+        accountId: { type: integer, format: int64 }
+        accountName: { type: string }
+        contractType: { type: string, enum: [MSA, SOW] }
+        parentMsaRef: { type: string }
+        workType: { type: string, enum: [STAFF_AUGMENTATION, PROJECT] }
+        pricingModel: { type: string, enum: [MONTHLY_RATE, TIME_AND_MATERIALS, FIXED_PRICE] }
+        totalValueInr: { type: number, description: Restricted }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        renewalDate: { type: string, format: date }
+        status: { type: string, enum: [DRAFT, ACTIVE, ENDED] }
+        clientPermissionToName: { type: boolean }
+
+    Engineer:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        employeeCode: { type: string }
+        fullName: { type: string }
+        workEmail: { type: string }
+        primaryRole: { type: string }
+        seniority: { $ref: '#/components/schemas/Seniority' }
+        skills: { type: array, items: { type: string } }
+        location: { type: string }
+        availability: { type: string, enum: [DEPLOYED, BENCH, NOTICE, LEAVE] }
+        availableFrom: { type: string, format: date }
+        consentToShareProfile: { type: boolean }
+        currentAllocationPercent: { type: integer, description: Sum over active deployments today }
+
+    Deployment:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        engineerId: { type: integer, format: int64 }
+        engineerName: { type: string }
+        employeeCode: { type: string }
+        seniority: { $ref: '#/components/schemas/Seniority' }
+        accountId: { type: integer, format: int64 }
+        accountName: { type: string }
+        sowRef: { type: string }
+        teamOrProject: { type: string }
+        role: { type: string }
+        clientManagerName: { type: string }
+        allocationPercent: { type: integer }
+        billRateInr: { type: number, description: Restricted }
+        rateUnit: { $ref: '#/components/schemas/RateUnit' }
+        startDate: { type: string, format: date }
+        expectedEndDate: { type: string, format: date }
+        status: { type: string, enum: [PLANNED, ACTIVE, ENDED] }
+
+    Activity:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        accountId: { type: integer, format: int64 }
+        contactId: { type: integer, format: int64 }
+        userName: { type: string }
+        channel: { type: string }
+        occurredOn: { type: string, format: date }
+        summary: { type: string }
+        outcome: { type: string }
+    ActivityInput:
+      type: object
+      required: [accountId, channel, occurredOn, summary, outcome]
+      properties:
+        accountId: { type: integer, format: int64 }
+        contactId: { type: integer, format: int64 }
+        channel: { type: string, enum: [LINKEDIN_CONNECTION, LINKEDIN_MESSAGE, INMAIL, EMAIL, CALL, MEETING, EVENT, REFERRAL] }
+        occurredOn: { type: string, format: date }
+        summary: { type: string, maxLength: 2000 }
+        outcome: { type: string, enum: [NO_REPLY, REPLIED, MEETING_BOOKED, NOT_INTERESTED, REFERRED_ON, DONE] }
+
+    Requirement:
+      type: object
+      required: [role, skills, seniority, headcount, locationMode, startDate]
+      properties:
+        id: { type: integer, format: int64 }
+        role: { type: string }
+        skills: { type: array, items: { type: string } }
+        seniority: { $ref: '#/components/schemas/Seniority' }
+        headcount: { type: integer, minimum: 1 }
+        locationMode: { type: string, enum: [ONSITE, HYBRID, REMOTE] }
+        location: { type: string }
+        startDate: { type: string, format: date }
+        durationMonths: { type: integer }
+        allocationPercent: { type: integer, minimum: 1, maximum: 100 }
+        rateInr: { type: number }
+        rateUnit: { $ref: '#/components/schemas/RateUnit' }
+    Opportunity:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        accountId: { type: integer, format: int64 }
+        accountName: { type: string }
+        name: { type: string }
+        type: { $ref: '#/components/schemas/OpportunityType' }
+        ownerId: { type: integer, format: int64 }
+        ownerName: { type: string }
+        stage: { type: string }
+        valueInr: { type: number }
+        probability: { type: integer }
+        weightedValueInr: { type: number }
+        expectedCloseDate: { type: string, format: date }
+        decisionMakerContactId: { type: integer, format: int64 }
+        needSummary: { type: string }
+        targetStartDate: { type: string, format: date }
+        lossReasonCode: { type: string }
+        requirements: { type: array, items: { $ref: '#/components/schemas/Requirement' } }
+        scopeSummary: { type: string }
+        pricingModel: { type: string, enum: [FIXED_PRICE, TIME_AND_MATERIALS] }
+        estimateInr: { type: number }
+    OpportunityInput:
+      type: object
+      required: [accountId, name, type, ownerId]
+      properties:
+        accountId: { type: integer, format: int64 }
+        name: { type: string }
+        type: { $ref: '#/components/schemas/OpportunityType' }
+        ownerId: { type: integer, format: int64 }
+        valueInr: { type: number }
+        probability: { type: integer }
+        expectedCloseDate: { type: string, format: date }
+        decisionMakerContactId: { type: integer, format: int64 }
+        needSummary: { type: string }
+        targetStartDate: { type: string, format: date }
+        requirements: { type: array, items: { $ref: '#/components/schemas/Requirement' } }
+        scopeSummary: { type: string }
+        pricingModel: { type: string, enum: [FIXED_PRICE, TIME_AND_MATERIALS] }
+        estimateInr: { type: number }
+        teamShape: { type: string }
+        timeline: { type: string }
