@@ -76,11 +76,7 @@ class ImportFlowIntegrationTest {
     @BeforeEach
     void setUp() {
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
-        jdbc.sql("UPDATE contract SET parent_msa_id = NULL").update();
-        for (String table : new String[] {"import_row_error", "import_batch", "audit_event", "deployment", "engineer_skill",
-            "engineer", "contract", "warm_path", "contact", "account", "parent_company", "user_role", "app_user"}) {
-            jdbc.sql("DELETE FROM " + table).update();
-        }
+        com.codewalnut.bd.TestData.clear(jdbc);
         users.recordSignIn(ADMIN, "Admin Person");
         long ae = users.recordSignIn(AE, "Sales Person").id();
         users.setRoles(ae, EnumSet.of(Role.ACCOUNT_EXECUTIVE), ae);

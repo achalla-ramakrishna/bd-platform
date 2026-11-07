@@ -1,13 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router';
-import { api, type AccountDetail, type Me } from '../lib/api';
+import { api, canEditPipeline, type AccountDetail, type Me, type Opportunity } from '../lib/api';
 import { formatDate, formatInr, formatRate, humanise } from '../lib/format';
 import { relationshipPill } from './AccountsPage';
 import { EndDate } from './DeploymentsPage';
+import { OpportunityTable } from './PipelinePage';
+import { ActivityLog } from './ActivityLog';
 
 export function AccountDetailPage({ me }: { me: Me }) {
   const { id } = useParams();
   const detail = useQuery({ queryKey: ['account', id], queryFn: () => api.get<AccountDetail>(`/accounts/${id}`) });
+  const opportunities = useQuery({
+    queryKey: ['opportunities', 'account', id],
+    queryFn: () => api.get<Opportunity[]>(`/opportunities?accountId=${id}`),
+  });
 
   if (detail.isPending) return <p className="muted">Loading…</p>;
   if (detail.error) return <div className="notice bad">{detail.error.message}</div>;
@@ -32,6 +38,15 @@ export function AccountDetailPage({ me }: { me: Me }) {
         <div className="card"><div className="label">Owner</div><div className="value" style={{ fontSize: 15 }}>{a.ownerName}</div></div>
       </div>
       {a.techStack.length > 0 && <p className="muted">Tech stack: {a.techStack.join(', ')}</p>}
+
+      <div className="title-row">
+        <h2>Opportunities</h2>
+        {canEditPipeline(me) && <Link className="button secondary" to={`/opportunities/new?accountId=${a.id}`}>New opportunity</Link>}
+      </div>
+      <OpportunityTable items={opportunities.data ?? []} />
+
+      <h2>Activity</h2>
+      <ActivityLog accountId={a.id} contacts={contacts} editable={canEditPipeline(me)} />
 
       <h2>Deployed team</h2>
       <div className="table-wrap">

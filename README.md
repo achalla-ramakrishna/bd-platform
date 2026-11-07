@@ -5,9 +5,9 @@ winning Global Capability Centre (GCC) and enterprise clients, running
 engagement across channels, managing the pipeline for staff augmentation and
 outsourced projects, and matching engineers to client demand.
 
-> Status: **release 1, first slice built**: Google sign-in, roles, spreadsheet
-> upload of starting data, and views of accounts, deployed teams and engineers.
-> Next slice: opportunities pipeline and activity log.
+> Status: **release 1, slices 1 and 2 built**: Google sign-in, roles,
+> spreadsheet upload, accounts, deployed teams, engineers, the opportunities
+> pipeline with stage rules, and the activity log. Next: reports and alerts.
 
 ## Document map
 

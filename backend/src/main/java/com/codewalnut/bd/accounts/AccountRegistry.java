@@ -72,6 +72,10 @@ public class AccountRegistry {
         return new Upserted(keys.getKey().longValue(), true);
     }
 
+    public boolean exists(long accountId) {
+        return jdbc.sql("SELECT COUNT(*) FROM account WHERE id = :id").param("id", accountId).query(Integer.class).single() > 0;
+    }
+
     /** An account with an active contract is a client (domain model, "Relationship"). */
     public void markClients(Collection<Long> accountIds) {
         if (accountIds.isEmpty()) {

@@ -7,6 +7,8 @@ import { EngineersPage } from './pages/EngineersPage';
 import { DeploymentsPage } from './pages/DeploymentsPage';
 import { UploadsPage } from './pages/UploadsPage';
 import { UsersPage } from './pages/UsersPage';
+import { PipelinePage } from './pages/PipelinePage';
+import { OpportunityPage } from './pages/OpportunityPage';
 
 export function App() {
   const me = useQuery({ queryKey: ['me'], queryFn: () => api.get<Me>('/me') });
@@ -30,6 +32,7 @@ export function App() {
     <div className="shell">
       <nav className="nav" aria-label="Main">
         <div className="brand">CodeWalnut <span>BD</span></div>
+        <NavLink to="/pipeline">Pipeline</NavLink>
         <NavLink to="/accounts">Accounts</NavLink>
         <NavLink to="/deployments">Deployed teams</NavLink>
         <NavLink to="/engineers">Engineers</NavLink>
@@ -54,7 +57,10 @@ export function App() {
           </div>
         )}
         <Routes>
-          <Route path="/" element={<Navigate to={user.canImport ? '/uploads' : '/accounts'} replace />} />
+          <Route path="/" element={<Navigate to="/pipeline" replace />} />
+          <Route path="/pipeline" element={<PipelinePage me={user} />} />
+          <Route path="/opportunities/new" element={<OpportunityPage me={user} />} />
+          <Route path="/opportunities/:id" element={<OpportunityPage me={user} />} />
           <Route path="/accounts" element={<AccountsPage />} />
           <Route path="/accounts/:id" element={<AccountDetailPage me={user} />} />
           <Route path="/deployments" element={<DeploymentsPage me={user} />} />

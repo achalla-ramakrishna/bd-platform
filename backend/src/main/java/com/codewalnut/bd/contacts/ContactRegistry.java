@@ -38,6 +38,11 @@ public class ContactRegistry {
         return keys;
     }
 
+    /** The account a contact belongs to, if the contact exists. */
+    public java.util.Optional<Long> accountOf(long contactId) {
+        return jdbc.sql("SELECT account_id FROM contact WHERE id = :id").param("id", contactId).query(Long.class).optional();
+    }
+
     public Set<String> personaCodes() {
         return Set.copyOf(jdbc.sql("SELECT code FROM picklist_value WHERE list_name = 'PERSONA' AND active")
             .query(String.class).list());

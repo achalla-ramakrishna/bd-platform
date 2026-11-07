@@ -15,6 +15,9 @@ public enum Role {
     /** May see bill rates, contract values and engineer personal data (FR-EXI-08). */
     public static final Set<Role> RESTRICTED_VIEWERS = EnumSet.of(LEADERSHIP, BD_LEAD, DELIVERY, ADMIN);
 
+    /** May create, edit and move opportunities and log activities. Delivery reads the pipeline. */
+    public static final Set<Role> PIPELINE_EDITORS = EnumSet.of(LEADERSHIP, BD_LEAD, ACCOUNT_EXECUTIVE, SOLUTIONS, ADMIN);
+
     /** May upload spreadsheets (ADR-0006). */
     public static final Set<Role> IMPORTERS = EnumSet.of(BD_LEAD, DELIVERY, ADMIN);
 }

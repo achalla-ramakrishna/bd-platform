@@ -61,6 +61,15 @@ class AdminController {
         return new ReferenceData(stages, rules, picklists);
     }
 
+    record Person(long id, String name) {}
+
+    /** Active people with a role, for owner pickers. Names only: emails and roles stay with Admins. */
+    @GetMapping("/users")
+    List<Person> people() {
+        return users.list().stream().filter(u -> u.active() && !u.roles().isEmpty())
+            .map(u -> new Person(u.id(), u.name())).toList();
+    }
+
     @GetMapping("/admin/users")
     List<UserDirectory.UserView> listUsers() {
         currentUser.get().require(EnumSet.of(Role.ADMIN));

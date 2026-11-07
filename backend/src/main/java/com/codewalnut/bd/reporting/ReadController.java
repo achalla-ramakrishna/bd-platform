@@ -66,11 +66,35 @@ class ReadController {
     private final JdbcClient jdbc;
     private final CurrentUserProvider currentUser;
     private final JsonMapper json;
+    private final OpportunityQueries opportunities;
+    private final ActivityQueries activities;
 
-    ReadController(JdbcClient jdbc, CurrentUserProvider currentUser, JsonMapper json) {
+    ReadController(JdbcClient jdbc, CurrentUserProvider currentUser, JsonMapper json, OpportunityQueries opportunities,
+                   ActivityQueries activities) {
         this.jdbc = jdbc;
         this.currentUser = currentUser;
         this.json = json;
+        this.opportunities = opportunities;
+        this.activities = activities;
+    }
+
+    @GetMapping("/opportunities")
+    List<OpportunityQueries.Opportunity> opportunities(@RequestParam(required = false) Long accountId,
+                                                       @RequestParam(required = false) Long ownerId,
+                                                       @RequestParam(required = false) String type,
+                                                       @RequestParam(required = false) String stage) {
+        return opportunities.list(accountId, ownerId, type, stage);
+    }
+
+    @GetMapping("/opportunities/{id}")
+    OpportunityQueries.Opportunity opportunity(@PathVariable long id) {
+        return opportunities.get(id);
+    }
+
+    @GetMapping("/activities")
+    List<ActivityQueries.Activity> activities(@RequestParam(required = false) Long accountId,
+                                              @RequestParam(required = false) Long contactId) {
+        return activities.list(accountId, contactId);
     }
 
     private static final String ACCOUNT_SELECT = """

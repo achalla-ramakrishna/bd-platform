@@ -65,6 +65,11 @@ public class UserDirectory {
             .optional();
     }
 
+    public boolean isActive(long userId) {
+        return jdbc.sql("SELECT COUNT(*) FROM app_user WHERE id = :id AND active").param("id", userId)
+            .query(Integer.class).single() > 0;
+    }
+
     public Optional<CurrentUser> findByEmail(String email) {
         return findId(email).map(this::load);
     }

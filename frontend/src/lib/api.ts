@@ -3,11 +3,15 @@
 export class ApiError extends Error {
   status: number;
   body: unknown;
+  /** Business rules not met (HTTP 422 problem details), one message each. */
+  problems: string[];
 
   constructor(status: number, message: string, body: unknown) {
     super(message);
     this.status = status;
     this.body = body;
+    const p = (body as { problems?: unknown } | undefined)?.problems;
+    this.problems = Array.isArray(p) ? p.map(String) : [];
   }
 }
 
@@ -16,7 +20,7 @@ function csrfToken(): string | undefined {
   return match ? decodeURIComponent(match.substring('XSRF-TOKEN='.length)) : undefined;
 }
 
-async function request<T>(method: string, path: string, body?: BodyInit | object): Promise<T> {
+async function request<T>(method: string, path: string, body?: BodyInit | object, accept422 = false): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   let payload: BodyInit | undefined;
   if (body instanceof FormData) {
@@ -32,7 +36,7 @@ async function request<T>(method: string, path: string, body?: BodyInit | object
   const res = await fetch(`/api/v1${path}`, { method, headers, body: payload, credentials: 'same-origin' });
   const text = await res.text();
   const data = text ? JSON.parse(text) : undefined;
-  if (!res.ok && res.status !== 422) {
+  if (!res.ok && !(accept422 && res.status === 422)) {
     const detail = (data && (data.detail || data.message)) || res.statusText;
     throw new ApiError(res.status, detail, data);
   }
@@ -42,10 +46,13 @@ async function request<T>(method: string, path: string, body?: BodyInit | object
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   put: <T>(path: string, body: object) => request<T>('PUT', path, body),
+  post: <T>(path: string, body: object) => request<T>('POST', path, body),
+  patch: <T>(path: string, body: object) => request<T>('PATCH', path, body),
+  /** Uploads return their validation report with HTTP 422 when rows fail. */
   upload: <T>(path: string, file: File) => {
     const form = new FormData();
     form.append('file', file);
-    return request<T>('POST', path, form);
+    return request<T>('POST', path, form, true);
   },
 };
 
@@ -221,3 +228,111 @@ export interface UserView {
   roles: Role[];
   lastLoginAt?: string;
 }
+
+export type OpportunityType = 'STAFF_AUGMENTATION' | 'PROJECT';
+
+export interface Requirement {
+  id?: number;
+  role: string;
+  skills: string[];
+  seniority: string;
+  headcount: number;
+  locationMode: 'ONSITE' | 'HYBRID' | 'REMOTE' | '';
+  location?: string | null;
+  startDate: string;
+  durationMonths?: number | null;
+  allocationPercent: number;
+  rateInr?: number | null;
+  rateUnit?: 'MONTH' | 'DAY' | 'HOUR' | '' | null;
+  deploymentRequest?: string | null;
+}
+
+export interface StageChange {
+  fromStage?: string | null;
+  toStage: string;
+  changedBy: string;
+  changedAt: string;
+}
+
+export interface Opportunity {
+  id: number;
+  accountId: number;
+  accountName: string;
+  name: string;
+  type: OpportunityType;
+  ownerId: number;
+  ownerName: string;
+  stage: string;
+  stageLabel: string;
+  stageOutcome: 'OPEN' | 'WON' | 'LOST';
+  valueInr?: number | null;
+  probability: number;
+  weightedValueInr?: number | null;
+  expectedCloseDate?: string | null;
+  decisionMakerContactId?: number | null;
+  decisionMakerName?: string | null;
+  needSummary?: string | null;
+  targetStartDate?: string | null;
+  lossReasonCode?: string | null;
+  scopeSummary?: string | null;
+  pricingModel?: string | null;
+  estimateInr?: number | null;
+  teamShape?: string | null;
+  timeline?: string | null;
+  version: number;
+  updatedAt: string;
+  requirements: Requirement[];
+  history: StageChange[];
+}
+
+export interface Activity {
+  id: number;
+  accountId: number;
+  accountName: string;
+  contactId?: number | null;
+  contactName?: string | null;
+  userName: string;
+  channel: string;
+  occurredOn: string;
+  summary: string;
+  outcome: string;
+  createdAt: string;
+}
+
+export interface Stage {
+  code: string;
+  label: string;
+  defaultProbability: number;
+  outcome: 'OPEN' | 'WON' | 'LOST';
+}
+
+export interface ReferenceData {
+  stages: Stage[];
+  seniorityRules: { seniority: string; maxConcurrentClients: number }[];
+  picklists: Record<string, { code: string; label: string }[]>;
+}
+
+/** Roles that may change the pipeline and log activities. */
+export function canEditPipeline(me: Me): boolean {
+  return me.roles.some((r) => ['LEADERSHIP', 'BD_LEAD', 'ACCOUNT_EXECUTIVE', 'SOLUTIONS', 'ADMIN'].includes(r));
+}
+
+export const CHANNEL_LABELS: Record<string, string> = {
+  LINKEDIN_CONNECTION: 'LinkedIn connection request',
+  LINKEDIN_MESSAGE: 'LinkedIn message',
+  INMAIL: 'InMail',
+  EMAIL: 'Email',
+  CALL: 'Call',
+  MEETING: 'Meeting',
+  EVENT: 'Event',
+  REFERRAL: 'Referral',
+};
+
+export const OUTCOME_LABELS: Record<string, string> = {
+  NO_REPLY: 'No reply yet',
+  REPLIED: 'Replied',
+  MEETING_BOOKED: 'Meeting booked',
+  NOT_INTERESTED: 'Not interested',
+  REFERRED_ON: 'Referred to someone else',
+  DONE: 'Done',
+};

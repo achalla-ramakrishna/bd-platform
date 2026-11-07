@@ -411,6 +411,25 @@ paths:
       responses:
         '200': { description: Utilisation and upcoming roll-offs (FR-REP-04) }
 
+  /users:
+    get:
+      tags: [admin]
+      operationId: listPeople
+      x-slice: 2
+      summary: Active people with a role (id and name only), for owner pickers
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer, format: int64 }
+                    name: { type: string }
+
   /admin/users:
     get:
       tags: [admin]
@@ -490,6 +509,10 @@ components:
         title: { type: string }
         status: { type: integer }
         detail: { type: string }
+        problems:
+          type: array
+          items: { type: string }
+          description: On 422, every business rule not met, one message each
 
     Role:
       type: string
@@ -770,6 +793,8 @@ components:
         ownerId: { type: integer, format: int64 }
         ownerName: { type: string }
         stage: { type: string }
+        stageLabel: { type: string }
+        stageOutcome: { type: string, enum: [OPEN, WON, LOST] }
         valueInr: { type: number }
         probability: { type: integer }
         weightedValueInr: { type: number }
@@ -782,6 +807,16 @@ components:
         scopeSummary: { type: string }
         pricingModel: { type: string, enum: [FIXED_PRICE, TIME_AND_MATERIALS] }
         estimateInr: { type: number }
+        version: { type: integer }
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              fromStage: { type: string }
+              toStage: { type: string }
+              changedBy: { type: string }
+              changedAt: { type: string, format: date-time }
     OpportunityInput:
       type: object
       required: [accountId, name, type, ownerId]
@@ -802,3 +837,4 @@ components:
         estimateInr: { type: number }
         teamShape: { type: string }
         timeline: { type: string }
+        version: { type: integer, description: Required on update; a stale version returns 409 }
