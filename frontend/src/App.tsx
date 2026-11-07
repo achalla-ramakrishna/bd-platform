@@ -10,6 +10,7 @@ import { UsersPage } from './pages/UsersPage';
 
 export function App() {
   const me = useQuery({ queryKey: ['me'], queryFn: () => api.get<Me>('/me') });
+  const signIn = useSignInInfo();
 
   if (me.isPending) {
     return <div className="centre muted">Loading…</div>;
@@ -46,6 +47,12 @@ export function App() {
         </div>
       </nav>
       <main>
+        {signIn.data?.preview && (
+          <div className="notice warn" role="status">
+            Preview with sample data only. Do not upload real client, contract or engineer data until Google sign-in is
+            set up.
+          </div>
+        )}
         <Routes>
           <Route path="/" element={<Navigate to={user.canImport ? '/uploads' : '/accounts'} replace />} />
           <Route path="/accounts" element={<AccountsPage />} />
@@ -66,8 +73,12 @@ function csrfFromCookie(): string {
   return match ? decodeURIComponent(match.substring('XSRF-TOKEN='.length)) : '';
 }
 
+export function useSignInInfo() {
+  return useQuery({ queryKey: ['sign-in'], queryFn: () => api.get<SignInInfo>('/public/sign-in'), staleTime: Infinity });
+}
+
 function SignIn() {
-  const info = useQuery({ queryKey: ['sign-in'], queryFn: () => api.get<SignInInfo>('/public/sign-in') });
+  const info = useSignInInfo();
   return (
     <div className="centre">
       <div className="panel">
@@ -76,10 +87,12 @@ function SignIn() {
         {info.data && (
           <>
             <a className="button" href={info.data.url}>
-              {info.data.devLogin ? 'Sign in (local development)' : 'Sign in with Google'}
+              {info.data.preview ? 'Sign in to the preview' : info.data.devLogin ? 'Sign in (local development)' : 'Sign in with Google'}
             </a>
             <p className="muted" style={{ marginTop: 14 }}>
-              Use your @{info.data.allowedDomain} account.
+              {info.data.preview
+                ? 'Use admin@example-gcc.test, or any other @example-gcc.test address, with the access code you were given.'
+                : `Use your @${info.data.allowedDomain} account.`}
             </p>
           </>
         )}

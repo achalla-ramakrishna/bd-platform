@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type ImportBatch, type ImportReport } from '../lib/api';
 import { formatDate, humanise } from '../lib/format';
+import { useSignInInfo } from '../App';
+
+const SAMPLES = ['1-accounts.csv', '2-contacts.csv', '3-contracts.csv', '4-engineers.csv', '5-deployments.csv', '5-deployments-with-errors.csv'];
 
 /** The five templates, in the order they must be loaded (ADR-0006, docs/data-import). */
 export const STEPS = [
@@ -15,6 +18,7 @@ export const STEPS = [
 export function UploadsPage() {
   const history = useQuery({ queryKey: ['imports'], queryFn: () => api.get<ImportBatch[]>('/imports') });
   const [open, setOpen] = useState<string>('accounts');
+  const signIn = useSignInInfo();
 
   const loaded = new Set(history.data?.filter((b) => b.status === 'COMMITTED').map((b) => b.entityType));
 
@@ -25,6 +29,15 @@ export function UploadsPage() {
         Load your spreadsheets in this order. Each file is checked first and nothing is saved until every row passes.
         Uploading the same file again updates records instead of duplicating them.
       </p>
+      {signIn.data?.preview && (
+        <p className="muted">
+          Try it with fictional sample files:{' '}
+          {SAMPLES.map((f, i) => (
+            <span key={f}>{i > 0 && ', '}<a href={`/samples/${f}`} download>{f}</a></span>
+          ))}
+          . The last one shows how problems are reported.
+        </p>
+      )}
       <div className="steps">
         {STEPS.map((step, i) => (
           <UploadStep

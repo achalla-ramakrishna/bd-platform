@@ -5,6 +5,7 @@
 *.csv
 !docs/data-import/templates/*.csv
 !frontend/public/templates/*.csv
+!frontend/public/samples/*.csv
 .env
 .env.*
 

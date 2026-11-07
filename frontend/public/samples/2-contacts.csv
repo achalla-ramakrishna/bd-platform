@@ -1,0 +1,4 @@
+account_website_domain,account_city,full_name,title,persona,linkedin_url,email,phone,contact_city,source,consent_basis,notes
+northwind-gcc.test,Bengaluru,Person One,Head of Engineering,engineering_leader,,person.one@northwind-gcc.test,,Bengaluru,existing relationship,existing_relationship,Fictional sample
+contoso-gcc.test,Hyderabad,Person Two,Centre Head,centre_head,,person.two@contoso-gcc.test,,Hyderabad,existing relationship,existing_relationship,Fictional sample
+fabrikam-gcc.test,Pune,Person Three,Talent Acquisition Lead,talent_acquisition,,,,Pune,event,business_contact,Fictional sample

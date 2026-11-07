@@ -33,44 +33,90 @@ Tests need a `bd_platform_test` database for the same user:
 
 ## Deploy to Railway (ADR-0007)
 
-One Railway project with two environments, `staging` and `production`. In
-each environment:
+One Railway service runs the app (API and React UI from one Docker image),
+plus Railway's MySQL. Railway rebuilds on every push to the branch it watches.
+This is the same setup as the CodeWalnut ATS.
 
-1. **Add a MySQL service** (Railway's MySQL template). Turn on its backups.
-2. **Add the application service** from this GitHub repository. Railway reads
-   `railway.json` and builds the `Dockerfile`. Staging deploys from `main`;
-   production is promoted by hand.
-3. **Set these variables** on the application service:
+### Quick start: preview with sample data (no Google setup)
 
-   | Variable | Value |
-   |---|---|
-   | `DATABASE_URL` | `jdbc:mysql://${{MySQL.MYSQLHOST}}:${{MySQL.MYSQLPORT}}/${{MySQL.MYSQLDATABASE}}` |
-   | `DATABASE_USERNAME` | `${{MySQL.MYSQLUSER}}` |
-   | `DATABASE_PASSWORD` | `${{MySQL.MYSQLPASSWORD}}` |
-   | `GOOGLE_CLIENT_ID` | From the Google Cloud OAuth client (below) |
-   | `GOOGLE_CLIENT_SECRET` | From the same client |
-   | `ALLOWED_DOMAIN` | `codewalnut.com` |
-   | `BOOTSTRAP_ADMINS` | Comma-separated emails to make Admin on first sign-in |
+1. **New Project → Deploy from GitHub repo →**
+   `achalla-ramakrishna/bd-platform`. Railway uses `main`; to deploy a branch
+   before it is merged, change it under app service **Settings → Source →
+   Branch**.
+2. In the same project: **+ New → Database → Add MySQL**.
+3. Click the **app** service (not MySQL) → **Variables** → **Raw Editor**,
+   paste these three lines, and set your own access code:
 
-   Railway sets `PORT`; the application reads it.
-4. **Generate a public domain** for the application service, for example
-   `bd-platform-production.up.railway.app`, or attach a CodeWalnut subdomain.
+   ```
+   MYSQL_URL=${{MySQL.MYSQL_URL}}
+   SPRING_PROFILES_ACTIVE=preview
+   PREVIEW_ACCESS_CODE=choose-a-long-code-here
+   ```
 
-### Google sign-in (ADR-0004)
+   `MySQL` must match the database service's name on the canvas (type `${{`
+   and Railway suggests it). The access code needs 12 or more characters; the
+   app will not start without it.
+4. App service → **Settings → Networking → Generate Domain**.
+5. Wait for the deploy to turn green, open the domain, click **Sign in to the
+   preview**, and sign in as `admin@example-gcc.test` with the access code.
+   The Uploads page links to fictional sample files to try.
 
-In Google Cloud Console, under CodeWalnut's Workspace organisation:
+Preview accepts only fictional `@example-gcc.test` addresses, so nobody can
+sign in as a real colleague, and every page shows a "sample data only"
+banner. **Do not upload real client, contract or engineer data in preview.**
 
-1. Create a project, for example `codewalnut-bd-platform`.
-2. OAuth consent screen: user type **Internal** (only CodeWalnut accounts).
-3. Credentials → Create OAuth client ID → Web application. Authorised redirect
-   URI: `https://<your-domain>/login/oauth2/code/google`, one per environment.
-4. Put the client ID and secret into the Railway variables above.
+If a deploy fails: app service → **Deployments → View logs**; the last lines
+say why. `https://<domain>/actuator/health` shows `{"status":"UP"}` when the
+app is up.
 
-### First sign-in
+### Later: real sign-in with Google (ADR-0004)
 
-The people in `BOOTSTRAP_ADMINS` sign in first and become Admins. Everyone
-else signs in, then an Admin gives them roles on the Users page. Upload data
-on the Uploads page in the order shown.
+**Google Cloud Console**, signed in with a CodeWalnut Workspace admin account:
+
+1. Create a project, for example "CodeWalnut BD Platform".
+2. **APIs & Services → OAuth consent screen** → user type **Internal** (only
+   CodeWalnut accounts can sign in; no Google review needed). Scopes:
+   `openid`, `email`, `profile`.
+3. **Credentials → Create credentials → OAuth client ID → Web application**.
+   Authorised redirect URI:
+   `https://<your-railway-domain>/login/oauth2/code/google`
+
+**Railway variables** (app service): remove `SPRING_PROFILES_ACTIVE` and
+`PREVIEW_ACCESS_CODE`, keep `MYSQL_URL`, and add:
+
+```
+ALLOWED_DOMAIN=codewalnut.com
+BOOTSTRAP_ADMINS=you@codewalnut.com
+GOOGLE_CLIENT_ID=<client id>
+GOOGLE_CLIENT_SECRET=<client secret>
+```
+
+- `BOOTSTRAP_ADMINS`: comma-separated; they become Admin on first sign-in and
+  give everyone else roles on the **Users** page.
+- Use a fresh MySQL database (or empty the preview one) before loading real
+  data, so no sample records remain.
+
+Deploy logs show `Google sign-in: ENABLED for @codewalnut.com accounts.`
+when it is set up, and `Google sign-in: DISABLED` in preview.
+
+### Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Variables changed but nothing happens | Railway stages variable edits ("Apply N changes") | Click **Deploy** |
+| Log says `Preview mode needs PREVIEW_ACCESS_CODE…` | Access code missing or under 12 characters | Set it, Deploy |
+| Deploy fails right after editing variables | `MYSQL_URL` deleted in the Raw Editor | Add `MYSQL_URL=${{MySQL.MYSQL_URL}}` back |
+| Google: `redirect_uri_mismatch` | Redirect URI not registered exactly | Add `https://<domain>/login/oauth2/code/google`, no trailing slash |
+| Google: `invalid_client` | Client ID mistyped or from another project | Copy it with Google's copy button |
+| Signed in but see "Almost there" | No role yet | An Admin ticks a role on **Users** |
+
+### Reference
+
+- Instead of `MYSQL_URL` you can set `DATABASE_URL` (JDBC form),
+  `DATABASE_USERNAME` and `DATABASE_PASSWORD`; `DATABASE_URL` wins if both are set.
+- Flyway creates and upgrades the schema on each start.
+- Railway sets `PORT`; the app listens on it. Health check: `/actuator/health`
+  (in `railway.json`).
 
 ## Region and data protection
 

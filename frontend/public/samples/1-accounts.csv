@@ -1,0 +1,5 @@
+account_name,parent_company,parent_hq_country,city,website_domain,industry,headcount_band,year_established,tech_stack,relationship,owner_email,source,notes
+Northwind Bengaluru,Northwind Retail,USA,Bengaluru,northwind-gcc.test,Retail,2000-5000,2014,Java;React;GCP,client,admin@example-gcc.test,existing client,
+Contoso Hyderabad,Contoso Health,UK,Hyderabad,contoso-gcc.test,Healthcare,500-2000,2019,.NET;Angular;Azure,client,priya.rao@example-gcc.test,existing client,
+Fabrikam Pune,Fabrikam Motors,Germany,Pune,fabrikam-gcc.test,Automotive,500-2000,2021,Python;AWS,prospect,priya.rao@example-gcc.test,Nasscom report,
+Tailspin Chennai,Tailspin Bank,Australia,Chennai,tailspin-gcc.test,Banking,<500,2024,Java;Kafka,prospect,admin@example-gcc.test,referral,

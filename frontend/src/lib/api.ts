@@ -75,6 +75,7 @@ export interface SignInInfo {
   url: string;
   allowedDomain: string;
   devLogin: boolean;
+  preview: boolean;
 }
 
 export interface RowError {

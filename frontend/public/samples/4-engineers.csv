@@ -1,0 +1,6 @@
+employee_code,full_name,work_email,primary_role,seniority,skills,location,availability,available_from,consent_to_share_profile,notes
+CW001,Engineer A,engineer.a@example-gcc.test,Frontend engineer,junior,React;TypeScript,Bengaluru,bench,,yes,
+CW002,Engineer B,engineer.b@example-gcc.test,Backend engineer,senior,Java;Spring;Kafka,Bengaluru,bench,,yes,
+CW003,Engineer C,engineer.c@example-gcc.test,Full-stack engineer,mid,Java;React,Hyderabad,bench,,yes,
+CW004,Engineer D,engineer.d@example-gcc.test,Data engineer,lead,Python;Spark;AWS,Pune,bench,,yes,
+CW005,Engineer E,engineer.e@example-gcc.test,QA engineer,mid,Playwright;Java,Chennai,notice,2026-12-15,no,

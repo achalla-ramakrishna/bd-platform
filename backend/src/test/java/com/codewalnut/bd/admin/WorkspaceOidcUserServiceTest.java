@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 /** ADR-0004: only verified accounts in the Workspace domain may sign in. */
 class WorkspaceOidcUserServiceTest {
 
-    private final SecurityProperties props = new SecurityProperties("example-gcc.test", List.of(), false, null);
+    private final SecurityProperties props = new SecurityProperties("example-gcc.test", List.of(), false, null, false);
 
     @Test
     void acceptsVerifiedWorkspaceAccount() {
@@ -34,6 +34,14 @@ class WorkspaceOidcUserServiceTest {
     @Test
     void rejectsUnverifiedEmail() {
         assertThat(WorkspaceOidcUserService.isAllowed(props, "example-gcc.test", "a@example-gcc.test", false)).isFalse();
+    }
+
+    @Test
+    void previewRefusesToStartWithoutALongAccessCode() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> new SecurityProperties("example-gcc.test", List.of(), true, "short", true))
+            .hasMessageContaining("PREVIEW_ACCESS_CODE");
+        assertThat(new SecurityProperties("example-gcc.test", List.of(), true, "a-long-access-code", true).preview()).isTrue();
     }
 
     @Test

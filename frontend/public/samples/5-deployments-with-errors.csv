@@ -1,0 +1,6 @@
+employee_code,account_website_domain,account_city,sow_ref,team_or_project,role,client_manager_name,allocation_percent,bill_rate,rate_unit,start_date,expected_end_date,status,notes
+CW001,northwind-gcc.test,Bengaluru,SOW-NW-01,Checkout,Frontend engineer,Manager X,50,180000,month,2026-04-01,2026-12-20,active,
+CW001,contoso-gcc.test,Hyderabad,SOW-CT-01,Claims,Frontend engineer,Manager Y,50,1500,hour,2026-06-01,2026-12-31,active,
+CW002,northwind-gcc.test,Bengaluru,SOW-NW-01,Payments,Senior backend engineer,Manager X,50,260000,month,2026-04-01,2027-03-31,active,
+CW002,contoso-gcc.test,Hyderabad,SOW-CT-01,Claims,Backend engineer,Manager Y,50,9000,day,2026-06-01,2026-12-31,active,
+CW003,contoso-gcc.test,Hyderabad,SOW-CT-01,Claims,Full-stack engineer,Manager Y,100,7000,day,2026-06-01,2027-02-28,active,

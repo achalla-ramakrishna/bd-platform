@@ -1,0 +1,11 @@
+# Shared preview on Railway before Google sign-in is set up (docs/deployment.md).
+# Enable with SPRING_PROFILES_ACTIVE=preview and PREVIEW_ACCESS_CODE (12+ characters; the app
+# refuses to start without it). Only fictional @example-gcc.test users can sign in, so nobody can
+# sign in as a real colleague. Load sample data only.
+app:
+  security:
+    allowed-domain: example-gcc.test
+    bootstrap-admins: admin@example-gcc.test
+    dev-login: true
+    dev-password: ${PREVIEW_ACCESS_CODE:}
+    preview: true

@@ -22,6 +22,8 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 @Configuration
 public class SecurityConfig {
 
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(SecurityConfig.class);
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityProperties props, UserDirectory users) throws Exception {
         http
@@ -38,8 +40,11 @@ public class SecurityConfig {
             .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/signed-out"));
 
         if (props.devLogin()) {
+            LOG.warn("Google sign-in: DISABLED. {} login for @{} addresses is on.",
+                props.preview() ? "Preview access-code" : "Development", props.allowedDomain());
             http.formLogin(form -> form.defaultSuccessUrl("/", true));
         } else {
+            LOG.info("Google sign-in: ENABLED for @{} accounts.", props.allowedDomain());
             http.oauth2Login(oauth -> oauth
                 .userInfoEndpoint(ui -> ui.oidcUserService(new WorkspaceOidcUserService(props, users)))
                 .defaultSuccessUrl("/", true));

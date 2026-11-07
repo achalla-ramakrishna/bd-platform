@@ -1,0 +1,4 @@
+contract_ref,account_website_domain,account_city,contract_type,parent_msa_ref,work_type,pricing_model,total_value,start_date,end_date,renewal_date,status,client_permission_to_name,notes
+MSA-NW,northwind-gcc.test,Bengaluru,msa,,,,,2025-04-01,,,active,yes,
+SOW-NW-01,northwind-gcc.test,Bengaluru,sow,MSA-NW,staff_augmentation,monthly_rate,9600000,2026-04-01,2027-03-31,2027-01-15,active,yes,
+SOW-CT-01,contoso-gcc.test,Hyderabad,sow,,staff_augmentation,time_and_materials,4800000,2026-06-01,2026-12-31,,active,no,
