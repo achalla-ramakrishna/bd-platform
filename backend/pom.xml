@@ -21,7 +21,7 @@
         <spring-modulith.version>2.1.2</spring-modulith.version>
         <poi.version>5.4.1</poi.version>
         <commons-csv.version>1.14.1</commons-csv.version>
-        <!-- Set to true to skip building the React app (e.g. back-end-only work). -->
+        <!-- Set to true to skip the npm steps. A frontend/dist built earlier is still copied in. -->
         <skipFrontend>false</skipFrontend>
     </properties>
 
@@ -148,7 +148,6 @@
                         <phase>process-resources</phase>
                         <goals><goal>copy-resources</goal></goals>
                         <configuration>
-                            <skip>${skipFrontend}</skip>
                             <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
                             <resources>
                                 <resource><directory>${project.basedir}/../frontend/dist</directory></resource>

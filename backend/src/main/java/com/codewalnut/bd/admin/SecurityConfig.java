@@ -28,6 +28,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .requestMatchers("/", "/index.html", "/assets/**", "/favicon.svg", "/signed-out").permitAll()
+                .requestMatchers("/api/v1/public/**").permitAll()
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll())
             .csrf(csrf -> csrf.spa())

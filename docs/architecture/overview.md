@@ -27,7 +27,7 @@ flowchart LR
 
 | Layer | Choice |
 |---|---|
-| Back end | Java 25, Spring Boot 4, Spring Security, Spring Data JPA, Spring Modulith for module boundaries |
+| Back end | Java 25, Spring Boot 4.1, Spring Security, Spring JDBC `JdbcClient` (ADR-0008), Spring Modulith for module boundaries |
 | Database | MySQL 8.4, Flyway migrations |
 | Front end | React 19, TypeScript, Vite, TanStack Query, a component library to be chosen in the screens step |
 | API contract | OpenAPI 3.1, written first; TypeScript client generated from it |
@@ -50,8 +50,9 @@ module reads another's tables directly. Spring Modulith tests enforce this.
 | `talent` | Engineers, skills, availability, proposals of engineers to requirements | 5 |
 | `contracts` | MSAs, SOWs, deployments of engineers to clients | 6, 7, 11 |
 | `imports` | Upload batches, validation, row errors, commit (ADR-0006) | 11 |
-| `reporting` | Read-only queries for dashboards and CSV export | 9 |
-| `admin` | Users, roles, picklists, stage definitions, audit log | 10 |
+| `reporting` | Read-only views across modules: account, contact, contract, engineer and deployment lists; dashboards and CSV export later | 9 |
+| `admin` | Users, roles, sign-in, picklists, stage definitions | 10 |
+| `shared` | Roles, current user, audit log, error handling (open to all modules) | — |
 
 ## Cross-cutting
 

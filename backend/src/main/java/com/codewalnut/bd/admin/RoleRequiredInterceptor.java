@@ -24,7 +24,7 @@ public class RoleRequiredInterceptor implements HandlerInterceptor, WebMvcConfig
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(this).addPathPatterns("/api/**").excludePathPatterns("/api/v1/me");
+        registry.addInterceptor(this).addPathPatterns("/api/**").excludePathPatterns("/api/v1/me", "/api/v1/public/**");
     }
 
     @Override

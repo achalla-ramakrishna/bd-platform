@@ -5,8 +5,9 @@ winning Global Capability Centre (GCC) and enterprise clients, running
 engagement across channels, managing the pipeline for staff augmentation and
 outsourced projects, and matching engineers to client demand.
 
-> Status: **design phase**. No application code yet. The design is agreed step
-> by step, and implementation starts once it is reviewed.
+> Status: **release 1, first slice built**: Google sign-in, roles, spreadsheet
+> upload of starting data, and views of accounts, deployed teams and engineers.
+> Next slice: opportunities pipeline and activity log.
 
 ## Document map
 
@@ -16,12 +17,23 @@ outsourced projects, and matching engineers to client demand.
 | [docs/scope.md](docs/scope.md) | What release 1 delivers, and what comes in later releases |
 | [docs/architecture/overview.md](docs/architecture/overview.md) | Architecture, technology stack, modules and deployment |
 | [docs/domain-model.md](docs/domain-model.md) | Entities, relationships, lifecycles and invariants |
+| [docs/data-model.md](docs/data-model.md) | MySQL schema (Flyway migrations in `backend/`) |
+| [docs/api/openapi.yaml](docs/api/openapi.yaml) | REST API contract for release 1 |
+| [docs/deployment.md](docs/deployment.md) | Running locally and deploying to Railway |
 | [docs/data-import/](docs/data-import/) | How starting data is uploaded, with spreadsheet templates |
 | [docs/adr/](docs/adr/) | Architecture decision records |
 
 The business requirements (FR-xxx-nn, BR-BD-nn, NFR-BD-nn) are kept in the
 shared document *CodeWalnut BD Platform — Business Requirements*. This
 repository refers to them by ID.
+
+## Repository layout
+
+| Folder | Contents |
+|---|---|
+| `backend/` | Spring Boot application (Java 25): API, sign-in, upload, Flyway migrations |
+| `frontend/` | React 19 + TypeScript app, built into the back end's jar |
+| `docs/` | Design documents and ADRs |
 
 ## How we work
 

@@ -4,6 +4,7 @@
 *.xls
 *.csv
 !docs/data-import/templates/*.csv
+!frontend/public/templates/*.csv
 .env
 .env.*
 

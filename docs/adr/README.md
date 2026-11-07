@@ -15,5 +15,6 @@ Status values: **Proposed** (under review), **Accepted**, **Superseded by ADR-nn
 | [0005](0005-no-linkedin-automation.md) | No LinkedIn automation or scraping | Proposed |
 | [0006](0006-spreadsheet-upload.md) | Starting data through validated spreadsheet upload | Proposed |
 | [0007](0007-hosting-on-railway.md) | Host on Railway for now | Accepted |
+| [0008](0008-data-access-with-jdbc.md) | Data access with Spring JDBC, not JPA | Proposed |
 
 Template: Context → Decision → Alternatives considered → Consequences.
