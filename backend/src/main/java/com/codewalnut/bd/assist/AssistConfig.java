@@ -15,10 +15,24 @@ class AssistConfig {
     @Bean
     ProfileReader profileReader(@Value("${app.ai.anthropic-api-key:}") String apiKey) {
         if (apiKey == null || apiKey.isBlank()) {
-            LOG.info("AI profile reading: DISABLED (no ANTHROPIC_API_KEY).");
+            LOG.info("AI profile reading and account research: DISABLED (no ANTHROPIC_API_KEY).");
             return new DisabledProfileReader();
         }
         LOG.info("AI profile reading: ENABLED ({}).", ClaudeProfileReader.MODEL);
-        return new ClaudeProfileReader(AnthropicOkHttpClient.builder().apiKey(apiKey.strip()).build());
+        return new ClaudeProfileReader(client(apiKey));
+    }
+
+    @Bean
+    AccountResearcher accountResearcher(@Value("${app.ai.anthropic-api-key:}") String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return new DisabledAccountResearcher();
+        }
+        LOG.info("AI account research: ENABLED ({} with web search).", ClaudeAccountResearcher.MODEL);
+        return new ClaudeAccountResearcher(client(apiKey));
+    }
+
+    private static com.anthropic.client.AnthropicClient client(String apiKey) {
+        // Research runs several web searches; allow up to 5 minutes per call.
+        return AnthropicOkHttpClient.builder().apiKey(apiKey.strip()).timeout(java.time.Duration.ofMinutes(5)).build();
     }
 }

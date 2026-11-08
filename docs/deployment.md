@@ -99,7 +99,9 @@ GOOGLE_CLIENT_SECRET=<client secret>
 Deploy logs show `Google sign-in: ENABLED for @codewalnut.com accounts.`
 when it is set up, and `Google sign-in: DISABLED` in preview.
 
-### Optional: Add from LinkedIn with AI (ADR-0009)
+### Optional: AI features (ADR-0009, ADR-0010)
+
+The same key switches on **Add from LinkedIn** profile reading and **account research**.
 
 Add one variable to the app service. If the ATS already has a key, reference it:
 
@@ -108,8 +110,9 @@ ANTHROPIC_API_KEY=${{agentic-ats-codewalnut.ANTHROPIC_API_KEY}}
 ```
 
 or create a key at console.anthropic.com (API keys). Deploy logs then show
-`AI profile reading: ENABLED`. Without it, **Add from LinkedIn** still works
-as a form filled in by hand.
+`AI profile reading: ENABLED` and `AI account research: ENABLED`. Without it,
+**Add from LinkedIn** still works as a form filled in by hand, and research is
+switched off.
 
 ### Troubleshooting
 

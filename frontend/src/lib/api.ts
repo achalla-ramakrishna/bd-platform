@@ -347,3 +347,28 @@ export interface ProfileSuggestion {
   personaReason: string;
   notes: string;
 }
+
+export interface ResearchFact { statement: string; source: string }
+
+export interface AccountResearch {
+  id: number;
+  accountId: number;
+  status: 'RUNNING' | 'DONE' | 'FAILED';
+  summary?: {
+    centreOverview: string;
+    facts: ResearchFact[];
+    buyingSignals: ResearchFact[];
+    likelyNeeds: string[];
+    recommendedOffers: { offer: string; why: string }[];
+    whoToContact: { persona: string; why: string; knownContact?: string | null }[];
+    openingMessage: string;
+    talkingPoints: string[];
+    cautions: string[];
+  } | null;
+  sources: { url: string; title: string }[];
+  error?: string | null;
+  model?: string | null;
+  requestedBy: string;
+  requestedAt: string;
+  finishedAt?: string | null;
+}

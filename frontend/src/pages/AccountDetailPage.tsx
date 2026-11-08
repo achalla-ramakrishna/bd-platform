@@ -7,6 +7,7 @@ import { EndDate } from './DeploymentsPage';
 import { OpportunityTable } from './PipelinePage';
 import { ActivityLog } from './ActivityLog';
 import { AddFromLinkedIn } from './AddFromLinkedIn';
+import { AccountResearch } from './AccountResearch';
 import { useState } from 'react';
 
 export function AccountDetailPage({ me }: { me: Me }) {
@@ -41,6 +42,8 @@ export function AccountDetailPage({ me }: { me: Me }) {
         <div className="card"><div className="label">Owner</div><div className="value" style={{ fontSize: 15 }}>{a.ownerName}</div></div>
       </div>
       {a.techStack.length > 0 && <p className="muted">Tech stack: {a.techStack.join(', ')}</p>}
+
+      <AccountResearch accountId={a.id} editable={canEditPipeline(me)} />
 
       <div className="title-row">
         <h2>Opportunities</h2>

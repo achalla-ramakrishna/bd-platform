@@ -25,18 +25,21 @@ class AssistController {
     private static final int MAX_TEXT = 20_000;
 
     private final ProfileReader reader;
+    private final AccountResearcher researcher;
     private final ContactRegistry contacts;
     private final CurrentUserProvider currentUser;
 
-    AssistController(ProfileReader reader, ContactRegistry contacts, CurrentUserProvider currentUser) {
+    AssistController(ProfileReader reader, AccountResearcher researcher, ContactRegistry contacts,
+                     CurrentUserProvider currentUser) {
         this.reader = reader;
+        this.researcher = researcher;
         this.contacts = contacts;
         this.currentUser = currentUser;
     }
 
     @GetMapping("/status")
     Map<String, Boolean> status() {
-        return Map.of("profileReading", reader.enabled());
+        return Map.of("profileReading", reader.enabled(), "accountResearch", researcher.enabled());
     }
 
     /** Suggests contact fields from a pasted LinkedIn profile. Nothing is saved. */
