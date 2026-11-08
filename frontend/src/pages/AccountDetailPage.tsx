@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router';
 import { api, canEditPipeline, type AccountDetail, type Me, type Opportunity } from '../lib/api';
 import { formatDate, formatInr, formatRate, humanise } from '../lib/format';
-import { relationshipPill } from './AccountsPage';
+import { FitPill, relationshipPill } from './AccountsPage';
 import { EndDate } from './DeploymentsPage';
 import { OpportunityTable } from './PipelinePage';
 import { ActivityLog } from './ActivityLog';
@@ -39,9 +39,16 @@ export function AccountDetailPage({ me }: { me: Me }) {
           <div className="card"><div className="label">Monthly billing</div><div className="value">{formatInr(monthlyBillingInr)}</div></div>
         )}
         <div className="card"><div className="label">Contacts</div><div className="value">{contacts.length}</div></div>
+        <div className="card"><div className="label">Fit score</div><div className="value"><FitPill score={a.fitScore} reasons={a.fitReasons} /></div></div>
         <div className="card"><div className="label">Owner</div><div className="value" style={{ fontSize: 15 }}>{a.ownerName}</div></div>
       </div>
       {a.techStack.length > 0 && <p className="muted">Tech stack: {a.techStack.join(', ')}</p>}
+      {a.fitReasons.length > 0 && (
+        <details className="fit-reasons">
+          <summary>Why fit {a.fitScore}?</summary>
+          <ul>{a.fitReasons.map((r) => <li key={r}>{r}</li>)}</ul>
+        </details>
+      )}
 
       <AccountResearch accountId={a.id} editable={canEditPipeline(me)} />
 

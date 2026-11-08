@@ -136,6 +136,8 @@ export interface Account {
   source: string;
   notes?: string;
   activeEngineers: number;
+  fitScore?: number | null;
+  fitReasons: string[];
 }
 
 export interface Page<T> {
@@ -368,6 +370,28 @@ export interface AccountResearch {
   sources: { url: string; title: string }[];
   error?: string | null;
   model?: string | null;
+  requestedBy: string;
+  requestedAt: string;
+  finishedAt?: string | null;
+}
+
+export interface GccCandidate {
+  candidate: {
+    company: string; parentCompany: string; hqCountry: string; city: string; websiteDomain: string;
+    industry: string; description: string; source: string;
+  };
+  domain: string;
+  validDomain: boolean;
+  alreadyInApp: boolean;
+}
+
+export interface GccSearch {
+  id: number;
+  city: string;
+  industry?: string | null;
+  status: 'RUNNING' | 'DONE' | 'FAILED';
+  candidates: GccCandidate[];
+  error?: string | null;
   requestedBy: string;
   requestedAt: string;
   finishedAt?: string | null;

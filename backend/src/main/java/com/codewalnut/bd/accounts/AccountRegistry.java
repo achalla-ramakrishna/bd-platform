@@ -72,6 +72,12 @@ public class AccountRegistry {
         return new Upserted(keys.getKey().longValue(), true);
     }
 
+    /** Parent company names with an account in the city, to tell a search what we already have. */
+    public List<String> parentNamesIn(String city) {
+        return jdbc.sql("SELECT DISTINCT p.name FROM account a JOIN parent_company p ON p.id = a.parent_company_id WHERE a.city = :city ORDER BY p.name")
+            .param("city", city.trim()).query(String.class).list();
+    }
+
     public boolean exists(long accountId) {
         return jdbc.sql("SELECT COUNT(*) FROM account WHERE id = :id").param("id", accountId).query(Integer.class).single() > 0;
     }

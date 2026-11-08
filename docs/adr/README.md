@@ -18,5 +18,6 @@ Status values: **Proposed** (under review), **Accepted**, **Superseded by ADR-nn
 | [0008](0008-data-access-with-jdbc.md) | Data access with Spring JDBC, not JPA | Proposed |
 | [0009](0009-claude-for-profile-reading.md) | Claude reads pasted LinkedIn profiles; people decide and save | Proposed |
 | [0010](0010-ai-account-research.md) | AI account research with web search | Proposed |
+| [0011](0011-find-gccs.md) | Find GCCs with web search; people choose what to add | Proposed |
 
 Template: Context → Decision → Alternatives considered → Consequences.

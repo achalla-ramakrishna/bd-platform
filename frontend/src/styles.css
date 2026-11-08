@@ -233,3 +233,13 @@ button.link { background: none; border: 0; color: var(--bad); padding: 0; font-w
 .research details { margin-top: 14px; }
 .research summary { cursor: pointer; color: var(--muted); }
 .research .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+/* Find GCCs and fit */
+.find-form { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; }
+.find-form .grid { max-width: 640px; }
+tr.selected td { background: var(--accent-soft); }
+button.link-plain { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 400; text-decoration: underline; }
+.fit-reasons { margin: 4px 0 8px; }
+.fit-reasons summary { cursor: pointer; color: var(--muted); }
+.fit-reasons ul { margin: 6px 0 0; padding-left: 18px; }
+.title-row .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }

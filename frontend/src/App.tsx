@@ -9,6 +9,7 @@ import { UploadsPage } from './pages/UploadsPage';
 import { UsersPage } from './pages/UsersPage';
 import { PipelinePage } from './pages/PipelinePage';
 import { OpportunityPage } from './pages/OpportunityPage';
+import { FindGccsPage } from './pages/FindGccsPage';
 
 export function App() {
   const me = useQuery({ queryKey: ['me'], queryFn: () => api.get<Me>('/me') });
@@ -34,6 +35,7 @@ export function App() {
         <div className="brand">CodeWalnut <span>BD</span></div>
         <NavLink to="/pipeline">Pipeline</NavLink>
         <NavLink to="/accounts">Accounts</NavLink>
+        <NavLink to="/find-gccs">Find GCCs</NavLink>
         <NavLink to="/deployments">Deployed teams</NavLink>
         <NavLink to="/engineers">Engineers</NavLink>
         {user.canImport && <NavLink to="/uploads">Uploads</NavLink>}
@@ -62,6 +64,7 @@ export function App() {
           <Route path="/opportunities/new" element={<OpportunityPage me={user} />} />
           <Route path="/opportunities/:id" element={<OpportunityPage me={user} />} />
           <Route path="/accounts" element={<AccountsPage />} />
+          <Route path="/find-gccs" element={<FindGccsPage me={user} />} />
           <Route path="/accounts/:id" element={<AccountDetailPage me={user} />} />
           <Route path="/deployments" element={<DeploymentsPage me={user} />} />
           <Route path="/engineers" element={<EngineersPage />} />

@@ -9,14 +9,21 @@ export function relationshipPill(rel: Account['relationship']) {
   return <span className={`pill ${cls}`}>{humanise(rel)}</span>;
 }
 
+export function FitPill({ score, reasons }: { score?: number | null; reasons: string[] }) {
+  if (score === null || score === undefined) return <span className="muted">—</span>;
+  const cls = score >= 60 ? 'good' : score >= 30 ? 'warn' : '';
+  return <span className={`pill ${cls}`} title={reasons.join('\n')}>{score}</span>;
+}
+
 export function AccountsPage() {
   const [q, setQ] = useState('');
   const [relationship, setRelationship] = useState('');
-  const params = new URLSearchParams({ size: '200' });
+  const [sort, setSort] = useState('fit');
+  const params = new URLSearchParams({ size: '200', sort });
   if (q) params.set('q', q);
   if (relationship) params.set('relationship', relationship);
   const accounts = useQuery({
-    queryKey: ['accounts', q, relationship],
+    queryKey: ['accounts', q, relationship, sort],
     queryFn: () => api.get<Page<Account>>(`/accounts?${params}`),
   });
 
@@ -39,12 +46,17 @@ export function AccountsPage() {
           <option value="PROSPECT">Prospects</option>
           <option value="PAST_CLIENT">Past clients</option>
         </select>
-        {accounts.data && <span className="muted">{accounts.data.total} accounts</span>}
+        <select id="account-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value)}>
+          <option value="fit">Best fit first</option>
+          <option value="name">Name</option>
+        </select>
+        {accounts.data && <span className="muted">{accounts.data.total} accounts{accounts.data.total > accounts.data.items.length ? `, showing ${accounts.data.items.length}` : ''}</span>}
       </div>
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
+              <th className="num">Fit</th>
               <th>Account</th>
               <th>City</th>
               <th>Industry</th>
@@ -55,10 +67,11 @@ export function AccountsPage() {
           </thead>
           <tbody>
             {accounts.data?.items.length === 0 && (
-              <tr><td colSpan={6} className="muted">No accounts match. Upload accounts on the Uploads page.</td></tr>
+              <tr><td colSpan={7} className="muted">No accounts match. Upload accounts on the Uploads page.</td></tr>
             )}
             {accounts.data?.items.map((a) => (
               <tr key={a.id}>
+                <td className="num"><FitPill score={a.fitScore} reasons={a.fitReasons} /></td>
                 <td>
                   <Link to={`/accounts/${a.id}`}>{a.name}</Link>
                   <span className="sub">{a.parentCompany} · {a.websiteDomain}</span>

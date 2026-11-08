@@ -101,7 +101,7 @@ when it is set up, and `Google sign-in: DISABLED` in preview.
 
 ### Optional: AI features (ADR-0009, ADR-0010)
 
-The same key switches on **Add from LinkedIn** profile reading and **account research**.
+The same key switches on **Add from LinkedIn** profile reading, **account research** and **Find GCCs**.
 
 Add one variable to the app service. If the ATS already has a key, reference it:
 

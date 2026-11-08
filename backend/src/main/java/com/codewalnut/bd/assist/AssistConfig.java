@@ -31,6 +31,15 @@ class AssistConfig {
         return new ClaudeAccountResearcher(client(apiKey));
     }
 
+    @Bean
+    GccFinder gccFinder(@Value("${app.ai.anthropic-api-key:}") String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return new DisabledGccFinder();
+        }
+        LOG.info("Find GCCs: ENABLED ({} with web search).", ClaudeGccFinder.MODEL);
+        return new ClaudeGccFinder(client(apiKey));
+    }
+
     private static com.anthropic.client.AnthropicClient client(String apiKey) {
         // Research runs several web searches; allow up to 5 minutes per call.
         return AnthropicOkHttpClient.builder().apiKey(apiKey.strip()).timeout(java.time.Duration.ofMinutes(5)).build();

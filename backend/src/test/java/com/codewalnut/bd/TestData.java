@@ -5,7 +5,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 /** Empties every table between integration tests, children first. */
 public final class TestData {
 
-    private static final String[] TABLES = {"account_research", "deployment_request", "submission", "opportunity_requirement",
+    private static final String[] TABLES = {"gcc_discovery", "account_research", "deployment_request", "submission", "opportunity_requirement",
         "opportunity_stage_history", "opportunity", "activity", "import_row_error", "import_batch", "audit_event",
         "deployment", "engineer_skill", "engineer", "contract", "warm_path", "contact", "account", "parent_company",
         "user_role", "app_user"};

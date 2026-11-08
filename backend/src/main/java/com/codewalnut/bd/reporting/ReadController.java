@@ -38,7 +38,14 @@ class ReadController {
     record Account(long id, String name, String parentCompany, String parentHqCountry, String city,
                    String websiteDomain, String industry, String headcountBand, Integer yearEstablished,
                    List<String> techStack, String relationship, long ownerId, String ownerName, String source,
-                   String notes, int activeEngineers) {}
+                   String notes, int activeEngineers, Integer fitScore, List<String> fitReasons) {
+
+        Account withFit(FitScorer.Fit fit) {
+            return new Account(id, name, parentCompany, parentHqCountry, city, websiteDomain, industry, headcountBand,
+                yearEstablished, techStack, relationship, ownerId, ownerName, source, notes, activeEngineers,
+                fit == null ? null : fit.score(), fit == null ? List.of() : fit.reasons());
+        }
+    }
 
     record AccountPage(List<Account> items, int page, int size, long total) {}
 
@@ -68,14 +75,16 @@ class ReadController {
     private final JsonMapper json;
     private final OpportunityQueries opportunities;
     private final ActivityQueries activities;
+    private final FitScorer fit;
 
     ReadController(JdbcClient jdbc, CurrentUserProvider currentUser, JsonMapper json, OpportunityQueries opportunities,
-                   ActivityQueries activities) {
+                   ActivityQueries activities, FitScorer fit) {
         this.jdbc = jdbc;
         this.currentUser = currentUser;
         this.json = json;
         this.opportunities = opportunities;
         this.activities = activities;
+        this.fit = fit;
     }
 
     @GetMapping("/opportunities")
@@ -112,6 +121,7 @@ class ReadController {
                          @RequestParam(required = false) String relationship,
                          @RequestParam(required = false) String city,
                          @RequestParam(required = false) Long ownerId,
+                         @RequestParam(required = false) String sort,
                          @RequestParam(defaultValue = "0") int page,
                          @RequestParam(defaultValue = "50") int size) {
         int limit = Math.clamp(size, 1, 200);
@@ -136,16 +146,28 @@ class ReadController {
         }
         long total = jdbc.sql("SELECT COUNT(*) FROM account a JOIN parent_company p ON p.id = a.parent_company_id" + where)
             .params(params).query(Long.class).single();
+        if ("fit".equalsIgnoreCase(sort)) {
+            // Score every matching account, then page: at most a few thousand accounts (NFR-BD-06).
+            List<Account> all = jdbc.sql(ACCOUNT_SELECT + where).params(params).query((rs, n) -> account(rs)).list();
+            Map<Long, FitScorer.Fit> fits = fit.score(all.stream().map(Account::id).toList());
+            List<Account> items = all.stream().map(a -> a.withFit(fits.get(a.id())))
+                .sorted(java.util.Comparator.comparing((Account a) -> a.fitScore() == null ? -1 : a.fitScore()).reversed()
+                    .thenComparing(Account::name))
+                .skip(offset).limit(limit).toList();
+            return new AccountPage(items, Math.max(page, 0), limit, total);
+        }
         List<Account> items = jdbc.sql(ACCOUNT_SELECT + where + " ORDER BY p.name, a.city LIMIT :limit OFFSET :offset")
             .params(params).param("limit", limit).param("offset", offset)
             .query((rs, n) -> account(rs)).list();
-        return new AccountPage(items, Math.max(page, 0), limit, total);
+        Map<Long, FitScorer.Fit> fits = fit.score(items.stream().map(Account::id).toList());
+        return new AccountPage(items.stream().map(a -> a.withFit(fits.get(a.id()))).toList(), Math.max(page, 0), limit, total);
     }
 
     @GetMapping("/accounts/{id}")
     AccountDetail account(@PathVariable long id) {
-        Account account = jdbc.sql(ACCOUNT_SELECT + " WHERE a.id = :id").param("id", id)
+        Account plain = jdbc.sql(ACCOUNT_SELECT + " WHERE a.id = :id").param("id", id)
             .query((rs, n) -> account(rs)).optional().orElseThrow(() -> new NotFoundException("Account", id));
+        Account account = plain.withFit(fit.score(List.of(id)).get(id));
         List<Deployment> deployments = deployments(id, null, null, null);
         BigDecimal monthly = null;
         if (currentUser.get().canSeeRestricted()) {
@@ -276,7 +298,7 @@ class ReadController {
             rs.getString("city"), rs.getString("website_domain"), rs.getString("industry"),
             rs.getString("headcount_band"), (Integer) rs.getObject("year_established", Integer.class), techStack,
             rs.getString("relationship"), rs.getLong("owner_user_id"), rs.getString("owner"), rs.getString("source"),
-            rs.getString("notes"), rs.getInt("active_engineers"));
+            rs.getString("notes"), rs.getInt("active_engineers"), null, List.of());
     }
 
     private static LocalDate date(ResultSet rs, int column) throws SQLException {
