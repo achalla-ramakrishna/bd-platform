@@ -25,3 +25,4 @@ coverage/
 .vscode/
 *.iml
 .DS_Store
+*.tsbuildinfo

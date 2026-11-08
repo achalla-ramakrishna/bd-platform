@@ -47,6 +47,8 @@ management:
         enabled: true
 
 app:
+  ai:
+    anthropic-api-key: ${ANTHROPIC_API_KEY:}
   security:
     allowed-domain: ${ALLOWED_DOMAIN:codewalnut.com}
     bootstrap-admins: ${BOOTSTRAP_ADMINS:}

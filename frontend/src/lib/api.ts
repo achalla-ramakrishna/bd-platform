@@ -48,6 +48,7 @@ export const api = {
   put: <T>(path: string, body: object) => request<T>('PUT', path, body),
   post: <T>(path: string, body: object) => request<T>('POST', path, body),
   patch: <T>(path: string, body: object) => request<T>('PATCH', path, body),
+  postForm: <T>(path: string, form: FormData) => request<T>('POST', path, form),
   /** Uploads return their validation report with HTTP 422 when rows fail. */
   upload: <T>(path: string, file: File) => {
     const form = new FormData();
@@ -336,3 +337,13 @@ export const OUTCOME_LABELS: Record<string, string> = {
   REFERRED_ON: 'Referred to someone else',
   DONE: 'Done',
 };
+
+export interface ProfileSuggestion {
+  fullName: string;
+  title: string;
+  company: string;
+  city: string;
+  persona: string;
+  personaReason: string;
+  notes: string;
+}

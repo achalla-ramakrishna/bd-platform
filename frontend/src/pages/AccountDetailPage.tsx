@@ -6,10 +6,13 @@ import { relationshipPill } from './AccountsPage';
 import { EndDate } from './DeploymentsPage';
 import { OpportunityTable } from './PipelinePage';
 import { ActivityLog } from './ActivityLog';
+import { AddFromLinkedIn } from './AddFromLinkedIn';
+import { useState } from 'react';
 
 export function AccountDetailPage({ me }: { me: Me }) {
   const { id } = useParams();
   const detail = useQuery({ queryKey: ['account', id], queryFn: () => api.get<AccountDetail>(`/accounts/${id}`) });
+  const [adding, setAdding] = useState(false);
   const opportunities = useQuery({
     queryKey: ['opportunities', 'account', id],
     queryFn: () => api.get<Opportunity[]>(`/opportunities?accountId=${id}`),
@@ -104,7 +107,13 @@ export function AccountDetailPage({ me }: { me: Me }) {
         </table>
       </div>
 
-      <h2>Contacts</h2>
+      <div className="title-row">
+        <h2>Contacts</h2>
+        {canEditPipeline(me) && !adding && (
+          <button type="button" className="secondary" style={{ marginTop: 22 }} onClick={() => setAdding(true)}>Add from LinkedIn</button>
+        )}
+      </div>
+      {adding && <AddFromLinkedIn account={a} onDone={() => setAdding(false)} />}
       <div className="table-wrap">
         <table>
           <thead><tr><th>Name</th><th>Persona</th><th>Email</th><th>LinkedIn</th><th>Source</th></tr></thead>

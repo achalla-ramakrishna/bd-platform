@@ -21,6 +21,7 @@
         <spring-modulith.version>2.1.2</spring-modulith.version>
         <poi.version>5.4.1</poi.version>
         <commons-csv.version>1.14.1</commons-csv.version>
+        <anthropic.version>3.3.0</anthropic.version>
         <!-- Set to true to skip the npm steps. A frontend/dist built earlier is still copied in. -->
         <skipFrontend>false</skipFrontend>
     </properties>
@@ -79,6 +80,11 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>${poi.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.anthropic</groupId>
+            <artifactId>anthropic-java</artifactId>
+            <version>${anthropic.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

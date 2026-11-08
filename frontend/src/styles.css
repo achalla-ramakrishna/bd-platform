@@ -212,3 +212,10 @@ button.link { background: none; border: 0; color: var(--bad); padding: 0; font-w
 .stages li.current { background: var(--accent); color: var(--surface); font-weight: 600; }
 .history { padding-left: 18px; margin: 0; }
 .activity-form { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+
+/* Add from LinkedIn */
+.linkedin-add { background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; }
+.linkedin-add h3 { margin: 0; font-size: 15px; }
+.linkedin-add .grid .span-2 { grid-column: span 2; }
+.steps-inline { margin: 0; padding-left: 18px; }
+@media (max-width: 760px) { .linkedin-add .grid .span-2 { grid-column: auto; } }
