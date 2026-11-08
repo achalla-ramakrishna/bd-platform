@@ -128,7 +128,7 @@ class ClaudeAccountResearcher implements AccountResearcher {
         try {
             return client.messages().create(params);
         } catch (AnthropicServiceException e) {
-            throw new ResearchException("Claude could not be reached (" + e.statusCode() + "). Try again later.");
+            throw new ResearchException(ClaudeErrors.explain(e));
         }
     }
 
@@ -191,7 +191,7 @@ class ClaudeAccountResearcher implements AccountResearcher {
         try {
             response = client.messages().create(params);
         } catch (AnthropicServiceException e) {
-            throw new ResearchException("Claude could not be reached (" + e.statusCode() + "). Try again later.");
+            throw new ResearchException(ClaudeErrors.explain(e));
         }
         if (response.stopReason().map(StopReason.REFUSAL::equals).orElse(false)) {
             throw new ResearchException("The summary was declined. Try again, or research this account by hand.");

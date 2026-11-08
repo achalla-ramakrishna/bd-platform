@@ -100,8 +100,7 @@ class ClaudeProfileReader implements ProfileReader {
         try {
             response = client.messages().create(params);
         } catch (AnthropicServiceException e) {
-            throw new RuleViolationException(List.of(
-                "The profile could not be read just now (" + e.statusCode() + "). Fill in the fields by hand, or try again."));
+            throw new RuleViolationException(List.of(ClaudeErrors.explain(e) + " Meanwhile, fill in the fields by hand."));
         }
         if (response.stopReason().map(StopReason.REFUSAL::equals).orElse(false)) {
             throw new RuleViolationException(List.of("The profile could not be read. Fill in the fields by hand."));
