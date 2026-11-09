@@ -62,7 +62,7 @@ export function AccountResearch({ accountId, editable }: { accountId: number; ed
         <p className="muted">
           {enabled
             ? 'Claude searches the web for this centre (news, hiring, technology) and suggests where CodeWalnut fits, who to contact and a first message. Takes a minute or two.'
-            : 'Account research is switched off. An Admin can turn it on by setting ANTHROPIC_API_KEY in Railway.'}
+            : 'No research yet. Research written outside the app can be added with Upload research on the Accounts page, or an Admin can switch on in-app research by setting ANTHROPIC_API_KEY in Railway.'}
         </p>
       )}
       {running && <div className="notice warn" role="status">Researching the web and our records. This usually takes one to two minutes; you can leave this page and come back.</div>}

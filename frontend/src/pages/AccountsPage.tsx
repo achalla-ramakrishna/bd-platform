@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { api, type Account, type Page } from '../lib/api';
+import { api, canEditPipeline, type Account, type Me, type Page } from '../lib/api';
+import { UploadResearch } from './UploadResearch';
 import { humanise } from '../lib/format';
 
 export function relationshipPill(rel: Account['relationship']) {
@@ -15,7 +16,7 @@ export function FitPill({ score, reasons }: { score?: number | null; reasons: st
   return <span className={`pill ${cls}`} title={reasons.join('\n')}>{score}</span>;
 }
 
-export function AccountsPage() {
+export function AccountsPage({ me }: { me: Me }) {
   const [q, setQ] = useState('');
   const [relationship, setRelationship] = useState('');
   const [sort, setSort] = useState('fit');
@@ -29,7 +30,10 @@ export function AccountsPage() {
 
   return (
     <>
-      <h1>Accounts</h1>
+      <div className="title-row">
+        <h1>Accounts</h1>
+        {canEditPipeline(me) && <UploadResearch />}
+      </div>
       <p className="lead">GCCs and enterprise centres: clients, past clients and prospects.</p>
       <div className="toolbar">
         <input

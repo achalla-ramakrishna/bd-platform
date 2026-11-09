@@ -46,3 +46,8 @@ to and what to say first. Doing this by hand takes 30 to 60 minutes an account.
 - Results reflect what is public and may be out of date or wrong; the brief
   shows sources and its own cautions so people can check.
 - A run interrupted by a restart is marked failed after 15 minutes.
+- Research can also be written outside the app (for example by a person
+  working with Claude Code and web search) and uploaded as a JSON file from
+  the Accounts page (`POST /api/v1/research/uploads`). It is matched to
+  accounts by website and city (BR-BD-01), checked as a whole, and saved as a
+  finished run, so the app works without ANTHROPIC_API_KEY.

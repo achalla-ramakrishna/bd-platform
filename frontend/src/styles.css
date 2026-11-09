@@ -243,3 +243,8 @@ button.link-plain { background: none; border: 0; padding: 0; color: var(--accent
 .fit-reasons summary { cursor: pointer; color: var(--muted); }
 .fit-reasons ul { margin: 6px 0 0; padding-left: 18px; }
 .title-row .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+.research-upload { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 520px; margin-top: 18px; }
+.research-upload label.button { cursor: pointer; }
+.research-upload .notice { text-align: left; }
+.research-upload .notice ul { margin: 4px 0 0; padding-left: 18px; }

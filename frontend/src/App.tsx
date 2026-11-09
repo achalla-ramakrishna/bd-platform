@@ -63,7 +63,7 @@ export function App() {
           <Route path="/pipeline" element={<PipelinePage me={user} />} />
           <Route path="/opportunities/new" element={<OpportunityPage me={user} />} />
           <Route path="/opportunities/:id" element={<OpportunityPage me={user} />} />
-          <Route path="/accounts" element={<AccountsPage />} />
+          <Route path="/accounts" element={<AccountsPage me={user} />} />
           <Route path="/find-gccs" element={<FindGccsPage me={user} />} />
           <Route path="/accounts/:id" element={<AccountDetailPage me={user} />} />
           <Route path="/deployments" element={<DeploymentsPage me={user} />} />
