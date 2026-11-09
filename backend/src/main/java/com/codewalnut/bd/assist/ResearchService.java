@@ -26,7 +26,13 @@ class ResearchService {
 
     record View(long id, long accountId, String status, AccountResearcher.Summary summary,
                 List<AccountResearcher.Source> sources, String error, String model, String requestedBy,
-                Instant requestedAt, Instant finishedAt) {}
+                Instant requestedAt, Instant finishedAt, String laterFailure) {
+
+        View withLaterFailure(String message) {
+            return new View(id, accountId, status, summary, sources, error, model, requestedBy, requestedAt, finishedAt,
+                message);
+        }
+    }
 
     private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(ResearchService.class);
 
@@ -101,19 +107,34 @@ class ResearchService {
             .param("error", message.length() > 500 ? message.substring(0, 500) : message).param("id", runId).update();
     }
 
+    /**
+     * What the account page shows: the newest run while one is running; otherwise the newest finished
+     * research, with the error of any later failed attempt so a failed refresh never hides good research.
+     */
     Optional<View> latest(long accountId) {
+        Optional<View> newest = newest(accountId, "");
+        if (newest.isEmpty() || !"FAILED".equals(newest.get().status())) {
+            return newest;
+        }
+        return newest(accountId, " AND r.status = 'DONE'")
+            .map(done -> done.withLaterFailure(newest.get().error()))
+            .or(() -> newest);
+    }
+
+    private Optional<View> newest(long accountId, String condition) {
         return jdbc.sql("""
                 SELECT r.id, r.account_id, r.status, r.summary, r.sources, r.error, r.model, u.full_name, r.requested_at,
                     r.finished_at
                 FROM account_research r JOIN app_user u ON u.id = r.requested_by
-                WHERE r.account_id = :id ORDER BY r.requested_at DESC, r.id DESC LIMIT 1
+                WHERE r.account_id = :id""" + condition + """
+                 ORDER BY r.requested_at DESC, r.id DESC LIMIT 1
                 """)
             .param("id", accountId)
             .query((rs, n) -> new View(rs.getLong(1), rs.getLong(2), rs.getString(3),
                 rs.getString(4) == null ? null : json.readValue(rs.getString(4), AccountResearcher.Summary.class),
                 rs.getString(5) == null ? List.of() : List.of(json.readValue(rs.getString(5), AccountResearcher.Source[].class)),
                 rs.getString(6), rs.getString(7), rs.getString(8), rs.getTimestamp(9).toInstant(),
-                rs.getTimestamp(10) == null ? null : rs.getTimestamp(10).toInstant()))
+                rs.getTimestamp(10) == null ? null : rs.getTimestamp(10).toInstant(), null))
             .optional();
     }
 }

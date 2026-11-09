@@ -374,6 +374,7 @@ export interface AccountResearch {
   requestedBy: string;
   requestedAt: string;
   finishedAt?: string | null;
+  laterFailure?: string | null;
 }
 
 export interface GccCandidate {

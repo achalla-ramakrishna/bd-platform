@@ -76,6 +76,9 @@ export function AccountResearch({ accountId, editable }: { accountId: number; ed
       {running && <div className="notice warn" role="status">Researching the web and our records. This usually takes one to two minutes; you can leave this page and come back.</div>}
       {start.error && <div className="notice bad" role="alert">{start.error instanceof ApiError && start.error.problems.length ? start.error.problems.join(' ') : start.error.message}</div>}
       {r?.status === 'FAILED' && !running && <div className="notice bad" role="alert">{r.error ?? 'Research failed.'}</div>}
+      {r?.status === 'DONE' && r.laterFailure && !running && (
+        <div className="notice warn small" role="status">A later refresh failed, so this is the last good research. {r.laterFailure}</div>
+      )}
 
       {s && r?.status === 'DONE' && (
         <div className="research-body">

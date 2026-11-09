@@ -86,6 +86,22 @@ class ResearchUploadIntegrationTest {
     }
 
     @Test
+    void aLaterFailedRefreshDoesNotHideTheResearch() throws Exception {
+        mvc.perform(post("/api/v1/research/uploads").with(user(ADMIN)).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(GOOD))
+            .andExpect(status().isOk());
+        jdbc.sql("""
+                INSERT INTO account_research (account_id, status, error, requested_by, requested_at, finished_at)
+                SELECT :a, 'FAILED', 'The Anthropic API key was rejected (401).', id, NOW(3) + INTERVAL 1 SECOND, NOW(3)
+                FROM app_user WHERE email = :e
+                """).param("a", accountId).param("e", ADMIN).update();
+        mvc.perform(get("/api/v1/accounts/" + accountId + "/research").with(user(ADMIN)))
+            .andExpect(jsonPath("$.status").value("DONE"))
+            .andExpect(jsonPath("$.summary.centreOverview").isNotEmpty())
+            .andExpect(jsonPath("$.laterFailure").value("The Anthropic API key was rejected (401)."));
+    }
+
+    @Test
     void savesNothingWhenAnyEntryIsWrong() throws Exception {
         String bad = GOOD.replace("\"accounts\": [{", "\"accounts\": [{\"websiteDomain\": \"missing.test\", \"city\": \"Pune\", \"summary\": {\"centreOverview\": \"x\"}}, {");
         mvc.perform(post("/api/v1/research/uploads").with(user(ADMIN)).with(csrf())
