@@ -38,12 +38,13 @@ class ReadController {
     record Account(long id, String name, String parentCompany, String parentHqCountry, String city,
                    String websiteDomain, String industry, String headcountBand, Integer yearEstablished,
                    List<String> techStack, String relationship, long ownerId, String ownerName, String source,
-                   String notes, int activeEngineers, Integer fitScore, List<String> fitReasons) {
+                   String notes, int activeEngineers, java.time.Instant researchedAt, Integer fitScore,
+                   List<String> fitReasons) {
 
         Account withFit(FitScorer.Fit fit) {
             return new Account(id, name, parentCompany, parentHqCountry, city, websiteDomain, industry, headcountBand,
                 yearEstablished, techStack, relationship, ownerId, ownerName, source, notes, activeEngineers,
-                fit == null ? null : fit.score(), fit == null ? List.of() : fit.reasons());
+                researchedAt, fit == null ? null : fit.score(), fit == null ? List.of() : fit.reasons());
         }
     }
 
@@ -110,7 +111,9 @@ class ReadController {
         SELECT a.id, a.name, p.name AS parent, p.hq_country, a.city, a.website_domain, a.industry, a.headcount_band,
             a.year_established, a.tech_stack, a.relationship, a.owner_user_id, u.full_name AS owner, a.source, a.notes,
             (SELECT COUNT(DISTINCT d.engineer_id) FROM deployment d WHERE d.account_id = a.id AND d.status = 'ACTIVE')
-                AS active_engineers
+                AS active_engineers,
+            (SELECT MAX(r.finished_at) FROM account_research r WHERE r.account_id = a.id AND r.status = 'DONE')
+                AS researched_at
         FROM account a
         JOIN parent_company p ON p.id = a.parent_company_id
         JOIN app_user u ON u.id = a.owner_user_id
@@ -122,6 +125,7 @@ class ReadController {
                          @RequestParam(required = false) String city,
                          @RequestParam(required = false) Long ownerId,
                          @RequestParam(required = false) String sort,
+                         @RequestParam(required = false) Boolean researched,
                          @RequestParam(defaultValue = "0") int page,
                          @RequestParam(defaultValue = "50") int size) {
         int limit = Math.clamp(size, 1, 200);
@@ -139,6 +143,10 @@ class ReadController {
         if (city != null && !city.isBlank()) {
             where.append(" AND a.city = :city");
             params.put("city", city.trim());
+        }
+        if (researched != null) {
+            where.append(researched ? " AND" : " AND NOT")
+                .append(" EXISTS (SELECT 1 FROM account_research r WHERE r.account_id = a.id AND r.status = 'DONE')");
         }
         if (ownerId != null) {
             where.append(" AND a.owner_user_id = :owner");
@@ -298,7 +306,8 @@ class ReadController {
             rs.getString("city"), rs.getString("website_domain"), rs.getString("industry"),
             rs.getString("headcount_band"), (Integer) rs.getObject("year_established", Integer.class), techStack,
             rs.getString("relationship"), rs.getLong("owner_user_id"), rs.getString("owner"), rs.getString("source"),
-            rs.getString("notes"), rs.getInt("active_engineers"), null, List.of());
+            rs.getString("notes"), rs.getInt("active_engineers"),
+            rs.getTimestamp("researched_at") == null ? null : rs.getTimestamp("researched_at").toInstant(), null, List.of());
     }
 
     private static LocalDate date(ResultSet rs, int column) throws SQLException {

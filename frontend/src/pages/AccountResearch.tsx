@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, api, type AccountResearch as Research, type ResearchFact } from '../lib/api';
 import { formatDate } from '../lib/format';
@@ -36,6 +37,13 @@ export function AccountResearch({ accountId, editable }: { accountId: number; ed
   const [copied, setCopied] = useState(false);
 
   const r = research.data;
+  const location = useLocation();
+  // Opened from "Research ready" on the Accounts page: scroll to this panel once it has loaded.
+  useEffect(() => {
+    if (location.hash === '#research' && research.isSuccess) {
+      document.getElementById('research')?.scrollIntoView({ block: 'start' });
+    }
+  }, [location.hash, research.isSuccess]);
   const enabled = status.data?.accountResearch ?? false;
   const running = r?.status === 'RUNNING' || start.isPending;
   const s = r?.summary;
@@ -47,7 +55,7 @@ export function AccountResearch({ accountId, editable }: { accountId: number; ed
   );
 
   return (
-    <section className="research" aria-label="Account research">
+    <section className="research" id="research" aria-label="Account research">
       <div className="title-row">
         <div>
           <h2>Research and how we can help</h2>

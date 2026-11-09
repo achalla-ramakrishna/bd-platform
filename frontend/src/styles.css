@@ -248,3 +248,11 @@ button.link-plain { background: none; border: 0; padding: 0; color: var(--accent
 .research-upload label.button { cursor: pointer; }
 .research-upload .notice { text-align: left; }
 .research-upload .notice ul { margin: 4px 0 0; padding-left: 18px; }
+
+/* Accounts that have research: a coloured edge on the row and a "Research ready" pill. */
+:root { --info: #1f5f99; --info-soft: #e5f0fa; }
+@media (prefers-color-scheme: dark) { :root { --info: #8fc1ec; --info-soft: #18293a; } }
+tr.researched td { background: var(--info-soft); }
+tr.researched td:first-child { box-shadow: inset 4px 0 0 var(--info); }
+a.pill.research-pill { margin-left: 8px; background: var(--info); color: #fff; text-decoration: none; vertical-align: 2px; }
+@media (prefers-color-scheme: dark) { a.pill.research-pill { color: #10202e; } }

@@ -13,7 +13,10 @@ export function UploadResearch() {
   const [readError, setReadError] = useState<string>();
   const upload = useMutation({
     mutationFn: (body: object) => api.post<Saved[]>('/research/uploads', body),
-    onSuccess: (saved) => saved.forEach((s) => queryClient.invalidateQueries({ queryKey: ['research', s.accountId] })),
+    onSuccess: (saved) => {
+      saved.forEach((s) => queryClient.invalidateQueries({ queryKey: ['research', s.accountId] }));
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    },
   });
 
   async function onFile(file: File | undefined) {

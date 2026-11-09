@@ -136,6 +136,7 @@ export interface Account {
   source: string;
   notes?: string;
   activeEngineers: number;
+  researchedAt: string | null;
   fitScore?: number | null;
   fitReasons: string[];
 }

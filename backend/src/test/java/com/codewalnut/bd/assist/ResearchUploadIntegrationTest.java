@@ -77,6 +77,12 @@ class ResearchUploadIntegrationTest {
             .andExpect(jsonPath("$.summary.buyingSignals[0].source").value("https://jobs.example.test/alpha"))
             .andExpect(jsonPath("$.summary.facts").isEmpty())
             .andExpect(jsonPath("$.summary.cautions").isArray());
+        // The accounts list shows which accounts have research, and can filter by it.
+        mvc.perform(get("/api/v1/accounts?researched=true").with(user(DELIVERY)))
+            .andExpect(jsonPath("$.total").value(1))
+            .andExpect(jsonPath("$.items[0].researchedAt").isNotEmpty());
+        mvc.perform(get("/api/v1/accounts?researched=false&sort=fit").with(user(DELIVERY)))
+            .andExpect(jsonPath("$.total").value(0));
     }
 
     @Test
