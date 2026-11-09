@@ -25,7 +25,14 @@ public class SecurityConfig {
     private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(SecurityConfig.class);
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityProperties props, UserDirectory users) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityProperties props, UserDirectory users,
+            @org.springframework.beans.factory.annotation.Value("${app.research-upload.token:}") String uploadToken,
+            @org.springframework.beans.factory.annotation.Value("${app.research-upload.as:}") String uploadAs) throws Exception {
+        var uploadTokens = new UploadTokenFilter(uploadToken, uploadAs);
+        if (uploadTokens.enabled()) {
+            LOG.info("Research upload token: ENABLED, acting as {}.", uploadAs.strip());
+            http.addFilterBefore(uploadTokens, org.springframework.security.web.authentication.AnonymousAuthenticationFilter.class);
+        }
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
@@ -33,7 +40,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/public/**").permitAll()
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll())
-            .csrf(csrf -> csrf.spa())
+            .csrf(csrf -> csrf.spa().ignoringRequestMatchers(UploadTokenFilter.BEARER_UPLOAD))
             .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
                 new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
                 PathPatternRequestMatcher.withDefaults().matcher("/api/**")))

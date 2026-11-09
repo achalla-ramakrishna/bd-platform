@@ -9,6 +9,7 @@ import { ActivityLog } from './ActivityLog';
 import { AddFromLinkedIn } from './AddFromLinkedIn';
 import { AccountResearch } from './AccountResearch';
 import { useState } from 'react';
+import { CompanyLogo } from './CompanyLogo';
 
 export function AccountDetailPage({ me }: { me: Me }) {
   const { id } = useParams();
@@ -27,7 +28,7 @@ export function AccountDetailPage({ me }: { me: Me }) {
   return (
     <>
       <p><Link to="/accounts">← Accounts</Link></p>
-      <h1>{a.name} {relationshipPill(a.relationship)}</h1>
+      <h1 className="account-title"><CompanyLogo domain={a.websiteDomain} name={a.parentCompany || a.name} size={40} /> {a.name} {relationshipPill(a.relationship)}</h1>
       <p className="lead">
         {a.parentCompany}{a.parentHqCountry ? ` (${a.parentHqCountry})` : ''} · {a.city} · {a.websiteDomain}
         {a.industry ? ` · ${a.industry}` : ''}

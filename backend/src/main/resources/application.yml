@@ -54,3 +54,8 @@ app:
     bootstrap-admins: ${BOOTSTRAP_ADMINS:}
     dev-login: ${DEV_LOGIN:false}
     dev-password: ${DEV_PASSWORD:}
+  # Research upload by script (ADR-0010). Off unless RESEARCH_UPLOAD_TOKEN (32+ characters) is set.
+  # The token acts as the user named in RESEARCH_UPLOAD_AS, who needs a pipeline role.
+  research-upload:
+    token: ${RESEARCH_UPLOAD_TOKEN:}
+    as: ${RESEARCH_UPLOAD_AS:}

@@ -256,3 +256,10 @@ tr.researched td { background: var(--info-soft); }
 tr.researched td:first-child { box-shadow: inset 4px 0 0 var(--info); }
 a.pill.research-pill { margin-left: 8px; background: var(--info); color: #fff; text-decoration: none; vertical-align: 2px; }
 @media (prefers-color-scheme: dark) { a.pill.research-pill { color: #10202e; } }
+
+/* Company logos on accounts. */
+.logo { flex: none; border-radius: 6px; background: #fff; border: 1px solid var(--line, #e5e5e5); padding: 3px; object-fit: contain; box-sizing: border-box; }
+.logo-initials { display: inline-flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent); font-weight: 700; padding: 0; }
+.account-cell { display: flex; gap: 10px; align-items: flex-start; }
+.account-cell .logo { margin-top: 2px; }
+h1.account-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

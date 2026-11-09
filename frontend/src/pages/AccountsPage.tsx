@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { api, canEditPipeline, type Account, type Me, type Page } from '../lib/api';
 import { UploadResearch } from './UploadResearch';
+import { CompanyLogo } from './CompanyLogo';
 import { formatDate, humanise } from '../lib/format';
 
 export function relationshipPill(rel: Account['relationship']) {
@@ -84,11 +85,16 @@ export function AccountsPage({ me }: { me: Me }) {
               <tr key={a.id} className={a.researchedAt ? 'researched' : undefined}>
                 <td className="num"><FitPill score={a.fitScore} reasons={a.fitReasons} /></td>
                 <td>
+                  <div className="account-cell">
+                  <CompanyLogo domain={a.websiteDomain} name={a.parentCompany || a.name} />
+                  <div>
                   <Link to={`/accounts/${a.id}`}>{a.name}</Link>
                   {a.researchedAt && (
                     <Link to={`/accounts/${a.id}#research`} className="pill research-pill" title={`Researched ${formatDate(a.researchedAt)}`}>Research ready</Link>
                   )}
                   <span className="sub">{a.parentCompany} · {a.websiteDomain}</span>
+                  </div>
+                  </div>
                 </td>
                 <td>{a.city}</td>
                 <td>{a.industry ?? '—'}</td>

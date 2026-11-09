@@ -114,6 +114,20 @@ or create a key at console.anthropic.com (API keys). Deploy logs then show
 **Add from LinkedIn** still works as a form filled in by hand, and research is
 switched off.
 
+### Optional: research upload by script (ADR-0010)
+
+Lets a script (for example a Claude Code session) upload account research
+without signing in. Add two variables to the app service:
+
+```
+RESEARCH_UPLOAD_TOKEN=<a random string of 32 or more characters>
+RESEARCH_UPLOAD_AS=<the email of a user with a pipeline role>
+```
+
+The token works only for `POST /api/v1/research/uploads`, and the upload is
+recorded as that user. Deploy logs show `Research upload token: ENABLED`.
+Delete the variable to switch it off; change it if it may have leaked.
+
 ### Troubleshooting
 
 | Symptom | Cause | Fix |
