@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router';
 import { Proposals } from './AssistantPage';
+import { stepsTo } from './AssistantCards';
 import type { AssistantAnswer, Conversation } from '../lib/api';
 
 const reading = {
@@ -42,5 +43,41 @@ describe('assistant proposals', () => {
     expect(screen.queryByRole('tab', { name: 'Update conversation' })).toBeNull();
     expect(screen.getByRole('tab', { name: 'Add connection', selected: true })).toBeTruthy();
     expect((document.getElementById('as-conn-fullName') as HTMLInputElement).value).toBe('Person A');
+  });
+
+  it('leads with the conference card when the note is about an event', () => {
+    show({
+      reading: { ...reading, fullName: '', about: 'EVENT', event: {
+        name: 'Example Tech Summit', kind: 'CONFERENCE', startsOn: '2026-12-04', endsOn: '2026-12-05', city: 'Bengaluru',
+        online: false, url: '', organiser: '', ourRole: 'SIGNED_UP', notes: 'Two of us going' } },
+      conversations: [], connections: [], accounts: [], events: [], interviews: [], suggestion: 'EVENT',
+    });
+    expect(screen.getByRole('tab', { name: 'Add conference', selected: true })).toBeTruthy();
+    expect(screen.queryByRole('tab', { name: 'Start conversation' })).toBeNull();
+    expect((document.getElementById('as-ev-name') as HTMLInputElement).value).toBe('Example Tech Summit');
+    expect((screen.getByLabelText("I'm going") as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('offers to move an existing interview to the stage read', () => {
+    show({
+      reading: { ...reading, about: 'INTERVIEW', interview: {
+        leaderName: 'Person A', leaderTitle: '', company: '', topic: 'AI-native teams', format: 'PODCAST', status: 'BOOKED',
+        on: '2026-11-20', publishedUrl: '', notes: '' } },
+      conversations: [], connections: [], accounts: [], events: [],
+      interviews: [{ id: 3, leaderName: 'Person A', topic: 'AI-native teams', format: 'PODCAST', status: 'ASKED', version: 1 }],
+      suggestion: 'INTERVIEW',
+    });
+    expect(screen.getByRole('tab', { name: 'Update interview', selected: true })).toBeTruthy();
+    expect(screen.getByText(/Move from Asked to/)).toBeTruthy();
+  });
+});
+
+describe('interview steps', () => {
+  it('moves one stage at a time, through Idea after a decline', () => {
+    expect(stepsTo('IDEA', 'BOOKED')).toEqual(['ASKED', 'AGREED', 'BOOKED']);
+    expect(stepsTo('RECORDED', 'AGREED')).toEqual(['BOOKED', 'AGREED']);
+    expect(stepsTo('DECLINED', 'ASKED')).toEqual(['IDEA', 'ASKED']);
+    expect(stepsTo('ASKED', 'DECLINED')).toEqual(['DECLINED']);
+    expect(stepsTo('BOOKED', 'BOOKED')).toEqual([]);
   });
 });

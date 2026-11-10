@@ -1,4 +1,4 @@
-# ADR-0013: An AI assistant logs conversations and connections from notes and screenshots
+# ADR-0013: An AI assistant logs BD work from notes and screenshots
 
 - Status: Proposed
 - Date: 2026-11-10
@@ -22,18 +22,27 @@ the thread, and have the conversation or connection added or updated.
    who the touch was with (name, title, company, city), the topic, channel,
    date, a neutral summary, the outcome and a next step with a due date, using
    the app's channel and outcome codes. Any other code is replaced by a default.
-3. The server matches the reading to open conversations and connections by the
-   person's name, and to accounts by company, and suggests one action: update
-   the open conversation, start a conversation at the matched account, or add
-   a connection.
-4. The page shows editable cards for **Update conversation**, **Start
-   conversation** and **Add / Update connection**, prefilled from the reading.
+3. Claude also says what the material is mainly about: a touch with a person,
+   a conference or event (an invitation, a registration, an agenda), or a
+   leader interview (asked, agreed, booked, recorded, published), and fills in
+   the event's or interview's details with the app's codes.
+4. The server matches the reading to open conversations and connections by the
+   person's name, to accounts by company, to conferences by name and to
+   interviews by the leader's name, and suggests one action: the conference or
+   interview when that is what it is about; otherwise update the open
+   conversation, start a conversation at the matched account, or add a
+   connection.
+5. The page shows editable cards for **Update conversation**, **Start
+   conversation**, **Add / Update connection**, **Add / Update conference**
+   (with "I'm going") and **Add / Update interview** (moving it one stage at a
+   time to the stage read, as the interview rules require), prefilled from the
+   reading.
    Nothing is saved until the person presses the card's button, and saving
    uses the existing endpoints with their rules, roles and optimistic locking.
-5. Nothing from the chat is stored: not the note, the screenshots or Claude's
+6. Nothing from the chat is stored: not the note, the screenshots or Claude's
    reply. The chat lives in the browser tab and is gone on reload. Only what
    the person saves is kept, as with any other update.
-6. Only pipeline roles may use it. Without `ANTHROPIC_API_KEY` the page says
+7. Only pipeline roles may use it. Without `ANTHROPIC_API_KEY` the page says
    it is switched off and points to the manual forms.
 
 ## Alternatives considered

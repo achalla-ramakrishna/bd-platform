@@ -19,6 +19,8 @@ import com.codewalnut.bd.admin.CurrentUserProvider;
 import com.codewalnut.bd.contacts.ContactRegistry;
 import com.codewalnut.bd.reporting.ConnectionQueries;
 import com.codewalnut.bd.reporting.ConversationQueries;
+import com.codewalnut.bd.reporting.EventQueries;
+import com.codewalnut.bd.reporting.InterviewQueries;
 import com.codewalnut.bd.shared.CurrentUser;
 import com.codewalnut.bd.shared.Role;
 
@@ -41,23 +43,29 @@ class AssistantController {
     static final List<String> OUTCOMES = List.of("NO_REPLY", "REPLIED", "MEETING_BOOKED", "NOT_INTERESTED", "REFERRED_ON", "DONE");
 
     /**
-     * What was understood and what it matches. {@code suggestion} is the first thing to offer:
-     * UPDATE_CONVERSATION (an open conversation with this person exists), START_CONVERSATION (we know the
-     * account) or ADD_CONNECTION (we know neither).
+     * What was understood and what it matches. {@code suggestion} is the first thing to offer: EVENT or
+     * INTERVIEW when the material is mainly about one; otherwise UPDATE_CONVERSATION (an open conversation
+     * with this person exists), START_CONVERSATION (we know the account) or ADD_CONNECTION (we know neither).
      */
     record Answer(NoteReader.Reading reading, List<ConversationQueries.Conversation> conversations,
                   List<ConnectionQueries.Connection> connections, List<AccountRegistry.Found> accounts,
-                  Long contactId, String suggestion) {}
+                  Long contactId, List<EventQueries.Event> events, List<InterviewQueries.Match> interviews,
+                  String suggestion) {}
 
     private final NoteReader reader;
     private final ConversationQueries conversations;
     private final ConnectionQueries connections;
     private final AccountRegistry accounts;
     private final ContactRegistry contacts;
+    private final EventQueries events;
+    private final InterviewQueries interviews;
     private final CurrentUserProvider currentUser;
 
     AssistantController(NoteReader reader, ConversationQueries conversations, ConnectionQueries connections,
-                        AccountRegistry accounts, ContactRegistry contacts, CurrentUserProvider currentUser) {
+                        AccountRegistry accounts, ContactRegistry contacts, EventQueries events,
+                        InterviewQueries interviews, CurrentUserProvider currentUser) {
+        this.events = events;
+        this.interviews = interviews;
         this.reader = reader;
         this.conversations = conversations;
         this.connections = connections;
@@ -123,7 +131,11 @@ class AssistantController {
         }
         Long contactId = accs.isEmpty() ? null : contacts.findByName(accs.get(0).id(), who).orElse(null);
         boolean openConversation = convs.stream().anyMatch(c -> !"CLOSED".equals(c.status()));
-        String suggestion = openConversation ? "UPDATE_CONVERSATION" : !accs.isEmpty() ? "START_CONVERSATION" : "ADD_CONNECTION";
-        return new Answer(r, convs, conns, accs.stream().distinct().limit(5).toList(), contactId, suggestion);
+        List<EventQueries.Event> evs = r.event() == null ? List.of() : events.findByName(r.event().name(), 5);
+        String leader = r.interview() == null ? "" : r.interview().leaderName();
+        List<InterviewQueries.Match> ivs = leader.isBlank() ? List.of() : interviews.findByLeader(leader, 5);
+        String suggestion = "EVENT".equals(r.about()) ? "EVENT" : "INTERVIEW".equals(r.about()) ? "INTERVIEW"
+            : openConversation ? "UPDATE_CONVERSATION" : !accs.isEmpty() ? "START_CONVERSATION" : "ADD_CONNECTION";
+        return new Answer(r, convs, conns, accs.stream().distinct().limit(5).toList(), contactId, evs, ivs, suggestion);
     }
 }

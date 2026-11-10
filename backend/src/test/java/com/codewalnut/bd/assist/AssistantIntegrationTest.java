@@ -87,7 +87,44 @@ class AssistantIntegrationTest {
     NoteReader.Reading reading(String name, String company) {
         return new NoteReader.Reading("Call with " + name, name, "Engineering Director", company, "Bengaluru", "",
             "AI pod", "CALL", TODAY.toString(), "Back on Friday; wants a show and tell", "MEETING_BOOKED",
-            "Book the show and tell", TODAY.plusDays(3).toString(), false, null);
+            "Book the show and tell", TODAY.plusDays(3).toString(), false, null, "TOUCH", null, null);
+    }
+
+    @Test
+    void anEventIsMatchedToTheConferenceWeHaveByName() throws Exception {
+        mvc.perform(post("/api/v1/events").with(user(ADMIN)).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"name": "Example Tech Summit", "kind": "CONFERENCE", "startsOn": "%s", "city": "Bengaluru",
+                     "online": false, "ourRole": "WATCHING"}""".formatted(TODAY.plusDays(20))))
+            .andExpect(status().isCreated());
+        var r = reading("", "");
+        NEXT.set(new NoteReader.Reading("Registered for the summit", "", "", "", "", "", "", "EVENT", TODAY.toString(), "",
+            "DONE", "", "", false, null, "EVENT",
+            new NoteReader.Event("Example Tech Summit 2026", "CONFERENCE", TODAY.plusDays(20).toString(), "", "Bengaluru",
+                false, "", "", "SIGNED_UP", "Registered two of us"), null));
+        mvc.perform(multipart("/api/v1/assistant/read").param("text", "Registered for Example Tech Summit 2026")
+                .with(user(ADMIN)).with(csrf()))
+            .andExpect(jsonPath("$.suggestion").value("EVENT"))
+            .andExpect(jsonPath("$.events[0].name").value("Example Tech Summit"))
+            .andExpect(jsonPath("$.reading.event.ourRole").value("SIGNED_UP"));
+        org.assertj.core.api.Assertions.assertThat(r.about()).isEqualTo("TOUCH");
+    }
+
+    @Test
+    void anInterviewIsMatchedByTheLeadersName() throws Exception {
+        mvc.perform(post("/api/v1/interviews").with(user(ADMIN)).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"leaderName": "Person Five", "company": "Alpha Corp", "topic": "AI-native teams", "format": "PODCAST"}"""))
+            .andExpect(status().isCreated());
+        NEXT.set(new NoteReader.Reading("Person Five agreed to the podcast", "Person Five", "CTO", "Alpha Corp", "", "", "",
+            "LINKEDIN_MESSAGE", TODAY.toString(), "", "REPLIED", "", "", false, null, "INTERVIEW", null,
+            new NoteReader.Interview("Person Five", "CTO", "Alpha Corp", "AI-native teams", "PODCAST", "AGREED",
+                TODAY.toString(), "", "")));
+        mvc.perform(multipart("/api/v1/assistant/read").param("text", "Person Five said yes to the podcast")
+                .with(user(ADMIN)).with(csrf()))
+            .andExpect(jsonPath("$.suggestion").value("INTERVIEW"))
+            .andExpect(jsonPath("$.interviews[0].leaderName").value("Person Five"))
+            .andExpect(jsonPath("$.interviews[0].status").value("IDEA"));
     }
 
     @Test

@@ -74,6 +74,18 @@ public class EventQueries {
         return new Page(load(SELECT + where + order + " LIMIT 1000", params), summary());
     }
 
+    /** Events whose name contains the text, or is contained in it (ADR-0013 matching), soonest upcoming first. */
+    public List<Event> findByName(String text, int limit) {
+        if (text == null || text.isBlank()) {
+            return List.of();
+        }
+        return load(SELECT + """
+             WHERE e.name LIKE :like OR :text LIKE CONCAT('%', e.name, '%')
+            ORDER BY COALESCE(e.ends_on, e.starts_on) < CURRENT_DATE, e.starts_on
+            LIMIT :limit
+            """, Map.of("like", "%" + text.trim() + "%", "text", text.trim(), "limit", limit));
+    }
+
     public Event get(long id) {
         List<Event> one = load(SELECT + " WHERE e.id = :id", Map.of("id", id));
         if (one.isEmpty()) {

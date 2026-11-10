@@ -61,6 +61,23 @@ class ClaudeNoteReader implements NoteReader {
         photo of them. If no photo of this person is shown, or only initials, a logo or a placeholder \
         silhouette, set photoImage to -1 and the box to 0. Never pick a photo of the team member or anyone \
         else.
+
+        The material may instead be mainly about a conference or event, or about a leader interview. Set \
+        "about" to TOUCH (a conversation or connection with a person), EVENT (a conference, meetup, webinar \
+        or roundtable: an invitation, a registration, an agenda, or a note about attending) or INTERVIEW \
+        (interviewing a GCC or engineering leader for CodeWalnut's blog, podcast, video or a LinkedIn article).
+        - event: fill it when an event is mentioned, whatever "about" is (for example a person met at an \
+        event). name as the event calls itself; kind is one of the event kind codes; startsOn and endsOn \
+        as YYYY-MM-DD (endsOn empty for one day); online true for virtual events; url only if shown; \
+        ourRole is one of the event role codes: WATCHING if we are only considering it, SIGNED_UP if \
+        registered, ATTENDING if going or went, PRESENTING if we speak, STALL if we have a booth, ORGANISING \
+        if we run it; notes in one or two sentences. Leave name empty if no event is mentioned.
+        - interview: fill it when the material is about such an interview. leaderName, leaderTitle and \
+        company are the leader's; topic under 12 words; format is one of the interview format codes; status \
+        is one of the interview status codes (IDEA not yet asked, ASKED, AGREED, BOOKED with a date, \
+        RECORDED, PUBLISHED with a link, DECLINED); on is the date of that stage as YYYY-MM-DD (the booked \
+        date for BOOKED); publishedUrl only if published. Leave leaderName empty if there is no interview. \
+        When about is INTERVIEW also fill the person fields with the leader.
         """;
 
     record NoteFields(
@@ -82,7 +99,33 @@ class ClaudeNoteReader implements NoteReader {
         @JsonPropertyDescription("Photo box left edge, fraction of image width") double photoX,
         @JsonPropertyDescription("Photo box top edge, fraction of image height") double photoY,
         @JsonPropertyDescription("Photo box width, fraction of image width") double photoWidth,
-        @JsonPropertyDescription("Photo box height, fraction of image height") double photoHeight) {}
+        @JsonPropertyDescription("Photo box height, fraction of image height") double photoHeight,
+        @JsonPropertyDescription("TOUCH, EVENT or INTERVIEW") String about,
+        @JsonPropertyDescription("An event mentioned, or an empty name") EventFields event,
+        @JsonPropertyDescription("A leader interview, or an empty leaderName") InterviewFields interview) {}
+
+    record EventFields(
+        @JsonPropertyDescription("Event name, or empty") String name,
+        @JsonPropertyDescription("One event kind code") String kind,
+        @JsonPropertyDescription("First day, YYYY-MM-DD") String startsOn,
+        @JsonPropertyDescription("Last day if more than one, YYYY-MM-DD") String endsOn,
+        @JsonPropertyDescription("City, empty if online") String city,
+        @JsonPropertyDescription("True if virtual") boolean online,
+        @JsonPropertyDescription("Event page address if shown") String url,
+        @JsonPropertyDescription("Who runs it") String organiser,
+        @JsonPropertyDescription("One event role code for CodeWalnut") String ourRole,
+        @JsonPropertyDescription("One or two sentences") String notes) {}
+
+    record InterviewFields(
+        @JsonPropertyDescription("The leader's full name, or empty") String leaderName,
+        @JsonPropertyDescription("The leader's title") String leaderTitle,
+        @JsonPropertyDescription("The leader's company") String company,
+        @JsonPropertyDescription("Topic, under 12 words") String topic,
+        @JsonPropertyDescription("One interview format code") String format,
+        @JsonPropertyDescription("One interview status code") String status,
+        @JsonPropertyDescription("Date of that stage, YYYY-MM-DD") String on,
+        @JsonPropertyDescription("Where it is published, if it is") String publishedUrl,
+        @JsonPropertyDescription("One or two sentences") String notes) {}
 
     private final AnthropicClient client;
 
@@ -97,6 +140,23 @@ class ClaudeNoteReader implements NoteReader {
 
     @Override
     public Reading read(Request request) {
+        StructuredMessageCreateParams<NoteFields> params = params(request);
+        NoteFields f;
+        try {
+            StructuredMessage<NoteFields> response = client.messages().create(params);
+            if (response.stopReason().map(StopReason.REFUSAL::equals).orElse(false)) {
+                throw new RuleViolationException(List.of("That could not be read. Log it by hand on the Conversations page."));
+            }
+            f = response.content().stream().flatMap(b -> b.text().stream()).map(t -> t.text()).findFirst()
+                .orElseThrow(() -> new RuleViolationException(List.of("Nothing came back. Try again, or log it by hand.")));
+        } catch (AnthropicException e) {
+            throw new RuleViolationException(List.of(ClaudeErrors.explain(e) + " Meanwhile, log it by hand."));
+        }
+        return reading(f, request);
+    }
+
+    /** The request to Claude. Building it checks the output schema, so tests can call it without the API. */
+    static StructuredMessageCreateParams<NoteFields> params(Request request) {
         List<ContentBlockParam> content = new ArrayList<>();
         for (Image image : request.images()) {
             content.add(ContentBlockParam.ofImage(Base64ImageSource.builder()
@@ -109,13 +169,17 @@ class ClaudeNoteReader implements NoteReader {
         StringBuilder text = new StringBuilder(INSTRUCTIONS)
             .append("\nToday: ").append(today)
             .append("\nChannel codes: ").append(String.join(", ", request.channels()))
-            .append("\nOutcome codes: ").append(String.join(", ", request.outcomes())).append('\n');
+            .append("\nOutcome codes: ").append(String.join(", ", request.outcomes()))
+            .append("\nEvent kind codes: ").append(String.join(", ", EVENT_KINDS))
+            .append("\nEvent role codes: ").append(String.join(", ", EVENT_ROLES))
+            .append("\nInterview format codes: ").append(String.join(", ", INTERVIEW_FORMATS))
+            .append("\nInterview status codes: ").append(String.join(", ", INTERVIEW_STATUSES)).append('\n');
         if (request.text() != null && !request.text().isBlank()) {
             text.append("\n<pasted_by_team_member>\n").append(request.text().strip()).append("\n</pasted_by_team_member>\n");
         }
         content.add(ContentBlockParam.ofText(TextBlockParam.builder().text(text.toString()).build()));
 
-        StructuredMessageCreateParams<NoteFields> params = MessageCreateParams.builder()
+        return MessageCreateParams.builder()
             .model(MODEL)
             .maxTokens(16000L)
             .outputConfig(NoteFields.class)
@@ -123,21 +187,31 @@ class ClaudeNoteReader implements NoteReader {
             .putAdditionalHeader("anthropic-beta", "server-side-fallback-2026-07-01")
             .putAdditionalBodyProperty("fallbacks", JsonValue.from("default"))
             .build();
-        NoteFields f;
-        try {
-            StructuredMessage<NoteFields> response = client.messages().create(params);
-            if (response.stopReason().map(StopReason.REFUSAL::equals).orElse(false)) {
-                throw new RuleViolationException(List.of("That could not be read. Log it by hand on the Conversations page."));
-            }
-            f = response.content().stream().flatMap(b -> b.text().stream()).map(t -> t.text()).findFirst()
-                .orElseThrow(() -> new RuleViolationException(List.of("Nothing came back. Try again, or log it by hand.")));
-        } catch (AnthropicException e) {
-            throw new RuleViolationException(List.of(ClaudeErrors.explain(e) + " Meanwhile, log it by hand."));
+    }
+
+    /** Claude's fields as a Reading: codes kept to the allowed lists, empty sections dropped. */
+    static Reading reading(NoteFields f, Request request) {
+        Event event = null;
+        if (f.event() != null && !c(f.event().name()).isEmpty()) {
+            EventFields e = f.event();
+            event = new Event(c(e.name()), code(e.kind(), EVENT_KINDS, "CONFERENCE"), c(e.startsOn()), c(e.endsOn()),
+                c(e.city()), e.online(), c(e.url()), c(e.organiser()), code(e.ourRole(), EVENT_ROLES, "WATCHING"), c(e.notes()));
+        }
+        Interview interview = null;
+        if (f.interview() != null && !c(f.interview().leaderName()).isEmpty()) {
+            InterviewFields i = f.interview();
+            interview = new Interview(c(i.leaderName()), c(i.leaderTitle()), c(i.company()), c(i.topic()),
+                code(i.format(), INTERVIEW_FORMATS, "BLOG"), code(i.status(), INTERVIEW_STATUSES, "IDEA"), c(i.on()),
+                c(i.publishedUrl()), c(i.notes()));
+        }
+        String about = code(f.about(), ABOUT, "TOUCH");
+        if ("EVENT".equals(about) && event == null || "INTERVIEW".equals(about) && interview == null) {
+            about = "TOUCH";
         }
         return new Reading(c(f.reply()), c(f.fullName()), c(f.title()), c(f.company()), c(f.city()), c(f.linkedinUrl()),
             c(f.topic()), code(f.channel(), request.channels(), "LINKEDIN_MESSAGE"), c(f.occurredOn()), c(f.summary()),
             code(f.outcome(), request.outcomes(), "DONE"), c(f.nextStep()), c(f.nextStepDue()), f.newConnection(),
-            photo(f, request.images().size()));
+            photo(f, request.images().size()), about, event, interview);
     }
 
     /** The photo box, if it names a screenshot that was sent and is a sensible size; otherwise null. */

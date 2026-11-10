@@ -584,13 +584,32 @@ export interface AssistantReading {
   newConnection: boolean;
   /** Where their profile photo is: screenshot index and a box as fractions of that screenshot. */
   photo?: PhotoBox | null;
+  /** TOUCH (a person), EVENT (a conference or meetup) or INTERVIEW (a leader interview). */
+  about?: 'TOUCH' | 'EVENT' | 'INTERVIEW';
+  event?: AssistantEvent | null;
+  interview?: AssistantInterview | null;
+}
+
+export interface AssistantEvent {
+  name: string; kind: EventKind; startsOn: string; endsOn: string; city: string; online: boolean; url: string;
+  organiser: string; ourRole: EventRole; notes: string;
+}
+
+export interface AssistantInterview {
+  leaderName: string; leaderTitle: string; company: string; topic: string; format: string; status: string; on: string;
+  publishedUrl: string; notes: string;
+}
+
+export interface InterviewMatch {
+  id: number; leaderName: string; leaderTitle?: string | null; company?: string | null; topic: string; format: string;
+  status: string; scheduledOn?: string | null; version: number;
 }
 
 export interface PhotoBox { image: number; x: number; y: number; width: number; height: number }
 
 export interface FoundAccount { id: number; name: string; parentCompany: string; city: string; websiteDomain: string }
 
-export type AssistantSuggestion = 'UPDATE_CONVERSATION' | 'START_CONVERSATION' | 'ADD_CONNECTION';
+export type AssistantSuggestion = 'UPDATE_CONVERSATION' | 'START_CONVERSATION' | 'ADD_CONNECTION' | 'EVENT' | 'INTERVIEW';
 
 export interface AssistantAnswer {
   reading: AssistantReading;
@@ -598,5 +617,7 @@ export interface AssistantAnswer {
   connections: Connection[];
   accounts: FoundAccount[];
   contactId?: number | null;
+  events?: BdEvent[];
+  interviews?: InterviewMatch[];
   suggestion: AssistantSuggestion;
 }

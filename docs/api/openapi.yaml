@@ -385,7 +385,7 @@ paths:
                   description: PNG, JPEG, WebP or GIF, at most 5 MB each
                   items: { type: string, format: binary }
       responses:
-        '200': { description: '{ reading: { reply, fullName, title, company, city, linkedinUrl, topic, channel, occurredOn, summary, outcome, nextStep, nextStepDue, newConnection, photo: { image, x, y, width, height } | null }, conversations: Conversation[], connections: Connection[], accounts: [{ id, name, parentCompany, city, websiteDomain }], contactId, suggestion: UPDATE_CONVERSATION | START_CONVERSATION | ADD_CONNECTION }' }
+        '200': { description: '{ reading: { reply, fullName, title, company, city, linkedinUrl, topic, channel, occurredOn, summary, outcome, nextStep, nextStepDue, newConnection, photo: { image, x, y, width, height } | null, about: TOUCH | EVENT | INTERVIEW, event: { name, kind, startsOn, endsOn, city, online, url, organiser, ourRole, notes } | null, interview: { leaderName, leaderTitle, company, topic, format, status, on, publishedUrl, notes } | null }, conversations: Conversation[], connections: Connection[], accounts: [{ id, name, parentCompany, city, websiteDomain }], contactId, events: Event[], interviews: [{ id, leaderName, leaderTitle, company, topic, format, status, scheduledOn, version }], suggestion: UPDATE_CONVERSATION | START_CONVERSATION | ADD_CONNECTION | EVENT | INTERVIEW }' }
         '400': { description: 'No text or screenshot, too long, or a file that is not a supported image' }
         '403': { description: 'Not a pipeline role' }
         '422': { description: 'The assistant is switched off (no ANTHROPIC_API_KEY)' }

@@ -8,6 +8,7 @@ import {
 import { formatDate } from '../lib/format';
 import { today } from './ConversationsPage';
 import { PhotoChooser } from './PersonPhoto';
+import { EventCard, InterviewCard } from './AssistantCards';
 import { photoForm } from '../lib/photo';
 
 /*
@@ -118,8 +119,9 @@ export function AssistantPage({ me }: { me: Me }) {
         {messages.length > 0 && <button type="button" className="secondary" onClick={() => setMessages([])}>New chat</button>}
       </div>
       <p className="lead">
-        Tell it what you did, or paste screenshots of a conversation you had. It works out who it was with and what
-        happened, then offers to update the conversation or connection. Nothing is saved until you press a button.
+        Tell it what you did, or paste screenshots: a conversation, a profile, an event page, an interview you
+        arranged. It works out what it is about and offers to add or update the conversation, connection,
+        conference or interview. Nothing is saved until you press a button.
       </p>
       {!editable && <div className="notice">Your role can read conversations but not log them.</div>}
       {disabled && (
@@ -137,6 +139,8 @@ export function AssistantPage({ me }: { me: Me }) {
               <li>“Called Person A, Head of Engineering at Example GCC. They want two React engineers from March. Send profiles by Friday.”</li>
               <li>Paste a screenshot of a LinkedIn or email thread with Ctrl+V / ⌘V.</li>
               <li>“Met Person B at the meetup yesterday, connected on LinkedIn. Platform lead at Example Bank GCC.”</li>
+              <li>“Registered for Example Tech Summit, 4–5 Dec in Bengaluru, two of us going.” Or paste the event page.</li>
+              <li>“Person C agreed to a podcast on AI-native teams, recording on the 20th.”</li>
             </ul>
             <p className="small">Screenshots go to Anthropic’s Claude to be read and are not stored. The app reads nothing from LinkedIn itself.</p>
           </div>
@@ -198,26 +202,35 @@ function errorText(e: unknown): string {
   return (e instanceof Error && e.message.trim()) || 'Something went wrong. Try again.';
 }
 
-type Tab = 'UPDATE_CONVERSATION' | 'START_CONVERSATION' | 'CONNECTION';
+type Tab = 'UPDATE_CONVERSATION' | 'START_CONVERSATION' | 'CONNECTION' | 'EVENT' | 'INTERVIEW';
 
 /** The assistant's reply: what it read, and one editable card per thing it can do. */
 export function Proposals({ answer, shots = [], editable }: { answer: AssistantAnswer; shots?: { url: string }[]; editable: boolean }) {
   const r = answer.reading;
   const hasConversation = answer.conversations.length > 0;
-  const [tab, setTab] = useState<Tab>(answer.suggestion === 'ADD_CONNECTION' ? 'CONNECTION' : answer.suggestion);
+  // Person cards when a person is involved (or nothing else was found); event and interview cards when read.
+  const aboutPerson = !!r.fullName || (!r.event && !r.interview);
   const tabs: { key: Tab; label: string }[] = [
-    ...(hasConversation ? [{ key: 'UPDATE_CONVERSATION' as Tab, label: 'Update conversation' }] : []),
-    { key: 'START_CONVERSATION', label: 'Start conversation' },
-    { key: 'CONNECTION', label: answer.connections.length ? 'Update connection' : 'Add connection' },
+    ...(r.event ? [{ key: 'EVENT' as Tab, label: answer.events?.length ? 'Update conference' : 'Add conference' }] : []),
+    ...(r.interview ? [{ key: 'INTERVIEW' as Tab, label: answer.interviews?.length ? 'Update interview' : 'Add interview' }] : []),
+    ...(aboutPerson && hasConversation ? [{ key: 'UPDATE_CONVERSATION' as Tab, label: 'Update conversation' }] : []),
+    ...(aboutPerson ? [
+      { key: 'START_CONVERSATION' as Tab, label: 'Start conversation' },
+      { key: 'CONNECTION' as Tab, label: answer.connections.length ? 'Update connection' : 'Add connection' },
+    ] : []),
   ];
+  const suggested: Tab = answer.suggestion === 'ADD_CONNECTION' ? 'CONNECTION' : answer.suggestion;
+  const [tab, setTab] = useState<Tab>(tabs.some((t) => t.key === suggested) ? suggested : tabs[0]!.key);
   return (
     <>
       {r.reply && <p className="pre">{r.reply}</p>}
       <dl className="reading">
         {r.fullName && <><dt>Who</dt><dd>{r.fullName}{r.title ? `, ${r.title}` : ''}{r.company ? ` at ${r.company}` : ''}</dd></>}
-        {r.channel && <><dt>How</dt><dd>{CHANNEL_LABELS[r.channel] ?? r.channel}{r.occurredOn ? ` on ${formatDate(r.occurredOn)}` : ''}</dd></>}
-        {r.outcome && <><dt>Outcome</dt><dd>{OUTCOME_LABELS[r.outcome] ?? r.outcome}</dd></>}
-        {r.nextStep && <><dt>Next</dt><dd>{r.nextStep}{r.nextStepDue ? ` by ${formatDate(r.nextStepDue)}` : ''}</dd></>}
+        {r.fullName && r.channel && <><dt>How</dt><dd>{CHANNEL_LABELS[r.channel] ?? r.channel}{r.occurredOn ? ` on ${formatDate(r.occurredOn)}` : ''}</dd></>}
+        {r.fullName && r.outcome && <><dt>Outcome</dt><dd>{OUTCOME_LABELS[r.outcome] ?? r.outcome}</dd></>}
+        {r.fullName && r.nextStep && <><dt>Next</dt><dd>{r.nextStep}{r.nextStepDue ? ` by ${formatDate(r.nextStepDue)}` : ''}</dd></>}
+        {r.event && <><dt>Event</dt><dd>{r.event.name}{r.event.startsOn ? `, ${formatDate(r.event.startsOn)}` : ''}{r.event.city ? `, ${r.event.city}` : r.event.online ? ', online' : ''}</dd></>}
+        {r.interview && <><dt>Interview</dt><dd>{r.interview.leaderName}{r.interview.topic ? `: ${r.interview.topic}` : ''}</dd></>}
       </dl>
       {editable && (
         <>
@@ -228,9 +241,11 @@ export function Proposals({ answer, shots = [], editable }: { answer: AssistantA
             ))}
           </div>
           {/* Keep every card mounted so edits and "done" states survive switching tabs. */}
+          {r.event && <div hidden={tab !== 'EVENT'}><EventCard answer={answer} /></div>}
+          {r.interview && <div hidden={tab !== 'INTERVIEW'}><InterviewCard answer={answer} /></div>}
           <div hidden={tab !== 'UPDATE_CONVERSATION'}>{hasConversation && <UpdateConversation answer={answer} />}</div>
-          <div hidden={tab !== 'START_CONVERSATION'}><StartConversation answer={answer} /></div>
-          <div hidden={tab !== 'CONNECTION'}><ConnectionCard answer={answer} shots={shots} /></div>
+          {aboutPerson && <div hidden={tab !== 'START_CONVERSATION'}><StartConversation answer={answer} /></div>}
+          {aboutPerson && <div hidden={tab !== 'CONNECTION'}><ConnectionCard answer={answer} shots={shots} /></div>}
         </>
       )}
     </>
@@ -280,7 +295,7 @@ function TouchFields({ touch, setTouch, prefix }: { touch: Touch; setTouch: (t: 
   );
 }
 
-function Problems({ error }: { error: Error | null }) {
+export function Problems({ error }: { error: Error | null }) {
   if (!error) return null;
   const problems = error instanceof ApiError ? error.problems : [];
   return (
@@ -290,14 +305,14 @@ function Problems({ error }: { error: Error | null }) {
   );
 }
 
-function Done({ to, label }: { to: string; label: string }) {
+export function Done({ to, label }: { to: string; label: string }) {
   return <div className="notice good" role="status">Saved. <Link to={to}>{label}</Link></div>;
 }
 
-function useRefresh() {
+export function useRefresh() {
   const queryClient = useQueryClient();
   return () => {
-    for (const key of ['conversations', 'conversation', 'connections', 'activities', 'heatmap']) {
+    for (const key of ['conversations', 'conversation', 'connections', 'connection', 'activities', 'heatmap', 'events', 'event', 'interviews', 'interview']) {
       queryClient.invalidateQueries({ queryKey: [key] });
     }
   };

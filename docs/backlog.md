@@ -170,6 +170,9 @@ A chat where people type what they did or paste screenshots of a thread
 - Photos (ADR-0014): when a screenshot shows the person's profile photo, the
   card crops it (drag to adjust) and saves it with the connection if ticked.
   Photos can also be added, changed or removed on the connection page.
+- Conferences and leader interviews too: an event page, a registration or a
+  note adds or updates the conference (and "I'm going"); a note about a
+  leader interview adds it or moves it to the stage reached.
 - A LinkedIn invitation that is not yet accepted is logged as a conversation
   (connection request, no reply yet); add the connection once they accept.
 

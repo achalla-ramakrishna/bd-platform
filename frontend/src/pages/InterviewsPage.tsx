@@ -6,8 +6,8 @@ import { formatDate } from '../lib/format';
 import { AccountPicker } from './AccountPicker';
 import { today } from './ConversationsPage';
 
-type Status = 'IDEA' | 'ASKED' | 'AGREED' | 'BOOKED' | 'RECORDED' | 'PUBLISHED' | 'DECLINED';
-type Format = 'BLOG' | 'PODCAST' | 'VIDEO' | 'LINKEDIN_ARTICLE';
+export type Status = 'IDEA' | 'ASKED' | 'AGREED' | 'BOOKED' | 'RECORDED' | 'PUBLISHED' | 'DECLINED';
+export type Format = 'BLOG' | 'PODCAST' | 'VIDEO' | 'LINKEDIN_ARTICLE';
 interface Interview {
   id: number; leaderName: string; leaderTitle?: string | null; company?: string | null; accountId?: number | null;
   accountName?: string | null; topic: string; format: Format; status: Status; ownerId: number; ownerName: string;
@@ -19,11 +19,11 @@ interface InterviewPage {
   summary: { inProgress: number; bookedNext30Days: number; awaitingPublication: number; publishedThisQuarter: number };
 }
 
-const STATUS: Record<Status, string> = {
+export const STATUS: Record<Status, string> = {
   IDEA: 'Idea', ASKED: 'Asked', AGREED: 'Agreed', BOOKED: 'Booked', RECORDED: 'Recorded', PUBLISHED: 'Published', DECLINED: 'Declined',
 };
-const FORMAT: Record<Format, string> = { BLOG: 'Blog', PODCAST: 'Podcast', VIDEO: 'Video', LINKEDIN_ARTICLE: 'LinkedIn article' };
-const FLOW: Status[] = ['IDEA', 'ASKED', 'AGREED', 'BOOKED', 'RECORDED', 'PUBLISHED'];
+export const FORMAT: Record<Format, string> = { BLOG: 'Blog', PODCAST: 'Podcast', VIDEO: 'Video', LINKEDIN_ARTICLE: 'LinkedIn article' };
+export const FLOW: Status[] = ['IDEA', 'ASKED', 'AGREED', 'BOOKED', 'RECORDED', 'PUBLISHED'];
 const NEXT_LABEL: Partial<Record<Status, string>> = {
   ASKED: 'Mark asked', AGREED: 'They agreed', BOOKED: 'Book it', RECORDED: 'Mark recorded', PUBLISHED: 'Mark published',
 };
