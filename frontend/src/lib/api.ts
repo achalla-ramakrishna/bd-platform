@@ -20,6 +20,21 @@ function csrfToken(): string | undefined {
   return match ? decodeURIComponent(match.substring('XSRF-TOKEN='.length)) : undefined;
 }
 
+/** Always a readable message, even when the body says nothing (HTTP/2 has no status text). */
+export function errorMessage(status: number, data: unknown): string {
+  const d = data as { detail?: unknown; message?: unknown; error?: unknown } | undefined;
+  const given = [d?.detail, d?.message].find((v) => typeof v === 'string' && v.trim());
+  if (given) return given as string;
+  switch (status) {
+    case 401: return 'Your session has ended. Reload the page and sign in again.';
+    case 403: return 'Your role cannot do this (HTTP 403).';
+    case 404: return 'Not found (HTTP 404).';
+    case 413: return 'That is too large to send (HTTP 413). Use fewer or smaller screenshots.';
+    case 502: case 503: case 504: return `The server did not answer in time (HTTP ${status}). Try again in a minute.`;
+    default: return `Something went wrong on the server (HTTP ${status}). Try again; if it keeps happening, tell an Admin.`;
+  }
+}
+
 async function request<T>(method: string, path: string, body?: BodyInit | object, accept422 = false): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   let payload: BodyInit | undefined;
@@ -35,10 +50,17 @@ async function request<T>(method: string, path: string, body?: BodyInit | object
   }
   const res = await fetch(`/api/v1${path}`, { method, headers, body: payload, credentials: 'same-origin' });
   const text = await res.text();
-  const data = text ? JSON.parse(text) : undefined;
+  let data: unknown;
+  try {
+    data = text ? JSON.parse(text) : undefined;
+  } catch {
+    data = undefined; // an HTML or plain-text error page from a proxy
+  }
   if (!res.ok && !(accept422 && res.status === 422)) {
-    const detail = (data && (data.detail || data.message)) || res.statusText;
-    throw new ApiError(res.status, detail, data);
+    throw new ApiError(res.status, errorMessage(res.status, data), data);
+  }
+  if (res.ok && text && data === undefined) {
+    throw new ApiError(res.status, 'The server sent an answer the page could not read. Reload and try again.', undefined);
   }
   return data as T;
 }

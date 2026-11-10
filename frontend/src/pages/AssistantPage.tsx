@@ -193,7 +193,7 @@ export function AssistantPage({ me }: { me: Me }) {
 
 function errorText(e: unknown): string {
   if (e instanceof ApiError && e.problems.length) return e.problems.join(' ');
-  return e instanceof Error ? e.message : 'Something went wrong.';
+  return (e instanceof Error && e.message.trim()) || 'Something went wrong. Try again.';
 }
 
 type Tab = 'UPDATE_CONVERSATION' | 'START_CONVERSATION' | 'CONNECTION';

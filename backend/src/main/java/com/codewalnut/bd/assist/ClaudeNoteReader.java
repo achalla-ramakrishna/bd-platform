@@ -8,7 +8,7 @@ import java.util.Locale;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.core.JsonValue;
-import com.anthropic.errors.AnthropicServiceException;
+import com.anthropic.errors.AnthropicException;
 import com.anthropic.models.messages.Base64ImageSource;
 import com.anthropic.models.messages.ContentBlockParam;
 import com.anthropic.models.messages.MessageCreateParams;
@@ -108,17 +108,17 @@ class ClaudeNoteReader implements NoteReader {
             .putAdditionalHeader("anthropic-beta", "server-side-fallback-2026-07-01")
             .putAdditionalBodyProperty("fallbacks", JsonValue.from("default"))
             .build();
-        StructuredMessage<NoteFields> response;
+        NoteFields f;
         try {
-            response = client.messages().create(params);
-        } catch (AnthropicServiceException e) {
+            StructuredMessage<NoteFields> response = client.messages().create(params);
+            if (response.stopReason().map(StopReason.REFUSAL::equals).orElse(false)) {
+                throw new RuleViolationException(List.of("That could not be read. Log it by hand on the Conversations page."));
+            }
+            f = response.content().stream().flatMap(b -> b.text().stream()).map(t -> t.text()).findFirst()
+                .orElseThrow(() -> new RuleViolationException(List.of("Nothing came back. Try again, or log it by hand.")));
+        } catch (AnthropicException e) {
             throw new RuleViolationException(List.of(ClaudeErrors.explain(e) + " Meanwhile, log it by hand."));
         }
-        if (response.stopReason().map(StopReason.REFUSAL::equals).orElse(false)) {
-            throw new RuleViolationException(List.of("That could not be read. Log it by hand on the Conversations page."));
-        }
-        NoteFields f = response.content().stream().flatMap(b -> b.text().stream()).map(t -> t.text()).findFirst()
-            .orElseThrow(() -> new RuleViolationException(List.of("Nothing came back. Try again, or log it by hand.")));
         return new Reading(c(f.reply()), c(f.fullName()), c(f.title()), c(f.company()), c(f.city()), c(f.linkedinUrl()),
             c(f.topic()), code(f.channel(), request.channels(), "LINKEDIN_MESSAGE"), c(f.occurredOn()), c(f.summary()),
             code(f.outcome(), request.outcomes(), "DONE"), c(f.nextStep()), c(f.nextStepDue()), f.newConnection());

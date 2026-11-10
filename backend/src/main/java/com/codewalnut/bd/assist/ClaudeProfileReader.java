@@ -6,7 +6,7 @@ import java.util.List;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.core.JsonValue;
-import com.anthropic.errors.AnthropicServiceException;
+import com.anthropic.errors.AnthropicException;
 import com.anthropic.models.messages.Base64ImageSource;
 import com.anthropic.models.messages.ContentBlockParam;
 import com.anthropic.models.messages.MessageCreateParams;
@@ -96,20 +96,20 @@ class ClaudeProfileReader implements ProfileReader {
             .putAdditionalBodyProperty("fallbacks", JsonValue.from("default"))
             .build();
 
-        StructuredMessage<ProfileFields> response;
+        ProfileFields fields;
         try {
-            response = client.messages().create(params);
-        } catch (AnthropicServiceException e) {
+            StructuredMessage<ProfileFields> response = client.messages().create(params);
+            if (response.stopReason().map(StopReason.REFUSAL::equals).orElse(false)) {
+                throw new RuleViolationException(List.of("The profile could not be read. Fill in the fields by hand."));
+            }
+            fields = response.content().stream()
+                .flatMap(block -> block.text().stream())
+                .map(typed -> typed.text())
+                .findFirst()
+                .orElseThrow(() -> new RuleViolationException(List.of("No profile details came back. Fill in the fields by hand.")));
+        } catch (AnthropicException e) {
             throw new RuleViolationException(List.of(ClaudeErrors.explain(e) + " Meanwhile, fill in the fields by hand."));
         }
-        if (response.stopReason().map(StopReason.REFUSAL::equals).orElse(false)) {
-            throw new RuleViolationException(List.of("The profile could not be read. Fill in the fields by hand."));
-        }
-        ProfileFields fields = response.content().stream()
-            .flatMap(block -> block.text().stream())
-            .map(typed -> typed.text())
-            .findFirst()
-            .orElseThrow(() -> new RuleViolationException(List.of("No profile details came back. Fill in the fields by hand.")));
         String persona = fields.persona() == null ? "" : fields.persona().strip().toUpperCase();
         if (!request.personaCodes().contains(persona)) {
             persona = request.personaCodes().contains("OTHER") ? "OTHER" : "";
