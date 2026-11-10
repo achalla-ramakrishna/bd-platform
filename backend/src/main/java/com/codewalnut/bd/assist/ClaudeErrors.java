@@ -7,11 +7,15 @@ final class ClaudeErrors {
 
     private ClaudeErrors() {}
 
+    /** Safe description of the key in use (AssistConfig.hint), shown with a 401 so an Admin can compare it. */
+    static volatile String keyHint = "";
+
     static String explain(AnthropicServiceException e) {
         String detail = e.getMessage() == null ? "" : e.getMessage().toLowerCase();
         return switch (e.statusCode()) {
             case 401 -> "The Anthropic API key was rejected (401). An Admin should check ANTHROPIC_API_KEY in Railway: "
-                + "it must be a valid key starting sk-ant-, with no quotes or spaces.";
+                + "it must be a valid key starting sk-ant-, with no quotes or spaces."
+                + (keyHint.isEmpty() ? "" : " The key the app has " + keyHint + "; compare the last 4 with the Claude Console's API keys list.");
             case 403 -> "The Anthropic API key is not allowed to do this (403). Check the key's workspace permissions.";
             case 400 -> detail.contains("credit")
                 ? "The Anthropic account has run out of credit. An Admin should add credit under Settings, Billing in the Anthropic Console."

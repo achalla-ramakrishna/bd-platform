@@ -50,6 +50,7 @@ class AssistConfig {
     }
 
     private static com.anthropic.client.AnthropicClient client(String apiKey) {
+        ClaudeErrors.keyHint = hint(apiKey);
         // Research runs several web searches; allow up to 5 minutes per call.
         return AnthropicOkHttpClient.builder().apiKey(clean(apiKey)).timeout(java.time.Duration.ofMinutes(5)).build();
     }
