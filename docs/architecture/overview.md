@@ -14,7 +14,7 @@ flowchart LR
     subgraph APP[BD Platform: one Spring Boot deployable]
         UI[React 19 + TypeScript<br/>static bundle]
         API[REST API /api/v1]
-        MODS[Modules: accounts, contacts, engagement,<br/>opportunities, talent, contracts, imports,<br/>reporting, strategy, admin]
+        MODS[Modules: accounts, contacts, engagement,<br/>opportunities, talent, contracts, imports,<br/>reporting, strategy, improvements, admin]
         API --> MODS
     end
     APP -->|JDBC| DB[(MySQL 8.4<br/>Railway)]
@@ -52,6 +52,7 @@ module reads another's tables directly. Spring Modulith tests enforce this.
 | `imports` | Upload batches, validation, row errors, commit (ADR-0006) | 11 |
 | `reporting` | Read-only views across modules: account, contact, contract, engineer and deployment lists; dashboards and CSV export later | 9 |
 | `strategy` | The BD strategy page and its versions (backlog item 2) | — |
+| `improvements` | Improvement areas for the platform and the build queue (backlog item 5) | — |
 | `admin` | Users, roles, sign-in, picklists, stage definitions | 10 |
 | `shared` | Roles, current user, audit log, error handling (open to all modules) | — |
 

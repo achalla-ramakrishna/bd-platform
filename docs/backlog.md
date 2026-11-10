@@ -83,11 +83,22 @@ People the team personally knows, in one shared list:
 - The `connection` and `connection_knower` tables (V11) replace the unused
   `warm_path` table from V2.
 
-## 5. Improvement areas (Proposed)
+## 5. Improvement areas (Built)
 
-Cards for improving the platform: Suggested, Approved, In progress, Done.
-Admins approve. Approved cards are the next work to build and link to the
-change that delivered them.
+The tool is the source of improvement knowledge. A board of cards with four
+columns (Suggested, Approved, In progress, Done) and a collapsed Declined
+list.
+
+- Anyone signed in suggests a card: a title and "what and why" in Markdown.
+  The person who suggested it can edit it until it is decided.
+- Leadership and admins approve, decline (with a reason the suggester sees),
+  start building, mark done (with an optional link to the change that
+  delivered it) or send a card back. Only sensible moves are allowed.
+- Approved cards form the build queue: each gets a place at the end, and
+  approvers move them up or down. `GET /api/v1/improvements?status=APPROVED`
+  returns the queue in order, which is what a coding assistant picks the next
+  change from.
+- Saves based on an out-of-date copy are refused (V12 `improvement`).
 
 ## 6. Conferences and events (Proposed)
 

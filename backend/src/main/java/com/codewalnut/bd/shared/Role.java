@@ -21,6 +21,9 @@ public enum Role {
     /** May edit the BD strategy page (backlog item 2). Everyone signed in can read it. */
     public static final Set<Role> STRATEGY_EDITORS = EnumSet.of(LEADERSHIP, ADMIN);
 
+    /** May approve, decline and progress improvement areas (backlog item 5). Everyone may suggest. */
+    public static final Set<Role> IMPROVEMENT_APPROVERS = EnumSet.of(LEADERSHIP, ADMIN);
+
     /** May upload spreadsheets (ADR-0006). */
     public static final Set<Role> IMPORTERS = EnumSet.of(BD_LEAD, DELIVERY, ADMIN);
 }

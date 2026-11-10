@@ -280,6 +280,58 @@ paths:
         '200': { description: '{ conversation, updates }' }
         '409': { description: Someone else updated it first }
         '422': { description: Invalid }
+  /improvements:
+    get:
+      tags: [improvements]
+      operationId: listImprovements
+      summary: 'All cards: in progress and approved first in queue order, then suggested, done, declined; with canApprove'
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [SUGGESTED, APPROVED, IN_PROGRESS, DONE, DECLINED] }, description: 'APPROVED returns the build queue in order' }
+      responses:
+        '200': { description: '{ items: Improvement[], canApprove }' }
+    post:
+      tags: [improvements]
+      operationId: suggestImprovement
+      summary: 'Suggest an improvement: { title, details } (anyone signed in)'
+      responses:
+        '201': { description: The new card, status SUGGESTED }
+        '422': { description: Missing title or too long }
+  /improvements/{id}:
+    get:
+      tags: [improvements]
+      operationId: getImprovement
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: The card }
+    put:
+      tags: [improvements]
+      operationId: editImprovement
+      summary: 'Edit { title, details, version }: the suggester while SUGGESTED, approvers any time'
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: The card }
+        '403': { description: Not allowed to edit }
+        '409': { description: Changed by someone else }
+  /improvements/{id}/decision:
+    post:
+      tags: [improvements]
+      operationId: decideImprovement
+      summary: 'Move a card: { status, note, deliveredRef, version } (leadership and admins). Declining needs a note.'
+      description: 'Allowed moves: SUGGESTED to APPROVED or DECLINED; APPROVED to IN_PROGRESS, DONE, SUGGESTED or DECLINED; IN_PROGRESS to DONE, APPROVED or DECLINED; DONE to IN_PROGRESS; DECLINED to SUGGESTED.'
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: The card }
+        '403': { description: Not an approver }
+        '409': { description: Changed by someone else }
+        '422': { description: Move not allowed or reason missing }
+  /improvements/{id}/move:
+    post:
+      tags: [improvements]
+      operationId: rankImprovement
+      summary: 'Move an approved card one place { direction: UP or DOWN, version } in the build queue (approvers)'
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: The whole board }
   /strategy:
     get:
       tags: [strategy]
