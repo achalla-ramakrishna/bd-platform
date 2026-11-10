@@ -128,7 +128,7 @@ class ReadController {
                          @RequestParam(required = false) Boolean researched,
                          @RequestParam(defaultValue = "0") int page,
                          @RequestParam(defaultValue = "50") int size) {
-        int limit = Math.clamp(size, 1, 200);
+        int limit = Math.clamp(size, 1, 1000);
         int offset = Math.max(page, 0) * limit;
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
         Map<String, Object> params = new LinkedHashMap<>();
@@ -154,13 +154,13 @@ class ReadController {
         }
         long total = jdbc.sql("SELECT COUNT(*) FROM account a JOIN parent_company p ON p.id = a.parent_company_id" + where)
             .params(params).query(Long.class).single();
-        if ("fit".equalsIgnoreCase(sort)) {
+        if ("fit".equalsIgnoreCase(sort) || "fit_asc".equalsIgnoreCase(sort)) {
             // Score every matching account, then page: at most a few thousand accounts (NFR-BD-06).
             List<Account> all = jdbc.sql(ACCOUNT_SELECT + where).params(params).query((rs, n) -> account(rs)).list();
             Map<Long, FitScorer.Fit> fits = fit.score(all.stream().map(Account::id).toList());
+            java.util.Comparator<Account> byScore = java.util.Comparator.comparing((Account a) -> a.fitScore() == null ? -1 : a.fitScore());
             List<Account> items = all.stream().map(a -> a.withFit(fits.get(a.id())))
-                .sorted(java.util.Comparator.comparing((Account a) -> a.fitScore() == null ? -1 : a.fitScore()).reversed()
-                    .thenComparing(Account::name))
+                .sorted(("fit".equalsIgnoreCase(sort) ? byScore.reversed() : byScore).thenComparing(Account::name))
                 .skip(offset).limit(limit).toList();
             return new AccountPage(items, Math.max(page, 0), limit, total);
         }

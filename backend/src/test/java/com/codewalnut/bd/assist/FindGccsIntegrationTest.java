@@ -134,6 +134,11 @@ class FindGccsIntegrationTest {
             .andExpect(jsonPath("$.items[0].fitScore").value(20))
             .andExpect(jsonPath("$.items[1].fitScore").value(5))
             .andExpect(jsonPath("$.items[0].fitReasons[0]").value("Size 500-2000 (+20)"));
+        mvc.perform(get("/api/v1/accounts?sort=fit_asc").with(user(ADMIN)))
+            .andExpect(jsonPath("$.items[0].fitScore").value(5))
+            .andExpect(jsonPath("$.items[1].name").value("Alpha Bengaluru"));
+        mvc.perform(get("/api/v1/accounts?sort=fit&size=1000").with(user(ADMIN)))
+            .andExpect(jsonPath("$.size").value(1000));
     }
 
     @Test

@@ -22,7 +22,7 @@ export function AccountsPage({ me }: { me: Me }) {
   const [relationship, setRelationship] = useState('');
   const [sort, setSort] = useState('fit');
   const [researched, setResearched] = useState('');
-  const params = new URLSearchParams({ size: '200', sort });
+  const params = new URLSearchParams({ size: '1000', sort });
   if (q) params.set('q', q);
   if (relationship) params.set('relationship', relationship);
   if (researched) params.set('researched', researched);
@@ -60,6 +60,7 @@ export function AccountsPage({ me }: { me: Me }) {
         </select>
         <select id="account-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value)}>
           <option value="fit">Best fit first</option>
+          <option value="fit_asc">Lowest fit first</option>
           <option value="name">Name</option>
         </select>
         {accounts.data && <span className="muted">{accounts.data.total} accounts{accounts.data.total > accounts.data.items.length ? `, showing ${accounts.data.items.length}` : ''}</span>}
@@ -68,8 +69,14 @@ export function AccountsPage({ me }: { me: Me }) {
         <table>
           <thead>
             <tr>
-              <th className="num">Fit</th>
-              <th>Account</th>
+              <th className="num" aria-sort={sort === 'fit' ? 'descending' : sort === 'fit_asc' ? 'ascending' : 'none'}>
+                <button type="button" className="th-sort" onClick={() => setSort(sort === 'fit' ? 'fit_asc' : 'fit')}>
+                  Fit{sort === 'fit' ? ' ↓' : sort === 'fit_asc' ? ' ↑' : ''}
+                </button>
+              </th>
+              <th aria-sort={sort === 'name' ? 'ascending' : 'none'}>
+                <button type="button" className="th-sort" onClick={() => setSort('name')}>Account{sort === 'name' ? ' ↑' : ''}</button>
+              </th>
               <th>City</th>
               <th>Industry</th>
               <th>Relationship</th>

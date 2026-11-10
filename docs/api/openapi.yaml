@@ -127,8 +127,10 @@ paths:
         - { name: relationship, in: query, schema: { $ref: '#/components/schemas/Relationship' } }
         - { name: city, in: query, schema: { type: string } }
         - { name: ownerId, in: query, schema: { type: integer, format: int64 } }
+        - { name: researched, in: query, schema: { type: boolean }, description: 'Only accounts with (true) or without (false) finished research' }
+        - { name: sort, in: query, schema: { type: string, enum: [name, fit, fit_asc], default: name }, description: 'fit = highest fit score first (FR-ACC-04); fit_asc = lowest first' }
         - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/Size'
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 1000, default: 50 }, description: 'Up to 1000, so the whole list can be ranked on one page' }
       responses:
         '200':
           description: OK
