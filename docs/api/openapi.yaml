@@ -339,7 +339,51 @@ paths:
         - { name: weeks, in: query, schema: { type: integer, minimum: 4, maximum: 53, default: 26 } }
         - { name: userId, in: query, schema: { type: integer, format: int64 }, description: One person; omit for the team }
       responses:
-        '200': { description: '{ from, to, days: [{ date, total, touches, meetings, conversationsStarted, connections, events, items: [{ kind, text, link }], moreItems }], weeks: [{ weekStart, total }], summary: { total, thisWeek, lastWeek, activeDaysLast30, bestWeek }, people }' }
+        '200': { description: '{ from, to, days: [{ date, total, touches, meetings, conversationsStarted, connections, events, interviews, items: [{ kind, text, link }], moreItems }], weeks: [{ weekStart, total }], summary: { total, thisWeek, lastWeek, activeDaysLast30, bestWeek }, people }' }
+  /interviews:
+    get:
+      tags: [engagement]
+      operationId: listInterviews
+      summary: Leader interviews with summary counts
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [OPEN, IDEA, ASKED, AGREED, BOOKED, RECORDED, PUBLISHED, DECLINED] }, description: 'OPEN = not published and not declined' }
+        - { name: mine, in: query, schema: { type: boolean } }
+        - { name: accountId, in: query, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: '{ items: Interview[], summary: { inProgress, bookedNext30Days, awaitingPublication, publishedThisQuarter } }' }
+    post:
+      tags: [engagement]
+      operationId: addInterview
+      summary: 'Add { leaderName, leaderTitle, company, accountId, topic, format (BLOG, PODCAST, VIDEO, LINKEDIN_ARTICLE), notes, ownerId } as an IDEA (pipeline roles)'
+      responses:
+        '201': { description: The interview }
+        '422': { description: Invalid }
+  /interviews/{id}:
+    get:
+      tags: [engagement]
+      operationId: getInterview
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: The interview }
+    put:
+      tags: [engagement]
+      operationId: updateInterview
+      summary: Edit the interview details, with version (pipeline roles)
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: The interview }
+        '409': { description: Changed by someone else }
+  /interviews/{id}/move:
+    post:
+      tags: [engagement]
+      operationId: moveInterview
+      summary: 'Move one stage forward or back, decline, or restart: { status, on, publishedUrl, version }'
+      description: 'BOOKED needs on (the date); PUBLISHED needs publishedUrl. Asked, recorded and published dates default to today and cannot be in the future.'
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: The interview }
+        '409': { description: Changed by someone else }
+        '422': { description: Move not allowed or details missing }
   /improvements:
     get:
       tags: [improvements]

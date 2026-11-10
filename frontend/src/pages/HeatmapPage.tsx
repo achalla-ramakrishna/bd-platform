@@ -7,7 +7,7 @@ import { formatDate } from '../lib/format';
 interface Item { kind: string; text: string; link: string }
 interface Day {
   date: string; total: number; touches: number; meetings: number; conversationsStarted: number; connections: number;
-  events: number; items: Item[]; moreItems: number;
+  events: number; interviews: number; items: Item[]; moreItems: number;
 }
 interface Week { weekStart: string; total: number }
 interface Heatmap {
@@ -42,6 +42,7 @@ function breakdown(d: Day) {
   if (d.conversationsStarted) parts.push(`${d.conversationsStarted} conversation${d.conversationsStarted === 1 ? '' : 's'} started`);
   if (d.connections) parts.push(`${d.connections} new connection${d.connections === 1 ? '' : 's'}`);
   if (d.events) parts.push(`${d.events} event${d.events === 1 ? '' : 's'}`);
+  if (d.interviews) parts.push(`${d.interviews} interview step${d.interviews === 1 ? '' : 's'}`);
   return parts.join(' · ');
 }
 
@@ -62,8 +63,8 @@ export function HeatmapPage() {
     <>
       <div className="title-row"><h1>Activity heatmap</h1></div>
       <p className="lead">
-        One square per day, darker when we did more: every touch and conversation update, every new connection, and every
-        event someone went to. The aim is to go from pale to dark green.
+        One square per day, darker when we did more: every touch and conversation update, every new connection, every
+        event someone went to, and every leader interview recorded or published. The aim is to go from pale to dark green.
       </p>
       <div className="toolbar">
         <select id="heat-person" aria-label="Whose activity" value={person} onChange={(e) => setPerson(e.target.value)}>

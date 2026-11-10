@@ -7,6 +7,7 @@ import { ConnectionPage } from './pages/ConnectionPage';
 import { ImprovementPage, ImprovementsPage } from './pages/ImprovementsPage';
 import { EventPage, EventsPage } from './pages/EventsPage';
 import { HeatmapPage } from './pages/HeatmapPage';
+import { InterviewPage, InterviewsPage } from './pages/InterviewsPage';
 import { NavLink, Navigate, Route, Routes } from 'react-router';
 import { ApiError, api, type Me, type SignInInfo } from './lib/api';
 import { AccountsPage } from './pages/AccountsPage';
@@ -47,6 +48,7 @@ export function App() {
         <NavLink to="/connections">Connections</NavLink>
         <NavLink to="/conversations">Conversations</NavLink>
         <NavLink to="/events">Conferences</NavLink>
+        <NavLink to="/interviews">Interviews</NavLink>
         <NavLink to="/heatmap">Heatmap</NavLink>
         <NavLink to="/find-gccs">Find GCCs</NavLink>
         <NavLink to="/deployments">Deployed teams</NavLink>
@@ -79,6 +81,8 @@ export function App() {
           <Route path="/opportunities/new" element={<OpportunityPage me={user} />} />
           <Route path="/opportunities/:id" element={<OpportunityPage me={user} />} />
           <Route path="/accounts" element={<AccountsPage me={user} />} />
+          <Route path="/interviews" element={<InterviewsPage me={user} />} />
+          <Route path="/interviews/:id" element={<InterviewPage me={user} />} />
           <Route path="/heatmap" element={<HeatmapPage />} />
           <Route path="/events" element={<EventsPage me={user} />} />
           <Route path="/events/:id" element={<EventPage me={user} />} />

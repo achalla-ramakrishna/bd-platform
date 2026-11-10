@@ -45,7 +45,7 @@ module reads another's tables directly. Spring Modulith tests enforce this.
 |---|---|---|
 | `accounts` | Parent companies, accounts (centres), owners, saved lists | 1 |
 | `contacts` | Contacts, personas, consent; connections (people the team knows) and warm paths into accounts | 2 |
-| `engagement` | Activities (touches), conversations and their next steps, conferences and events, referrals; cadences in release 2 | 3 |
+| `engagement` | Activities (touches), conversations and their next steps, conferences and events, leader interviews, referrals; cadences in release 2 | 3 |
 | `opportunities` | Opportunities, requirement lines, stages, forecast | 4 |
 | `talent` | Engineers, skills, availability, proposals of engineers to requirements | 5 |
 | `contracts` | MSAs, SOWs, deployments of engineers to clients | 6, 7, 11 |

@@ -29,9 +29,12 @@ class HeatmapController {
     /** What happened on a day. {@code link} is an app path. */
     record Item(String kind, String text, String link) {}
 
-    /** {@code total} = touches + new connections + events; meetings and conversations started are part of touches. */
+    /**
+     * {@code total} = touches + new connections + events + interviews recorded or published; meetings and
+     * conversations started are part of touches.
+     */
     record Day(LocalDate date, int total, int touches, int meetings, int conversationsStarted, int connections,
-               int events, List<Item> items, int moreItems) {}
+               int events, int interviews, List<Item> items, int moreItems) {}
 
     record Week(LocalDate weekStart, int total) {}
 
@@ -141,15 +144,33 @@ class HeatmapController {
                 return null;
             }).list();
 
+        // Leader interviews recorded or published (backlog item 8), by their owner.
+        jdbc.sql("""
+                SELECT recorded_on, id, leader_name, 'recorded' FROM interview
+                WHERE recorded_on BETWEEN :from AND :to AND (:user IS NULL OR owner_user_id = :user)
+                UNION ALL
+                SELECT published_on, id, leader_name, 'published' FROM interview
+                WHERE published_on BETWEEN :from AND :to AND (:user IS NULL OR owner_user_id = :user)
+                """).param("from", from).param("to", today).param("user", userId)
+            .query((rs, n) -> {
+                Acc acc = days.get(rs.getObject(1, LocalDate.class));
+                if (acc != null) {
+                    acc.interviews++;
+                    acc.add(new Item("INTERVIEW", "Interview " + rs.getString(4) + ": " + rs.getString(3),
+                        "/interviews/" + rs.getLong(2)));
+                }
+                return null;
+            }).list();
+
         List<Day> dayList = new ArrayList<>();
         Map<LocalDate, Integer> byWeek = new TreeMap<>();
         int activeLast30 = 0;
         int total = 0;
         for (var entry : days.entrySet()) {
             Acc a = entry.getValue();
-            int dayTotal = a.touches + a.connections + a.events;
+            int dayTotal = a.touches + a.connections + a.events + a.interviews;
             dayList.add(new Day(entry.getKey(), dayTotal, a.touches, a.meetings, a.conversationsStarted, a.connections,
-                a.events, a.items, Math.max(0, a.itemCount - a.items.size())));
+                a.events, a.interviews, a.items, Math.max(0, a.itemCount - a.items.size())));
             byWeek.merge(entry.getKey().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)), dayTotal, Integer::sum);
             if (dayTotal > 0 && !entry.getKey().isBefore(today.minusDays(29))) {
                 activeLast30++;
@@ -165,6 +186,7 @@ class HeatmapController {
                 WHERE EXISTS (SELECT 1 FROM activity x WHERE x.user_id = u.id)
                    OR EXISTS (SELECT 1 FROM connection_knower k WHERE k.user_id = u.id)
                    OR EXISTS (SELECT 1 FROM bd_event_attendee e WHERE e.user_id = u.id)
+                   OR EXISTS (SELECT 1 FROM interview i WHERE i.owner_user_id = u.id)
                 ORDER BY u.full_name
                 """).query((rs, n) -> new Person(rs.getLong(1), rs.getString(2))).list();
         return new Heatmap(from, today, dayList, weekList, summary, people);
@@ -191,6 +213,7 @@ class HeatmapController {
         int conversationsStarted;
         int connections;
         int events;
+        int interviews;
         int itemCount;
         final List<Item> items = new ArrayList<>();
 

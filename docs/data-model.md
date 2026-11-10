@@ -31,6 +31,7 @@ explains them.
 | contacts | V11 | `connection`, `connection_knower` (who in the team knows each person, how well, since when); replaces the unused `warm_path` |
 | improvements | V12 | `improvement` (status, build-queue rank, decision and delivery) |
 | engagement | V13 | `bd_event`, `bd_event_attendee`; `conversation.event_id` and `connection.met_at_event_id` record who we met where |
+| engagement | V14 | `interview` (leader interviews and their stage dates) |
 | strategy | V9 | `strategy_version` (every save kept; the newest is current) |
 
 ## Keys that carry business rules

@@ -366,3 +366,12 @@ button.link { all: unset; color: var(--accent); cursor: pointer; text-decoration
 .heat-day { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
 .heat-day h2 { font-size: 15px; margin: 0 0 6px; }
 .heat-day ul { margin: 0; padding-left: 18px; }
+
+/* Leader interviews (backlog item 8) */
+.topic { font-size: 17px; font-weight: 500; margin: 0 0 12px; }
+.stage-steps { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 0 0 14px; }
+.stage-steps li { border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; background: var(--surface); min-width: 92px; font-size: 14px; color: var(--muted); }
+.stage-steps li.done { color: var(--fg); border-color: var(--good); }
+.stage-steps li.current { color: var(--surface); background: var(--accent); border-color: var(--accent); font-weight: 600; }
+.stage-steps li.current .sub { color: var(--surface); opacity: 0.85; }
+.stage-steps .sub { display: block; font-size: 12px; min-height: 1em; }

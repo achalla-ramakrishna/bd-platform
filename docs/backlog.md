@@ -138,10 +138,22 @@ for the whole team or one person:
 - LinkedIn posts are not counted: nothing is read from LinkedIn (ADR-0005).
   Log a post as an activity if it should count.
 
-## 8. Leader interviews (Proposed)
+## 8. Leader interviews (Built)
 
-GCC leaders to interview for the blog, podcast or articles, with status
-(asked, booked, recorded, published) and the published link.
+"I'm reaching out to interview you and publish it where AI engineering
+leaders are featured", not "can I supply you engineers" (V14 `interview`):
+
+- Each interview: the leader, their title and company, an optional account,
+  the topic, the format (blog, podcast, video, LinkedIn article), an owner and
+  notes.
+- Stages: idea, asked, agreed, booked, recorded, published, one step at a
+  time (forward or back), or declined before recording (and back to idea).
+  The asked, booked, recorded and published dates are kept; booking needs
+  the date and publishing needs the link.
+- The page shows interviews not yet published (or all, or one stage), "mine
+  only", and cards for in progress, booked in the next 30 days, recorded but
+  not published and published this quarter.
+- Recording and publishing an interview count on the activity heatmap.
 
 ## Outside the platform
 
