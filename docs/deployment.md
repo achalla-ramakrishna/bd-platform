@@ -115,6 +115,14 @@ or create a key at console.anthropic.com (API keys). Deploy logs then show
 **Add from LinkedIn** still works as a form filled in by hand, and research is
 switched off.
 
+If a feature says **"The Anthropic API key was rejected (401)"**, the deploy log line
+`AI profile reading: ENABLED (...). Anthropic key: ...` shows what the app received:
+whether it starts `sk-ant-`, its length and its last 4 characters (never the key).
+Compare the last 4 with the key list in the Claude Console (API keys). If they differ,
+the variable holds another key, or a `${{...}}` reference points at a stale one: paste
+the key itself. If they match, the key was revoked or belongs to a disabled
+organization: create a new one. Surrounding spaces and quotes are ignored.
+
 ### Optional: research upload by script (ADR-0010)
 
 Lets a script (for example a Claude Code session) upload account research

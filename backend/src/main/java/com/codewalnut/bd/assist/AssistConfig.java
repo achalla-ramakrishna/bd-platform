@@ -18,7 +18,7 @@ class AssistConfig {
             LOG.info("AI profile reading and account research: DISABLED (no ANTHROPIC_API_KEY).");
             return new DisabledProfileReader();
         }
-        LOG.info("AI profile reading: ENABLED ({}).", ClaudeProfileReader.MODEL);
+        LOG.info("AI profile reading: ENABLED ({}). Anthropic key: {}", ClaudeProfileReader.MODEL, hint(apiKey));
         return new ClaudeProfileReader(client(apiKey));
     }
 
@@ -51,6 +51,33 @@ class AssistConfig {
 
     private static com.anthropic.client.AnthropicClient client(String apiKey) {
         // Research runs several web searches; allow up to 5 minutes per call.
-        return AnthropicOkHttpClient.builder().apiKey(apiKey.strip()).timeout(java.time.Duration.ofMinutes(5)).build();
+        return AnthropicOkHttpClient.builder().apiKey(clean(apiKey)).timeout(java.time.Duration.ofMinutes(5)).build();
+    }
+
+    /** The key as pasted into Railway, without surrounding spaces, quotes or a "Bearer " / "KEY=" prefix. */
+    static String clean(String apiKey) {
+        String k = apiKey.strip();
+        if (k.startsWith("ANTHROPIC_API_KEY=")) {
+            k = k.substring("ANTHROPIC_API_KEY=".length()).strip();
+        }
+        if (k.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            k = k.substring(7).strip();
+        }
+        while (k.length() >= 2 && (k.charAt(0) == '"' || k.charAt(0) == '\'') && k.charAt(k.length() - 1) == k.charAt(0)) {
+            k = k.substring(1, k.length() - 1).strip();
+        }
+        return k;
+    }
+
+    /**
+     * A safe description of the key for the deploy logs, to compare with the Claude Console's key list:
+     * whether it looks like an Anthropic key, its length and its last 4 characters. Never the key.
+     */
+    static String hint(String apiKey) {
+        String k = clean(apiKey);
+        String shape = k.startsWith("sk-ant-") ? "starts sk-ant-" : "does NOT start sk-ant- (check the value)";
+        String end = k.length() > 12 ? "ends ..." + k.substring(k.length() - 4) : "too short";
+        String spaces = k.chars().anyMatch(Character::isWhitespace) ? ", contains spaces (check the value)" : "";
+        return shape + ", " + k.length() + " characters, " + end + spaces;
     }
 }
