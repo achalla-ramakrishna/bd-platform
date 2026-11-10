@@ -3,10 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router';
 import {
   CHANNEL_LABELS, CONVERSATION_STATUS_LABELS, OUTCOME_LABELS, ApiError, api, canEditPipeline,
-  type Account, type AccountDetail, type ConversationDetail, type ConversationPage, type ConversationStatus,
-  type Conversation, type Me, type Page,
+  type AccountDetail, type ConversationDetail, type ConversationPage, type ConversationStatus,
+  type Conversation, type Me,
 } from '../lib/api';
 import { formatDate } from '../lib/format';
+import { AccountPicker } from './AccountPicker';
 
 export function today(offsetDays = 0) {
   const d = new Date();
@@ -135,24 +136,23 @@ export function ConversationTable({ items, loading, empty, hideAccount }: {
   );
 }
 
-/** Start a conversation with its first touch. With `accountId`, the account is fixed (account page). */
-export function NewConversation({ accountId, onDone }: { accountId?: number; onDone: () => void }) {
+/**
+ * Start a conversation with its first touch. With `accountId`, the account is fixed (account page);
+ * `contactId`, `personName` and `topic` prefill the form (for example from a connection).
+ */
+export function NewConversation({ accountId, contactId, personName, topic, onDone }: {
+  accountId?: number; contactId?: number | null; personName?: string; topic?: string; onDone: () => void;
+}) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [accountQuery, setAccountQuery] = useState('');
   const [chosenAccount, setChosenAccount] = useState<number | null>(accountId ?? null);
-  const accounts = useQuery({
-    queryKey: ['accounts', 'picker', accountQuery],
-    queryFn: () => api.get<Page<Account>>(`/accounts?size=20&sort=name&q=${encodeURIComponent(accountQuery)}`),
-    enabled: !accountId && accountQuery.trim().length >= 2 && chosenAccount === null,
-  });
   const detail = useQuery({
     queryKey: ['account', String(chosenAccount)],
     queryFn: () => api.get<AccountDetail>(`/accounts/${chosenAccount}`),
     enabled: chosenAccount !== null,
   });
   const [form, setForm] = useState({
-    contactId: '', personName: '', topic: '', channel: 'LINKEDIN_MESSAGE', occurredOn: today(), summary: '',
+    contactId: contactId ? String(contactId) : personName ? 'other' : '', personName: personName ?? '', topic: topic ?? '', channel: 'LINKEDIN_MESSAGE', occurredOn: today(), summary: '',
     outcome: 'NO_REPLY', nextStep: '', nextStepDue: today(3),
   });
   const save = useMutation({
@@ -179,23 +179,8 @@ export function NewConversation({ accountId, onDone }: { accountId?: number; onD
       <div className="grid">
         {!accountId && (
           <label>Account
-            {chosenAccount === null ? (
-              <>
-                <input id="conv-account" value={accountQuery} placeholder="Type 2+ letters of the account"
-                  onChange={(e) => setAccountQuery(e.target.value)} autoComplete="off" />
-                {accounts.data && accounts.data.items.length > 0 && (
-                  <ul className="picker">
-                    {accounts.data.items.map((a) => (
-                      <li key={a.id}><button type="button" onClick={() => setChosenAccount(a.id)}>{a.name} <span className="muted">· {a.city}</span></button></li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            ) : (
-              <span className="chosen">{detail.data?.account.name ?? '…'}{' '}
-                <button type="button" className="link" onClick={() => { setChosenAccount(null); setForm({ ...form, contactId: '' }); }}>change</button>
-              </span>
-            )}
+            <AccountPicker id="conv-account" value={chosenAccount} valueName={detail.data?.account.name}
+              onChange={(id) => { setChosenAccount(id); setForm({ ...form, contactId: '' }); }} />
           </label>
         )}
         <label>Person
@@ -203,7 +188,7 @@ export function NewConversation({ accountId, onDone }: { accountId?: number; onD
             onChange={(e) => setForm({ ...form, contactId: e.target.value })}>
             <option value="">{contacts.length ? 'Choose a contact' : 'No contacts yet: type a name'}</option>
             {contacts.map((c) => <option key={c.id} value={c.id}>{c.fullName}{c.title ? ` (${c.title})` : ''}</option>)}
-            {contacts.length > 0 && <option value="other">Someone not in contacts</option>}
+            {(contacts.length > 0 || form.contactId === 'other') && <option value="other">Someone not in contacts</option>}
           </select>
         </label>
         {typingName && (

@@ -62,12 +62,26 @@ step with its due date, and an optional linked opportunity.
 - A next step needs a date so it shows in the due list. Saves based on an
   out-of-date copy are refused. Pipeline roles write; everyone reads.
 
-## 4. Connections (Proposed)
+## 4. Connections (Built)
 
-People the team personally knows: who knows them and how well, their current
-company and role, a profile link typed in by hand, and an optional link to an
-account to show warm paths (the `warm_path` table from V2 is the starting
-point). Connection growth over time. A connection can become a contact.
+People the team personally knows, in one shared list:
+
+- Name, company, role, city, LinkedIn profile link and email, typed in by
+  hand (nothing is read from LinkedIn, ADR-0005).
+- Who knows them: each team member who does, how well (close, know well,
+  acquaintance), how, and since when. A second person who knows someone adds
+  themselves ("I know them too") instead of creating a duplicate; the
+  connection is removed when the last person who knows them leaves it.
+- An optional target account, marked "works there" or "can introduce us".
+  Account pages show these as warm paths.
+- From a connection: start a conversation at the linked account, or, for
+  someone who works there, make a contact (source "Connection of ...").
+- The page shows connections, known by me, warm paths into accounts, added
+  in 30 days and added this week against last week, with filters for
+  linked, closeness and "known by me". The weekly counts for the last 12
+  weeks are in the API for the heatmap (item 7).
+- The `connection` and `connection_knower` tables (V11) replace the unused
+  `warm_path` table from V2.
 
 ## 5. Improvement areas (Proposed)
 

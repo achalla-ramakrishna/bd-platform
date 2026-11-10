@@ -159,6 +159,76 @@ paths:
               schema: { $ref: '#/components/schemas/Account' }
         '409': { $ref: '#/components/responses/Problem' }
 
+  /connections:
+    get:
+      tags: [contacts]
+      operationId: listConnections
+      summary: People the team knows, with who knows them, and growth counts
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: mine, in: query, schema: { type: boolean }, description: Only people the caller knows }
+        - { name: accountId, in: query, schema: { type: integer, format: int64 } }
+        - { name: linked, in: query, schema: { type: boolean }, description: Linked to a target account or not }
+        - { name: strength, in: query, schema: { type: string, enum: [CLOSE, KNOW_WELL, ACQUAINTANCE] } }
+      responses:
+        '200': { description: '{ items: Connection[], summary: { total, knownByMe, linkedToAccounts, addedLast30Days, weekly: [{ weekStart, added }] (12 weeks) } }' }
+    post:
+      tags: [contacts]
+      operationId: addConnection
+      summary: Add a person the caller knows (pipeline roles)
+      description: 'Body: { person: { fullName, currentCompany, currentRole, city, linkedinUrl, email, accountId, accountLink (WORKS_THERE or CAN_INTRODUCE), notes }, knowing: { strength, howKnown, connectedOn } }. The same name at the same company is refused: add yourself to the existing one.'
+      responses:
+        '201': { description: The connection }
+        '422': { description: Invalid or already there }
+  /connections/{id}:
+    get:
+      tags: [contacts]
+      operationId: getConnection
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: The connection with knownBy }
+        '404': { description: No such connection }
+    put:
+      tags: [contacts]
+      operationId: updateConnection
+      summary: Edit the person and their account link (pipeline roles); version required to avoid overwriting
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: The connection }
+        '409': { description: Changed by someone else }
+        '422': { description: Invalid }
+  /connections/{id}/knowers/me:
+    put:
+      tags: [contacts]
+      operationId: knowConnection
+      summary: 'Add or update how the caller knows them: { strength, howKnown, connectedOn }'
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: The connection }
+    delete:
+      tags: [contacts]
+      operationId: forgetConnection
+      summary: Remove the caller as a knower; the connection is deleted when nobody knows them
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: Done }
+  /connections/{id}/contact:
+    post:
+      tags: [contacts]
+      operationId: connectionToContact
+      summary: 'Make a contact at the linked account from someone who works there: { persona }'
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: The connection with contactId }
+        '422': { description: Not linked as working at an account, or invalid persona }
+  /connections/for-account/{accountId}:
+    get:
+      tags: [contacts]
+      operationId: warmPaths
+      summary: Connections who work at or can introduce us to an account
+      parameters: [ { name: accountId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses:
+        '200': { description: Connection[] }
   /conversations:
     get:
       tags: [engagement]

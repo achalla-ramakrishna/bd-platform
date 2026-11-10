@@ -12,6 +12,8 @@ import { useState } from 'react';
 import { CompanyLogo } from './CompanyLogo';
 import { AccountProfile } from './AccountProfile';
 import { ConversationTable, NewConversation } from './ConversationsPage';
+import { ConnectionTable } from './ConnectionsPage';
+import type { Connection } from '../lib/api';
 import type { ConversationPage as ConversationList } from '../lib/api';
 
 export function AccountDetailPage({ me }: { me: Me }) {
@@ -19,6 +21,10 @@ export function AccountDetailPage({ me }: { me: Me }) {
   const detail = useQuery({ queryKey: ['account', id], queryFn: () => api.get<AccountDetail>(`/accounts/${id}`) });
   const [adding, setAdding] = useState(false);
   const [starting, setStarting] = useState(false);
+  const warmPaths = useQuery({
+    queryKey: ['connections', 'account', id],
+    queryFn: () => api.get<Connection[]>(`/connections/for-account/${id}`),
+  });
   const conversations = useQuery({
     queryKey: ['conversations', 'account', id],
     queryFn: () => api.get<ConversationList>(`/conversations?accountId=${id}`),
@@ -61,6 +67,13 @@ export function AccountDetailPage({ me }: { me: Me }) {
       )}
 
       <AccountResearch accountId={a.id} editable={canEditPipeline(me)} />
+
+      <div className="title-row">
+        <h2>Warm paths</h2>
+        <Link className="button secondary" to="/connections">Connections</Link>
+      </div>
+      <ConnectionTable items={warmPaths.data ?? []} loading={warmPaths.isPending} hideAccount
+        empty="No one we know works here or can introduce us yet. Link a connection to this account on its Connections page." />
 
       <div className="title-row">
         <h2>Conversations</h2>

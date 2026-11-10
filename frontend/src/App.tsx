@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { StrategyPage } from './pages/StrategyPage';
 import { ConversationsPage } from './pages/ConversationsPage';
 import { ConversationPage } from './pages/ConversationPage';
+import { ConnectionsPage } from './pages/ConnectionsPage';
+import { ConnectionPage } from './pages/ConnectionPage';
 import { NavLink, Navigate, Route, Routes } from 'react-router';
 import { ApiError, api, type Me, type SignInInfo } from './lib/api';
 import { AccountsPage } from './pages/AccountsPage';
@@ -39,6 +41,7 @@ export function App() {
         <NavLink to="/strategy">Strategy</NavLink>
         <NavLink to="/pipeline">Pipeline</NavLink>
         <NavLink to="/accounts">Accounts</NavLink>
+        <NavLink to="/connections">Connections</NavLink>
         <NavLink to="/conversations">Conversations</NavLink>
         <NavLink to="/find-gccs">Find GCCs</NavLink>
         <NavLink to="/deployments">Deployed teams</NavLink>
@@ -70,6 +73,8 @@ export function App() {
           <Route path="/opportunities/new" element={<OpportunityPage me={user} />} />
           <Route path="/opportunities/:id" element={<OpportunityPage me={user} />} />
           <Route path="/accounts" element={<AccountsPage me={user} />} />
+          <Route path="/connections" element={<ConnectionsPage me={user} />} />
+          <Route path="/connections/:id" element={<ConnectionPage me={user} />} />
           <Route path="/conversations" element={<ConversationsPage me={user} />} />
           <Route path="/conversations/:id" element={<ConversationPage me={user} />} />
           <Route path="/find-gccs" element={<FindGccsPage me={user} />} />

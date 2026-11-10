@@ -48,6 +48,7 @@ export const api = {
   put: <T>(path: string, body: object) => request<T>('PUT', path, body),
   post: <T>(path: string, body: object) => request<T>('POST', path, body),
   patch: <T>(path: string, body: object) => request<T>('PATCH', path, body),
+  del: <T>(path: string) => request<T>('DELETE', path),
   postForm: <T>(path: string, form: FormData) => request<T>('POST', path, form),
   /** Uploads return their validation report with HTTP 422 when rows fail. */
   upload: <T>(path: string, file: File) => {
@@ -371,6 +372,36 @@ export interface ConversationSummary {
 export interface ConversationPage {
   items: Conversation[];
   summary: ConversationSummary;
+}
+
+export type Strength = 'CLOSE' | 'KNOW_WELL' | 'ACQUAINTANCE';
+export const STRENGTH_LABELS: Record<Strength, string> = { CLOSE: 'Close', KNOW_WELL: 'Know well', ACQUAINTANCE: 'Acquaintance' };
+export const ACCOUNT_LINK_LABELS: Record<string, string> = { WORKS_THERE: 'Works there', CAN_INTRODUCE: 'Can introduce us' };
+
+export interface Knower { userId: number; userName: string; strength: Strength; howKnown?: string | null; connectedOn: string }
+
+export interface Connection {
+  id: number;
+  fullName: string;
+  currentCompany?: string | null;
+  currentRole?: string | null;
+  city?: string | null;
+  linkedinUrl?: string | null;
+  email?: string | null;
+  accountId?: number | null;
+  accountName?: string | null;
+  accountLink?: 'WORKS_THERE' | 'CAN_INTRODUCE' | null;
+  contactId?: number | null;
+  notes?: string | null;
+  knownBy: Knower[];
+  firstConnectedOn?: string | null;
+  createdAt: string;
+  version: number;
+}
+
+export interface ConnectionPage {
+  items: Connection[];
+  summary: { total: number; knownByMe: number; linkedToAccounts: number; addedLast30Days: number; weekly: { weekStart: string; added: number }[] };
 }
 
 export interface Stage {
