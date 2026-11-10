@@ -3,7 +3,13 @@ package com.codewalnut.bd.contacts;
 import java.util.List;
 import java.util.Map;
 
+import java.io.IOException;
+import java.time.Duration;
+
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.codewalnut.bd.admin.CurrentUserProvider;
 import com.codewalnut.bd.reporting.ConnectionQueries;
@@ -26,11 +33,14 @@ import com.codewalnut.bd.shared.Role;
 class ConnectionController {
 
     private final ConnectionService connections;
+    private final ConnectionPhotos photos;
     private final ConnectionQueries queries;
     private final CurrentUserProvider currentUser;
 
-    ConnectionController(ConnectionService connections, ConnectionQueries queries, CurrentUserProvider currentUser) {
+    ConnectionController(ConnectionService connections, ConnectionPhotos photos, ConnectionQueries queries,
+                         CurrentUserProvider currentUser) {
         this.connections = connections;
+        this.photos = photos;
         this.queries = queries;
         this.currentUser = currentUser;
     }
@@ -97,6 +107,34 @@ class ConnectionController {
         CurrentUser user = currentUser.get();
         user.require(Role.PIPELINE_EDITORS);
         connections.makeContact(id, in, user);
+        return queries.get(id);
+    }
+
+    /** The photo, as a JPEG. Links carry {@code ?v=photoVersion}, so a browser may keep it. */
+    @GetMapping("/{id}/photo")
+    ResponseEntity<byte[]> photo(@PathVariable long id) {
+        currentUser.get();
+        ConnectionPhotos.Photo p = photos.get(id).orElseThrow(() -> new com.codewalnut.bd.shared.NotFoundException("Photo of connection", id));
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(p.contentType()))
+            .cacheControl(CacheControl.maxAge(Duration.ofDays(30)).cachePrivate())
+            .header("X-Content-Type-Options", "nosniff")
+            .body(p.bytes());
+    }
+
+    @PutMapping("/{id}/photo")
+    ConnectionQueries.Connection setPhoto(@PathVariable long id, @RequestParam("file") MultipartFile file) throws IOException {
+        CurrentUser user = currentUser.get();
+        user.require(Role.PIPELINE_EDITORS);
+        photos.set(id, file.getBytes(), user);
+        return queries.get(id);
+    }
+
+    @DeleteMapping("/{id}/photo")
+    ConnectionQueries.Connection removePhoto(@PathVariable long id) {
+        CurrentUser user = currentUser.get();
+        user.require(Role.PIPELINE_EDITORS);
+        photos.remove(id, user);
         return queries.get(id);
     }
 }

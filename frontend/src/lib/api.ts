@@ -72,6 +72,7 @@ export const api = {
   patch: <T>(path: string, body: object) => request<T>('PATCH', path, body),
   del: <T>(path: string) => request<T>('DELETE', path),
   postForm: <T>(path: string, form: FormData) => request<T>('POST', path, form),
+  putForm: <T>(path: string, form: FormData) => request<T>('PUT', path, form),
   /** Uploads return their validation report with HTTP 422 when rows fail. */
   upload: <T>(path: string, file: File) => {
     const form = new FormData();
@@ -423,6 +424,8 @@ export interface Connection {
   version: number;
   metAtEventId?: number | null;
   metAtEventName?: string | null;
+  /** Set when the connection has a photo; changes whenever it does (ADR-0014). */
+  photoVersion?: number | null;
 }
 
 export type EventKind = 'CONFERENCE' | 'MEETUP' | 'WEBINAR' | 'ROUNDTABLE' | 'OTHER';
@@ -579,7 +582,11 @@ export interface AssistantReading {
   nextStep: string;
   nextStepDue: string;
   newConnection: boolean;
+  /** Where their profile photo is: screenshot index and a box as fractions of that screenshot. */
+  photo?: PhotoBox | null;
 }
+
+export interface PhotoBox { image: number; x: number; y: number; width: number; height: number }
 
 export interface FoundAccount { id: number; name: string; parentCompany: string; city: string; websiteDomain: string }
 

@@ -17,7 +17,13 @@ public interface NoteReader {
     /** Empty strings mean "not shown". Dates are ISO (YYYY-MM-DD) or empty. */
     record Reading(String reply, String fullName, String title, String company, String city, String linkedinUrl,
                    String topic, String channel, String occurredOn, String summary, String outcome, String nextStep,
-                   String nextStepDue, boolean newConnection) {}
+                   String nextStepDue, boolean newConnection, Photo photo) {}
+
+    /**
+     * Where the person's own profile photo is in one of the screenshots: the image's index and a box as
+     * fractions (0 to 1) of that image's width and height. Null when no photo of them is shown.
+     */
+    record Photo(int image, double x, double y, double width, double height) {}
 
     boolean enabled();
 

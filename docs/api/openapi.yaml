@@ -212,6 +212,35 @@ paths:
       parameters: [ { $ref: '#/components/parameters/Id' } ]
       responses:
         '200': { description: Done }
+  /connections/{id}/photo:
+    get:
+      tags: [contacts]
+      operationId: connectionPhoto
+      summary: The connection's photo (ADR-0014). Link with ?v=photoVersion.
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: The photo, content: { image/jpeg: { schema: { type: string, format: binary } } } }
+        '404': { description: No photo }
+    put:
+      tags: [contacts]
+      operationId: setConnectionPhoto
+      summary: Set or replace the photo; stored as a JPEG of at most 256 by 256 pixels
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { type: object, required: [file], properties: { file: { type: string, format: binary, description: 'JPEG or PNG, at most 2 MB' } } }
+      responses:
+        '200': { description: The connection, with photoVersion }
+        '422': { description: Not an image, or too large }
+    delete:
+      tags: [contacts]
+      operationId: removeConnectionPhoto
+      summary: Remove the photo
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: The connection, without photoVersion }
   /connections/{id}/contact:
     post:
       tags: [contacts]
@@ -356,7 +385,7 @@ paths:
                   description: PNG, JPEG, WebP or GIF, at most 5 MB each
                   items: { type: string, format: binary }
       responses:
-        '200': { description: '{ reading: { reply, fullName, title, company, city, linkedinUrl, topic, channel, occurredOn, summary, outcome, nextStep, nextStepDue, newConnection }, conversations: Conversation[], connections: Connection[], accounts: [{ id, name, parentCompany, city, websiteDomain }], contactId, suggestion: UPDATE_CONVERSATION | START_CONVERSATION | ADD_CONNECTION }' }
+        '200': { description: '{ reading: { reply, fullName, title, company, city, linkedinUrl, topic, channel, occurredOn, summary, outcome, nextStep, nextStepDue, newConnection, photo: { image, x, y, width, height } | null }, conversations: Conversation[], connections: Connection[], accounts: [{ id, name, parentCompany, city, websiteDomain }], contactId, suggestion: UPDATE_CONVERSATION | START_CONVERSATION | ADD_CONNECTION }' }
         '400': { description: 'No text or screenshot, too long, or a file that is not a supported image' }
         '403': { description: 'Not a pipeline role' }
         '422': { description: 'The assistant is switched off (no ANTHROPIC_API_KEY)' }

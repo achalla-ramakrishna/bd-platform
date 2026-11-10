@@ -8,6 +8,7 @@ import {
 import { formatDate } from '../lib/format';
 import { AccountPicker } from './AccountPicker';
 import { today } from './ConversationsPage';
+import { PersonPhoto } from './PersonPhoto';
 
 export function StrengthPill({ strength }: { strength: Strength }) {
   const cls = strength === 'CLOSE' ? 'good' : strength === 'KNOW_WELL' ? 'accent' : '';
@@ -98,8 +99,9 @@ export function ConnectionTable({ items, loading, empty, hideAccount }: { items:
           {!loading && items.length === 0 && <tr><td colSpan={5} className="muted">{empty}</td></tr>}
           {items.map((c) => (
             <tr key={c.id} className="clickable" onClick={() => navigate(`/connections/${c.id}`)}>
-              <td><Link to={`/connections/${c.id}`} onClick={(e) => e.stopPropagation()}>{c.fullName}</Link>
-                {c.currentRole && <span className="sub">{c.currentRole}</span>}</td>
+              <td><span className="with-photo"><PersonPhoto c={c} size={32} /><span>
+                <Link to={`/connections/${c.id}`} onClick={(e) => e.stopPropagation()}>{c.fullName}</Link>
+                {c.currentRole && <span className="sub">{c.currentRole}</span>}</span></span></td>
               <td>{c.currentCompany ?? '—'}{hideAccount && c.accountLink && <span className="sub">{ACCOUNT_LINK_LABELS[c.accountLink]}</span>}</td>
               {!hideAccount && (
                 <td>{c.accountId

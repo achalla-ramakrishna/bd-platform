@@ -29,6 +29,7 @@ explains them.
 | accounts | V8 | `account` gains `employee_count`, `open_roles`, `open_roles_as_of`, `open_roles_source` (backlog item 1) |
 | engagement | V10 | `conversation`; `activity.conversation_id` links updates to their conversation |
 | contacts | V11 | `connection`, `connection_knower` (who in the team knows each person, how well, since when); replaces the unused `warm_path` |
+| contacts | V15 | `connection_photo`: one small JPEG per connection (ADR-0014), removed with the connection |
 | improvements | V12 | `improvement` (status, build-queue rank, decision and delivery) |
 | engagement | V13 | `bd_event`, `bd_event_attendee`; `conversation.event_id` and `connection.met_at_event_id` record who we met where |
 | engagement | V14 | `interview` (leader interviews and their stage dates) |

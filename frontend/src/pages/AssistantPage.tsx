@@ -7,6 +7,8 @@ import {
 } from '../lib/api';
 import { formatDate } from '../lib/format';
 import { today } from './ConversationsPage';
+import { PhotoChooser } from './PersonPhoto';
+import { photoForm } from '../lib/photo';
 
 /*
  * The BD assistant (ADR-0013). People type what they did, or paste screenshots of a conversation they had
@@ -22,7 +24,7 @@ const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 type Shot = { file: File; url: string };
 type Message =
   | { id: number; from: 'you'; text: string; shots: Shot[] }
-  | { id: number; from: 'ai'; answer: AssistantAnswer }
+  | { id: number; from: 'ai'; answer: AssistantAnswer; shots: Shot[] }
   | { id: number; from: 'error'; text: string };
 
 let nextId = 1;
@@ -81,7 +83,7 @@ export function AssistantPage({ me }: { me: Me }) {
       m.shots.forEach((s) => form.append('images', s.file, s.file.name || 'screenshot.png'));
       return api.postForm<AssistantAnswer>('/assistant/read', form);
     },
-    onSuccess: (answer) => setMessages((ms) => [...ms, { id: nextId++, from: 'ai', answer }]),
+    onSuccess: (answer, sent) => setMessages((ms) => [...ms, { id: nextId++, from: 'ai', answer, shots: sent.shots }]),
     onError: (e) => setMessages((ms) => [...ms, { id: nextId++, from: 'error', text: errorText(e) }]),
   });
 
@@ -150,7 +152,7 @@ export function AssistantPage({ me }: { me: Me }) {
           ) : m.from === 'error' ? (
             <div key={m.id} className="bubble ai"><div className="notice bad" role="alert">{m.text}</div></div>
           ) : (
-            <div key={m.id} className="bubble ai"><Proposals answer={m.answer} editable={editable} /></div>
+            <div key={m.id} className="bubble ai"><Proposals answer={m.answer} shots={m.shots} editable={editable} /></div>
           )
         ))}
         {send.isPending && <div className="bubble ai muted">Reading…</div>}
@@ -199,7 +201,7 @@ function errorText(e: unknown): string {
 type Tab = 'UPDATE_CONVERSATION' | 'START_CONVERSATION' | 'CONNECTION';
 
 /** The assistant's reply: what it read, and one editable card per thing it can do. */
-export function Proposals({ answer, editable }: { answer: AssistantAnswer; editable: boolean }) {
+export function Proposals({ answer, shots = [], editable }: { answer: AssistantAnswer; shots?: { url: string }[]; editable: boolean }) {
   const r = answer.reading;
   const hasConversation = answer.conversations.length > 0;
   const [tab, setTab] = useState<Tab>(answer.suggestion === 'ADD_CONNECTION' ? 'CONNECTION' : answer.suggestion);
@@ -228,7 +230,7 @@ export function Proposals({ answer, editable }: { answer: AssistantAnswer; edita
           {/* Keep every card mounted so edits and "done" states survive switching tabs. */}
           <div hidden={tab !== 'UPDATE_CONVERSATION'}>{hasConversation && <UpdateConversation answer={answer} />}</div>
           <div hidden={tab !== 'START_CONVERSATION'}><StartConversation answer={answer} /></div>
-          <div hidden={tab !== 'CONNECTION'}><ConnectionCard answer={answer} /></div>
+          <div hidden={tab !== 'CONNECTION'}><ConnectionCard answer={answer} shots={shots} /></div>
         </>
       )}
     </>
@@ -379,7 +381,7 @@ function StartConversation({ answer }: { answer: AssistantAnswer }) {
   );
 }
 
-function ConnectionCard({ answer }: { answer: AssistantAnswer }) {
+function ConnectionCard({ answer, shots }: { answer: AssistantAnswer; shots: { url: string }[] }) {
   const refresh = useRefresh();
   const r = answer.reading;
   const existing = answer.connections;
@@ -392,9 +394,21 @@ function ConnectionCard({ answer }: { answer: AssistantAnswer }) {
   const [note, setNote] = useState(r.summary);
   const [strength, setStrength] = useState('ACQUAINTANCE');
   const [linkAccount, setLinkAccount] = useState(account !== null);
+  const [photo, setPhoto] = useState<Blob | null>(null);
 
   const save = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
+      const saved = await saveConnection();
+      if (!photo) return { connection: saved, photoProblem: null };
+      try {
+        return { connection: await api.putForm<Connection>(`/connections/${saved.id}/photo`, photoForm(photo)), photoProblem: null };
+      } catch (e) {
+        return { connection: saved, photoProblem: errorText(e) };
+      }
+    },
+    onSuccess: refresh,
+  });
+  function saveConnection(): Promise<Connection> {
       const dated = note.trim() ? `${r.occurredOn || today()}: ${note.trim()}` : '';
       if (chosen) {
         return api.put<Connection>(`/connections/${chosen.id}`, {
@@ -418,10 +432,16 @@ function ConnectionCard({ answer }: { answer: AssistantAnswer }) {
         },
         knowing: { strength, howKnown: CHANNEL_LABELS[r.channel] ?? '', connectedOn: r.occurredOn || today() },
       });
-    },
-    onSuccess: refresh,
-  });
-  if (save.data) return <Done to={`/connections/${save.data.id}`} label={`Open ${save.data.fullName}`} />;
+  }
+  if (save.data) {
+    const c = save.data.connection;
+    return (
+      <>
+        <Done to={`/connections/${c.id}`} label={`Open ${c.fullName}`} />
+        {save.data.photoProblem && <div className="notice warn">The photo was not saved: {save.data.photoProblem}</div>}
+      </>
+    );
+  }
   const field = (key: keyof typeof person, label: string) => (
     <label>{label}
       <input id={`as-conn-${key}`} value={person[key]} onChange={(e) => setPerson({ ...person, [key]: e.target.value })} />
@@ -453,6 +473,8 @@ function ConnectionCard({ answer }: { answer: AssistantAnswer }) {
           </label>
         )}
       </div>
+      <PhotoChooser shots={shots} box={r.photo} defaultUse={!chosen?.photoVersion}
+        label={chosen?.photoVersion ? 'Replace their photo with this one' : 'Save this photo with them'} onChange={setPhoto} />
       {account && !chosen?.accountId && (
         <label className="check">
           <input type="checkbox" checked={linkAccount} onChange={(e) => setLinkAccount(e.target.checked)} />

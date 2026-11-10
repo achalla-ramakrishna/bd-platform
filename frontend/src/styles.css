@@ -406,3 +406,20 @@ button.link { all: unset; color: var(--accent); cursor: pointer; text-decoration
 .composer textarea { width: 100%; box-sizing: border-box; border: 0; resize: vertical; background: transparent; color: var(--fg); font: inherit; outline: none; }
 .composer .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 6px; }
 @media (max-width: 760px) { .bubble.you { max-width: 100%; } }
+/* Buttons and button-styled links side by side in a title row line up exactly. */
+.title-row .actions > button, .title-row .actions > .button { margin: 0; line-height: 1.3; }
+
+/* Connection photos (ADR-0014). */
+.person-photo { border-radius: 50%; object-fit: cover; flex: none; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent-soft); color: var(--accent); font-weight: 700; border: 1px solid var(--line); }
+.with-photo { display: inline-flex; align-items: center; gap: 10px; }
+.person-head { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+.person-head h1 { margin: 0; }
+.photo-actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-top: 4px; }
+.photo-chooser { margin-top: 12px; }
+.photo-row { display: flex; align-items: center; gap: 12px; }
+.photo-row label.check { margin: 0; }
+.crop-area { position: relative; max-width: 640px; margin-top: 6px; cursor: crosshair; touch-action: none; user-select: none;
+  border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.crop-area img { display: block; width: 100%; height: 100%; pointer-events: none; }
+.crop-square { position: absolute; border: 2px solid var(--accent); border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35); pointer-events: none; }

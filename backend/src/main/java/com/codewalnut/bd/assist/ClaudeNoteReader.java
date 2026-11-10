@@ -39,7 +39,7 @@ class ClaudeNoteReader implements NoteReader {
         - topic: a short topic for the conversation, under 12 words.
         - channel: exactly one of the channel codes listed below; LINKEDIN_MESSAGE for LinkedIn chats, \
         EMAIL for email, MEETING for an in-person or video meeting, CALL for a phone call, EVENT if met at \
-        an event, LINKEDIN_CONNECTION if they accepted or sent a connection request.
+        an event, LINKEDIN_CONNECTION if a connection request was sent or accepted.
         - occurredOn: the date of the latest message or touch as YYYY-MM-DD. Today is given below; resolve \
         "yesterday" or weekday names against it. Empty if not shown.
         - summary: what happened, in one or two sentences, written for the record.
@@ -49,8 +49,18 @@ class ClaudeNoteReader implements NoteReader {
         - nextStep: what the team member should do next, as a short instruction. Empty if nothing is due.
         - nextStepDue: the date for the next step as YYYY-MM-DD, resolved against today. If a next step \
         has no date, use three working days after today.
-        - newConnection: true if the material shows a new LinkedIn connection or a first meeting with \
-        this person.
+        - newConnection: true if the material shows an accepted LinkedIn connection or a first meeting \
+        with this person. A LinkedIn invitation that was sent but not yet accepted ("Invitation sent", \
+        "Pending") is NOT a new connection: use channel LINKEDIN_CONNECTION, outcome NO_REPLY, a next step \
+        to follow up once they accept, and say in the reply that they can add the connection when it is \
+        accepted.
+        - photoImage, photoX, photoY, photoWidth, photoHeight: if a screenshot shows the other person's own \
+        profile photo (a picture of them, usually round, next to or above their name), give the 0-based \
+        index of that screenshot in the order given and the photo's bounding box as fractions of that \
+        screenshot's width and height (photoX and photoY are the top-left corner). Use the largest clear \
+        photo of them. If no photo of this person is shown, or only initials, a logo or a placeholder \
+        silhouette, set photoImage to -1 and the box to 0. Never pick a photo of the team member or anyone \
+        else.
         """;
 
     record NoteFields(
@@ -67,7 +77,12 @@ class ClaudeNoteReader implements NoteReader {
         @JsonPropertyDescription("One outcome code") String outcome,
         @JsonPropertyDescription("Next step for the team member") String nextStep,
         @JsonPropertyDescription("Next step date, YYYY-MM-DD") String nextStepDue,
-        @JsonPropertyDescription("A new connection or first meeting") boolean newConnection) {}
+        @JsonPropertyDescription("An accepted connection or first meeting") boolean newConnection,
+        @JsonPropertyDescription("0-based screenshot index showing their profile photo, or -1") int photoImage,
+        @JsonPropertyDescription("Photo box left edge, fraction of image width") double photoX,
+        @JsonPropertyDescription("Photo box top edge, fraction of image height") double photoY,
+        @JsonPropertyDescription("Photo box width, fraction of image width") double photoWidth,
+        @JsonPropertyDescription("Photo box height, fraction of image height") double photoHeight) {}
 
     private final AnthropicClient client;
 
@@ -121,7 +136,27 @@ class ClaudeNoteReader implements NoteReader {
         }
         return new Reading(c(f.reply()), c(f.fullName()), c(f.title()), c(f.company()), c(f.city()), c(f.linkedinUrl()),
             c(f.topic()), code(f.channel(), request.channels(), "LINKEDIN_MESSAGE"), c(f.occurredOn()), c(f.summary()),
-            code(f.outcome(), request.outcomes(), "DONE"), c(f.nextStep()), c(f.nextStepDue()), f.newConnection());
+            code(f.outcome(), request.outcomes(), "DONE"), c(f.nextStep()), c(f.nextStepDue()), f.newConnection(),
+            photo(f, request.images().size()));
+    }
+
+    /** The photo box, if it names a screenshot that was sent and is a sensible size; otherwise null. */
+    static Photo photo(NoteFields f, int images) {
+        if (f.photoImage() < 0 || f.photoImage() >= images) {
+            return null;
+        }
+        double x = clamp(f.photoX());
+        double y = clamp(f.photoY());
+        double w = Math.min(clamp(f.photoWidth()), 1 - x);
+        double h = Math.min(clamp(f.photoHeight()), 1 - y);
+        if (w < 0.01 || h < 0.01 || w > 0.9 || h > 0.9) {
+            return null;
+        }
+        return new Photo(f.photoImage(), x, y, w, h);
+    }
+
+    private static double clamp(double v) {
+        return Double.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0;
     }
 
     private static String c(String s) {

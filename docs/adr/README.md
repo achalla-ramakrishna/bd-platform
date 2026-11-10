@@ -21,5 +21,6 @@ Status values: **Proposed** (under review), **Accepted**, **Superseded by ADR-nn
 | [0011](0011-find-gccs.md) | Find GCCs with web search; people choose what to add | Proposed |
 | [0012](0012-research-fit-rating.md) | Research fit rating counts towards the fit score | Proposed |
 | [0013](0013-ai-assistant-for-logging.md) | An AI assistant logs conversations and connections from notes and screenshots | Proposed |
+| [0014](0014-connection-photos.md) | Connection photos, cropped from the team member's own screenshots | Proposed |
 
 Template: Context → Decision → Alternatives considered → Consequences.

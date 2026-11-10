@@ -87,7 +87,7 @@ class AssistantIntegrationTest {
     NoteReader.Reading reading(String name, String company) {
         return new NoteReader.Reading("Call with " + name, name, "Engineering Director", company, "Bengaluru", "",
             "AI pod", "CALL", TODAY.toString(), "Back on Friday; wants a show and tell", "MEETING_BOOKED",
-            "Book the show and tell", TODAY.plusDays(3).toString(), false);
+            "Book the show and tell", TODAY.plusDays(3).toString(), false, null);
     }
 
     @Test

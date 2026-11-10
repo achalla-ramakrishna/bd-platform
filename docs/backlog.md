@@ -167,6 +167,11 @@ A chat where people type what they did or paste screenshots of a thread
 - Up to 4 screenshots per message, pasted, dropped or chosen. Nothing from the
   chat is stored; the app reads nothing from LinkedIn.
 - Linked from the Conversations and Connections pages.
+- Photos (ADR-0014): when a screenshot shows the person's profile photo, the
+  card crops it (drag to adjust) and saves it with the connection if ticked.
+  Photos can also be added, changed or removed on the connection page.
+- A LinkedIn invitation that is not yet accepted is logged as a conversation
+  (connection request, no reply yet); add the connection once they accept.
 
 ## Outside the platform
 

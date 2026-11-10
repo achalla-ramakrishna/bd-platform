@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ACCOUNT_LINK_LABELS, ApiError, api, canEditPipeline, type Connection, type Me } from '../lib/api';
@@ -6,6 +6,8 @@ import { formatDate } from '../lib/format';
 import { useReference } from './PipelinePage';
 import { KnowingFields, LinkFields, PersonFields, StrengthPill } from './ConnectionsPage';
 import { NewConversation, today } from './ConversationsPage';
+import { PersonPhoto } from './PersonPhoto';
+import { centreSquare, cropToBlob, loadImage, photoForm } from '../lib/photo';
 
 /** One connection: who knows them, the account they lead to, and next moves (backlog item 4). */
 export function ConnectionPage({ me }: { me: Me }) {
@@ -30,7 +32,13 @@ export function ConnectionPage({ me }: { me: Me }) {
   return (
     <>
       <p><Link to="/connections">← Connections</Link></p>
-      <h1>{c.fullName}</h1>
+      <div className="person-head">
+        <PersonPhoto c={c} size={72} />
+        <div>
+          <h1>{c.fullName}</h1>
+          {editable && <PhotoActions c={c} onDone={done} />}
+        </div>
+      </div>
       <p className="lead">
         {[c.currentRole, c.currentCompany, c.city].filter(Boolean).join(' · ') || 'No role or company yet'}
         {c.linkedinUrl && <> · <a href={c.linkedinUrl} target="_blank" rel="noreferrer">LinkedIn profile</a></>}
@@ -171,5 +179,38 @@ function MyKnowing({ c, me, onDone }: { c: Connection; me: Me; onDone: (c?: Conn
         <button type="button" className="secondary" onClick={() => onDone()}>Cancel</button>
       </div>
     </form>
+  );
+}
+
+/** Add, change or remove a connection's photo by hand: the centre square of a picture you choose. */
+function PhotoActions({ c, onDone }: { c: Connection; onDone: (c: Connection) => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const upload = useMutation({
+    mutationFn: async (file: File) => {
+      const url = URL.createObjectURL(file);
+      try {
+        const img = await loadImage(url);
+        const blob = await cropToBlob(img, centreSquare(img.naturalWidth, img.naturalHeight));
+        return api.putForm<Connection>(`/connections/${c.id}/photo`, photoForm(blob));
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    },
+    onSuccess: onDone,
+  });
+  const remove = useMutation({ mutationFn: () => api.del<Connection>(`/connections/${c.id}/photo`), onSuccess: onDone });
+  const error = upload.error ?? remove.error;
+  return (
+    <div className="photo-actions small">
+      <button type="button" className="link-plain" disabled={upload.isPending} onClick={() => input.current?.click()}>
+        {upload.isPending ? 'Saving photo…' : c.photoVersion ? 'Change photo' : 'Add photo'}
+      </button>
+      {c.photoVersion && (
+        <button type="button" className="link-plain" disabled={remove.isPending} onClick={() => remove.mutate()}>Remove photo</button>
+      )}
+      <input ref={input} type="file" accept="image/png,image/jpeg,image/webp" hidden aria-label="Choose a photo"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) upload.mutate(f); e.target.value = ''; }} />
+      {error && <span role="alert" style={{ color: 'var(--bad)' }}>{error instanceof ApiError && error.problems.length ? error.problems.join(' ') : error.message}</span>}
+    </div>
   );
 }
