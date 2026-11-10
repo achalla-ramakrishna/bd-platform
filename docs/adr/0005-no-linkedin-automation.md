@@ -34,3 +34,6 @@ partners, which a custom application is not (ADR-0001).
   the daily task list.
 - Contact data comes from people, uploads or licensed providers, with its
   source recorded (FR-CON-06).
+- The same applies to job boards such as Naukri (added 2026-11-10): open-role
+  counts and hiring signals are gathered by people or from public pages, with
+  the source recorded, never by bots or scraping.

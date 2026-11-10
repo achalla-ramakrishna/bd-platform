@@ -46,6 +46,12 @@ current clients, past clients and target accounts.
 | owner_email | Yes | CodeWalnut email of the account owner |
 | source | Yes | Where the record came from, for example `existing client`, `referral`, `Nasscom report` |
 | notes | No | |
+| employee_count | No | Exact headcount of the centre; also sets the band. Blank keeps the stored value |
+| open_roles | No | Open engineering roles counted on a careers page or job board. Blank keeps the stored value |
+| open_roles_as_of | No | Date the roles were counted, `YYYY-MM-DD`; defaults to the upload date |
+| open_roles_source | No | Where they were counted, for example a careers-page link |
+
+The last four columns are optional and can be left out of the file.
 
 ## 2-contacts.csv
 

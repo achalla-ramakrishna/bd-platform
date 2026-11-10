@@ -24,7 +24,8 @@ public class FitScorer {
     public record Fit(int score, List<String> reasons) {}
 
     /** The inputs for one account; kept separate so the rules can be unit tested. */
-    record Inputs(String headcountBand, List<String> techStack, String industry, int buyingSignals, String researchFit,
+    record Inputs(String headcountBand, Integer yearEstablished, List<String> techStack, String industry,
+                  int buyingSignals, String researchFit,
                   boolean decisionContact, boolean anyContact, boolean positiveEngagement, boolean anyEngagement) {}
 
     private static final Set<String> DECISION_PERSONAS = Set.of("CENTRE_HEAD", "ENGINEERING_LEADER", "PRODUCT_LEADER");
@@ -81,13 +82,16 @@ public class FitScorer {
                 """).param("ids", accountIds)
             .query((rs, n) -> engagement.put(rs.getLong(1), rs.getBoolean(2))).list();
 
-        jdbc.sql("SELECT id, headcount_band, tech_stack, industry FROM account WHERE id IN (:ids)")
+        jdbc.sql("SELECT id, COALESCE(headcount_band, CASE WHEN employee_count IS NULL THEN NULL WHEN employee_count < 500 THEN '<500' "
+                + "WHEN employee_count < 2000 THEN '500-2000' WHEN employee_count < 5000 THEN '2000-5000' ELSE '5000+' END), "
+                + "tech_stack, industry, year_established FROM account WHERE id IN (:ids)")
             .param("ids", accountIds)
             .query((rs, n) -> {
                 long id = rs.getLong(1);
                 List<String> tech = rs.getString(3) == null ? List.of() : List.of(json.readValue(rs.getString(3), String[].class));
                 Set<String> p = personas.getOrDefault(id, Set.of());
-                Inputs in = new Inputs(rs.getString(2), tech, rs.getString(4), signals.getOrDefault(id, 0),
+                Inputs in = new Inputs(rs.getString(2), (Integer) rs.getObject(5, Integer.class), tech, rs.getString(4),
+                    signals.getOrDefault(id, 0),
                     ratings.get(id), p.stream().anyMatch(DECISION_PERSONAS::contains), !p.isEmpty(),
                     engagement.getOrDefault(id, false), engagement.containsKey(id));
                 fits.put(id, rate(in, ourSkills, clientIndustries, weights));
@@ -107,6 +111,13 @@ public class FitScorer {
         } else {
             score += w.sizeUnknown();
             reasons.add("Size not recorded (+" + w.sizeUnknown() + ")");
+        }
+
+        if (in.yearEstablished() != null && in.yearEstablished() >= java.time.Year.now().getValue() - w.recentYears()) {
+            score += w.recentlyFormed();
+            reasons.add("Formed in " + in.yearEstablished() + ", in the last " + w.recentYears() + " years (+" + w.recentlyFormed() + ")");
+        } else if (in.yearEstablished() == null) {
+            reasons.add("Year formed not recorded");
         }
 
         List<String> matches = in.techStack().stream().filter(t -> ourSkills.contains(t.toLowerCase(Locale.ROOT))).toList();

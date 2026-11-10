@@ -21,7 +21,7 @@ class AccountsImporter implements EntityImporter {
 
     static final Map<String, String> RELATIONSHIPS = Map.of(
         "client", "CLIENT", "past_client", "PAST_CLIENT", "prospect", "PROSPECT");
-    static final Set<String> HEADCOUNT_BANDS = Set.of("<500", "500-2000", "2000-5000", "5000+");
+    static final Set<String> HEADCOUNT_BANDS = AccountRegistry.HEADCOUNT_BANDS;
 
     private final AccountRegistry accounts;
     private final UserDirectory users;
@@ -42,7 +42,7 @@ class AccountsImporter implements EntityImporter {
 
     private record Row(AccountKey key, String name, String parent, String hq, String city, String industry,
                        String band, Integer year, List<String> tech, String relationship, String ownerEmail,
-                       String source, String notes) {}
+                       String source, String notes, AccountRegistry.Profile profile) {}
 
     @Override
     public ImportPlan prepare(List<SpreadsheetReader.SheetRow> sheetRows, ImportErrors errors) {
@@ -72,6 +72,10 @@ class AccountsImporter implements EntityImporter {
             }
             String source = r.text("source", true, 200);
             String notes = r.text("notes", false, 4000);
+            // Optional columns (backlog item 1). Blank cells keep what is already stored.
+            var profile = new AccountRegistry.Profile(null, null, r.integer("employee_count", false, 0, 1_000_000),
+                r.integer("open_roles", false, 0, 100_000), r.date("open_roles_as_of", false),
+                r.text("open_roles_source", false, 500));
 
             AccountKey key = null;
             if (rawDomain != null && city != null) {
@@ -86,7 +90,7 @@ class AccountsImporter implements EntityImporter {
             }
             if (r.ok()) {
                 rows.add(new Row(key, name, parent, hq, city, industry, band == null ? null : band.replace(" ", ""),
-                    year, tech, relationship, owner, source, notes));
+                    year, tech, relationship, owner, source, notes, profile));
                 if (existing.containsKey(key)) {
                     updates++;
                 } else {
@@ -100,6 +104,9 @@ class AccountsImporter implements EntityImporter {
                 var result = accounts.upsert(new AccountRegistry.AccountData(row.name(), row.parent(), row.hq(),
                     row.city(), row.key().domain(), row.industry(), row.band(), row.year(), row.tech(),
                     row.relationship(), ownerId, row.source(), row.notes()));
+                if (!row.profile().isEmpty()) {
+                    accounts.updateProfile(result.id(), row.profile(), true);
+                }
                 audit.record("account", result.id(), AuditLog.Action.IMPORT,
                     Map.of("created", result.created()), userId);
             }

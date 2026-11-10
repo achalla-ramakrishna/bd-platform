@@ -1,1 +1,1 @@
-account_name,parent_company,parent_hq_country,city,website_domain,industry,headcount_band,year_established,tech_stack,relationship,owner_email,source,notes
+account_name,parent_company,parent_hq_country,city,website_domain,industry,headcount_band,year_established,tech_stack,relationship,owner_email,source,notes,employee_count,open_roles,open_roles_as_of,open_roles_source

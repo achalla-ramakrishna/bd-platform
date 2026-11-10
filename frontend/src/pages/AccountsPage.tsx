@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { api, canEditPipeline, type Account, type Me, type Page } from '../lib/api';
+import { api, accountSize, canEditPipeline, type Account, type AccountFacets, type Me, type Page } from '../lib/api';
 import { UploadResearch } from './UploadResearch';
 import { CompanyLogo } from './CompanyLogo';
 import { formatDate, humanise } from '../lib/format';
@@ -22,14 +22,29 @@ export function AccountsPage({ me }: { me: Me }) {
   const [relationship, setRelationship] = useState('');
   const [sort, setSort] = useState('fit');
   const [researched, setResearched] = useState('');
+  const [city, setCity] = useState('');
+  const [formed, setFormed] = useState('');
+  const [sizeBand, setSizeBand] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [tech, setTech] = useState('');
   const params = new URLSearchParams({ size: '1000', sort });
   if (q) params.set('q', q);
   if (relationship) params.set('relationship', relationship);
   if (researched) params.set('researched', researched);
+  if (city) params.set('city', city);
+  if (formed) params.set('formedSince', String(new Date().getFullYear() - Number(formed)));
+  if (sizeBand) params.set('sizeBand', sizeBand);
+  if (industry) params.set('industry', industry);
+  if (tech) params.set('tech', tech);
   const accounts = useQuery({
-    queryKey: ['accounts', q, relationship, sort, researched],
+    queryKey: ['accounts', params.toString()],
     queryFn: () => api.get<Page<Account>>(`/accounts?${params}`),
   });
+  const facets = useQuery({ queryKey: ['account-facets'], queryFn: () => api.get<AccountFacets>('/accounts/facets') });
+  const filtered = !!(q || relationship || researched || city || formed || sizeBand || industry || tech);
+  const clear = () => {
+    setQ(''); setRelationship(''); setResearched(''); setCity(''); setFormed(''); setSizeBand(''); setIndustry(''); setTech('');
+  };
 
   return (
     <>
@@ -58,11 +73,40 @@ export function AccountsPage({ me }: { me: Me }) {
           <option value="true">Research ready</option>
           <option value="false">No research yet</option>
         </select>
+        <select id="account-city" aria-label="City" value={city} onChange={(e) => setCity(e.target.value)}>
+          <option value="">All cities</option>
+          {facets.data?.cities.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select id="account-formed" aria-label="Year formed" value={formed} onChange={(e) => setFormed(e.target.value)}>
+          <option value="">Formed any year</option>
+          <option value="2">Formed in the last 2 years</option>
+          <option value="5">Formed in the last 5 years</option>
+        </select>
+        <select id="account-size" aria-label="Size" value={sizeBand} onChange={(e) => setSizeBand(e.target.value)}>
+          <option value="">Any size</option>
+          <option value="<500">Micro: under 500</option>
+          <option value="500-2000">500 to 2,000</option>
+          <option value="2000-5000">2,000 to 5,000</option>
+          <option value="5000+">5,000 and more</option>
+        </select>
+        <select id="account-industry" aria-label="Industry" value={industry} onChange={(e) => setIndustry(e.target.value)}>
+          <option value="">All industries</option>
+          {facets.data?.industries.map((i) => <option key={i} value={i}>{i}</option>)}
+        </select>
+        <select id="account-tech" aria-label="Tech stack" value={tech} onChange={(e) => setTech(e.target.value)}>
+          <option value="">Any tech stack</option>
+          <option value="Java">Uses Java</option>
+          <option value="React">Uses React</option>
+        </select>
         <select id="account-sort" aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value)}>
           <option value="fit">Best fit first</option>
           <option value="fit_asc">Lowest fit first</option>
+          <option value="newest">Newest GCC first</option>
+          <option value="smallest">Smallest first</option>
+          <option value="open_roles">Most open roles</option>
           <option value="name">Name</option>
         </select>
+        {filtered && <button type="button" className="secondary" onClick={clear}>Clear filters</button>}
         {accounts.data && <span className="muted">{accounts.data.total} accounts{accounts.data.total > accounts.data.items.length ? `, showing ${accounts.data.items.length}` : ''}</span>}
       </div>
       <div className="table-wrap">
@@ -78,6 +122,15 @@ export function AccountsPage({ me }: { me: Me }) {
                 <button type="button" className="th-sort" onClick={() => setSort('name')}>Account{sort === 'name' ? ' ↑' : ''}</button>
               </th>
               <th>City</th>
+              <th className="num" aria-sort={sort === 'newest' ? 'descending' : 'none'}>
+                <button type="button" className="th-sort" onClick={() => setSort('newest')}>Formed{sort === 'newest' ? ' ↓' : ''}</button>
+              </th>
+              <th className="num" aria-sort={sort === 'smallest' ? 'ascending' : 'none'}>
+                <button type="button" className="th-sort" onClick={() => setSort('smallest')}>Employees{sort === 'smallest' ? ' ↑' : ''}</button>
+              </th>
+              <th className="num" aria-sort={sort === 'open_roles' ? 'descending' : 'none'}>
+                <button type="button" className="th-sort" onClick={() => setSort('open_roles')}>Open roles{sort === 'open_roles' ? ' ↓' : ''}</button>
+              </th>
               <th>Industry</th>
               <th>Relationship</th>
               <th className="num">Engineers deployed</th>
@@ -86,7 +139,7 @@ export function AccountsPage({ me }: { me: Me }) {
           </thead>
           <tbody>
             {accounts.data?.items.length === 0 && (
-              <tr><td colSpan={7} className="muted">No accounts match. Upload accounts on the Uploads page.</td></tr>
+              <tr><td colSpan={10} className="muted">No accounts match{filtered ? ' these filters' : '. Upload accounts on the Uploads page'}.</td></tr>
             )}
             {accounts.data?.items.map((a) => (
               <tr key={a.id} className={a.researchedAt ? 'researched' : undefined}>
@@ -104,6 +157,9 @@ export function AccountsPage({ me }: { me: Me }) {
                   </div>
                 </td>
                 <td>{a.city}</td>
+                <td className="num">{a.yearEstablished ?? '—'}</td>
+                <td className="num">{accountSize(a)}</td>
+                <td className="num" title={a.openRolesAsOf ? `Counted ${formatDate(a.openRolesAsOf)}` : undefined}>{a.openRoles ?? '—'}</td>
                 <td>{a.industry ?? '—'}</td>
                 <td>{relationshipPill(a.relationship)}</td>
                 <td className="num">{a.activeEngineers}</td>

@@ -128,6 +128,9 @@ The token works only for `POST /api/v1/research/uploads`, and the upload is
 recorded as that user. Deploy logs show `Research upload token: ENABLED`.
 Each entry's `summary` may carry `"fitRating": "STRONG" | "MEDIUM" | "WEAK"`,
 which counts towards the account fit score (ADR-0012).
+An entry may also carry `"accountFacts": {"yearEstablished", "headcountBand",
+"employeeCount", "openRoles", "openRolesAsOf", "openRolesSource"}`; any field
+given updates the account, and missing ones keep what is stored.
 Delete the variable to switch it off; change it if it may have leaked.
 
 ### Troubleshooting

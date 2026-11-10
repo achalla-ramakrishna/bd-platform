@@ -25,6 +25,8 @@ explains them.
 | talent, contracts | V3 | `engineer`, `engineer_skill`, `contract`, `deployment` |
 | engagement, opportunities | V4 | `activity`, `opportunity`, `opportunity_stage_history`, `opportunity_requirement`, `submission`, `deployment_request` |
 | imports | V5 | `import_batch`, `import_row_error` |
+| assist | V6, V7 | `account_research`, `gcc_discovery` |
+| accounts | V8 | `account` gains `employee_count`, `open_roles`, `open_roles_as_of`, `open_roles_source` (backlog item 1) |
 
 ## Keys that carry business rules
 

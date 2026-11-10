@@ -38,15 +38,20 @@ class ReadController {
     record Account(long id, String name, String parentCompany, String parentHqCountry, String city,
                    String websiteDomain, String industry, String headcountBand, Integer yearEstablished,
                    List<String> techStack, String relationship, long ownerId, String ownerName, String source,
-                   String notes, int activeEngineers, java.time.Instant researchedAt, Integer fitScore,
+                   String notes, int activeEngineers, java.time.Instant researchedAt, Integer employeeCount,
+                   Integer openRoles, LocalDate openRolesAsOf, String openRolesSource, Integer fitScore,
                    List<String> fitReasons) {
 
         Account withFit(FitScorer.Fit fit) {
             return new Account(id, name, parentCompany, parentHqCountry, city, websiteDomain, industry, headcountBand,
                 yearEstablished, techStack, relationship, ownerId, ownerName, source, notes, activeEngineers,
-                researchedAt, fit == null ? null : fit.score(), fit == null ? List.of() : fit.reasons());
+                researchedAt, employeeCount, openRoles, openRolesAsOf, openRolesSource,
+                fit == null ? null : fit.score(), fit == null ? List.of() : fit.reasons());
         }
     }
+
+    /** Values for the filter lists on the Accounts page. */
+    record AccountFacets(List<String> cities, List<String> industries) {}
 
     record AccountPage(List<Account> items, int page, int size, long total) {}
 
@@ -107,9 +112,28 @@ class ReadController {
         return activities.list(accountId, contactId);
     }
 
+    /** The headcount band, taken from the exact count when no band is recorded. */
+    private static final String EFFECTIVE_BAND = """
+        COALESCE(a.headcount_band, CASE WHEN a.employee_count IS NULL THEN NULL WHEN a.employee_count < 500 THEN '<500'
+            WHEN a.employee_count < 2000 THEN '500-2000' WHEN a.employee_count < 5000 THEN '2000-5000' ELSE '5000+' END)""";
+
+    /** Size for sorting: the exact count, or the middle of the band. */
+    private static final String EFFECTIVE_SIZE = """
+        COALESCE(a.employee_count, CASE a.headcount_band WHEN '<500' THEN 250 WHEN '500-2000' THEN 1250
+            WHEN '2000-5000' THEN 3500 WHEN '5000+' THEN 8000 END)""";
+
+    @GetMapping("/accounts/facets")
+    AccountFacets accountFacets() {
+        return new AccountFacets(
+            jdbc.sql("SELECT DISTINCT city FROM account ORDER BY city").query(String.class).list(),
+            jdbc.sql("SELECT DISTINCT industry FROM account WHERE industry IS NOT NULL AND industry <> '' ORDER BY industry")
+                .query(String.class).list());
+    }
+
     private static final String ACCOUNT_SELECT = """
         SELECT a.id, a.name, p.name AS parent, p.hq_country, a.city, a.website_domain, a.industry, a.headcount_band,
-            a.year_established, a.tech_stack, a.relationship, a.owner_user_id, u.full_name AS owner, a.source, a.notes,
+            a.year_established, a.tech_stack, a.relationship, a.employee_count, a.open_roles, a.open_roles_as_of,
+            a.open_roles_source, a.owner_user_id, u.full_name AS owner, a.source, a.notes,
             (SELECT COUNT(DISTINCT d.engineer_id) FROM deployment d WHERE d.account_id = a.id AND d.status = 'ACTIVE')
                 AS active_engineers,
             (SELECT MAX(r.finished_at) FROM account_research r WHERE r.account_id = a.id AND r.status = 'DONE')
@@ -126,6 +150,10 @@ class ReadController {
                          @RequestParam(required = false) Long ownerId,
                          @RequestParam(required = false) String sort,
                          @RequestParam(required = false) Boolean researched,
+                         @RequestParam(required = false) Integer formedSince,
+                         @RequestParam(required = false) String sizeBand,
+                         @RequestParam(required = false) String industry,
+                         @RequestParam(required = false) String tech,
                          @RequestParam(defaultValue = "0") int page,
                          @RequestParam(defaultValue = "50") int size) {
         int limit = Math.clamp(size, 1, 1000);
@@ -152,6 +180,23 @@ class ReadController {
             where.append(" AND a.owner_user_id = :owner");
             params.put("owner", ownerId);
         }
+        if (formedSince != null) {
+            where.append(" AND a.year_established >= :since");
+            params.put("since", formedSince);
+        }
+        if (sizeBand != null && !sizeBand.isBlank()) {
+            where.append(" AND ").append(EFFECTIVE_BAND).append(" = :band");
+            params.put("band", sizeBand.replace(" ", ""));
+        }
+        if (industry != null && !industry.isBlank()) {
+            where.append(" AND a.industry LIKE :industry");
+            params.put("industry", "%" + industry.trim() + "%");
+        }
+        if (tech != null && !tech.isBlank()) {
+            // Whole entries only, so "java" does not match "javascript".
+            where.append(" AND LOWER(CAST(a.tech_stack AS CHAR)) LIKE :tech");
+            params.put("tech", "%\"" + tech.trim().toLowerCase(java.util.Locale.ROOT) + "\"%");
+        }
         long total = jdbc.sql("SELECT COUNT(*) FROM account a JOIN parent_company p ON p.id = a.parent_company_id" + where)
             .params(params).query(Long.class).single();
         if ("fit".equalsIgnoreCase(sort) || "fit_asc".equalsIgnoreCase(sort)) {
@@ -164,7 +209,13 @@ class ReadController {
                 .skip(offset).limit(limit).toList();
             return new AccountPage(items, Math.max(page, 0), limit, total);
         }
-        List<Account> items = jdbc.sql(ACCOUNT_SELECT + where + " ORDER BY p.name, a.city LIMIT :limit OFFSET :offset")
+        String order = switch (sort == null ? "" : sort.toLowerCase(java.util.Locale.ROOT)) {
+            case "newest" -> "a.year_established IS NULL, a.year_established DESC, p.name, a.city";
+            case "smallest" -> "(" + EFFECTIVE_SIZE + ") IS NULL, " + EFFECTIVE_SIZE + ", p.name, a.city";
+            case "open_roles" -> "a.open_roles IS NULL, a.open_roles DESC, p.name, a.city";
+            default -> "p.name, a.city";
+        };
+        List<Account> items = jdbc.sql(ACCOUNT_SELECT + where + " ORDER BY " + order + " LIMIT :limit OFFSET :offset")
             .params(params).param("limit", limit).param("offset", offset)
             .query((rs, n) -> account(rs)).list();
         Map<Long, FitScorer.Fit> fits = fit.score(items.stream().map(Account::id).toList());
@@ -307,7 +358,9 @@ class ReadController {
             rs.getString("headcount_band"), (Integer) rs.getObject("year_established", Integer.class), techStack,
             rs.getString("relationship"), rs.getLong("owner_user_id"), rs.getString("owner"), rs.getString("source"),
             rs.getString("notes"), rs.getInt("active_engineers"),
-            rs.getTimestamp("researched_at") == null ? null : rs.getTimestamp("researched_at").toInstant(), null, List.of());
+            rs.getTimestamp("researched_at") == null ? null : rs.getTimestamp("researched_at").toInstant(),
+            (Integer) rs.getObject("employee_count", Integer.class), (Integer) rs.getObject("open_roles", Integer.class),
+            rs.getObject("open_roles_as_of", LocalDate.class), rs.getString("open_roles_source"), null, List.of());
     }
 
     private static LocalDate date(ResultSet rs, int column) throws SQLException {

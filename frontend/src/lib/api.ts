@@ -137,8 +137,23 @@ export interface Account {
   notes?: string;
   activeEngineers: number;
   researchedAt: string | null;
+  employeeCount?: number | null;
+  openRoles?: number | null;
+  openRolesAsOf?: string | null;
+  openRolesSource?: string | null;
   fitScore?: number | null;
   fitReasons: string[];
+}
+
+export interface AccountFacets {
+  cities: string[];
+  industries: string[];
+}
+
+/** Size for display: the exact count when known, otherwise the band. */
+export function accountSize(a: Pick<Account, 'employeeCount' | 'headcountBand'>): string {
+  if (a.employeeCount !== null && a.employeeCount !== undefined) return a.employeeCount.toLocaleString('en-IN');
+  return a.headcountBand ?? '—';
 }
 
 export interface Page<T> {

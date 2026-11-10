@@ -10,6 +10,7 @@ import { AddFromLinkedIn } from './AddFromLinkedIn';
 import { AccountResearch } from './AccountResearch';
 import { useState } from 'react';
 import { CompanyLogo } from './CompanyLogo';
+import { AccountProfile } from './AccountProfile';
 
 export function AccountDetailPage({ me }: { me: Me }) {
   const { id } = useParams();
@@ -43,6 +44,7 @@ export function AccountDetailPage({ me }: { me: Me }) {
         <div className="card"><div className="label">Fit score</div><div className="value"><FitPill score={a.fitScore} reasons={a.fitReasons} /></div></div>
         <div className="card"><div className="label">Owner</div><div className="value" style={{ fontSize: 15 }}>{a.ownerName}</div></div>
       </div>
+      <AccountProfile account={a} editable={canEditPipeline(me)} />
       {a.techStack.length > 0 && <p className="muted">Tech stack: {a.techStack.join(', ')}</p>}
       {a.fitReasons.length > 0 && (
         <details className="fit-reasons">

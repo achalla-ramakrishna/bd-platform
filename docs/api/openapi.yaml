@@ -128,7 +128,11 @@ paths:
         - { name: city, in: query, schema: { type: string } }
         - { name: ownerId, in: query, schema: { type: integer, format: int64 } }
         - { name: researched, in: query, schema: { type: boolean }, description: 'Only accounts with (true) or without (false) finished research' }
-        - { name: sort, in: query, schema: { type: string, enum: [name, fit, fit_asc], default: name }, description: 'fit = highest fit score first (FR-ACC-04); fit_asc = lowest first' }
+        - { name: formedSince, in: query, schema: { type: integer }, description: 'Only centres formed in or after this year' }
+        - { name: sizeBand, in: query, schema: { type: string, enum: ['<500', '500-2000', '2000-5000', '5000+'] }, description: 'Recorded band, or the band of the exact employee count' }
+        - { name: industry, in: query, schema: { type: string }, description: 'Industry contains' }
+        - { name: tech, in: query, schema: { type: string }, description: 'Tech stack has this entry (whole entry, any case)' }
+        - { name: sort, in: query, schema: { type: string, enum: [name, fit, fit_asc, newest, smallest, open_roles], default: name }, description: 'fit = highest fit score first (FR-ACC-04); fit_asc = lowest first; newest = latest year formed first; smallest = fewest employees first; open_roles = most open roles first. Unknown values sort last.' }
         - $ref: '#/components/parameters/Page'
         - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 1000, default: 50 }, description: 'Up to 1000, so the whole list can be ranked on one page' }
       responses:
@@ -155,6 +159,37 @@ paths:
               schema: { $ref: '#/components/schemas/Account' }
         '409': { $ref: '#/components/responses/Problem' }
 
+  /accounts/facets:
+    get:
+      tags: [accounts]
+      operationId: accountFacets
+      summary: Cities and industries in use, for the filter lists
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cities: { type: array, items: { type: string } }
+                  industries: { type: array, items: { type: string } }
+  /accounts/{id}/profile:
+    put:
+      tags: [accounts]
+      operationId: updateAccountProfile
+      summary: Set year formed, size and open roles; null clears a field (pipeline roles)
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AccountProfile' }
+      responses:
+        '200': { description: Saved }
+        '403': { description: Not a pipeline role }
+        '404': { description: No such account }
+        '422': { description: Invalid values, one problem each }
   /accounts/{id}:
     get:
       tags: [accounts]
@@ -638,6 +673,23 @@ components:
         source: { type: string }
         notes: { type: string }
         activeEngineers: { type: integer }
+        employeeCount: { type: integer, nullable: true }
+        openRoles: { type: integer, nullable: true }
+        openRolesAsOf: { type: string, format: date, nullable: true }
+        openRolesSource: { type: string, nullable: true }
+        researchedAt: { type: string, format: date-time, nullable: true }
+        fitScore: { type: integer, nullable: true }
+        fitReasons: { type: array, items: { type: string } }
+    AccountProfile:
+      type: object
+      description: Targeting facts. An exact employeeCount also sets the band. openRolesAsOf defaults to today when openRoles is given.
+      properties:
+        yearEstablished: { type: integer, minimum: 1900, nullable: true }
+        headcountBand: { type: string, enum: ['<500', '500-2000', '2000-5000', '5000+'], nullable: true }
+        employeeCount: { type: integer, minimum: 0, nullable: true }
+        openRoles: { type: integer, minimum: 0, nullable: true }
+        openRolesAsOf: { type: string, format: date, nullable: true }
+        openRolesSource: { type: string, maxLength: 500, nullable: true }
     AccountInput:
       type: object
       required: [name, parentCompany, city, websiteDomain, relationship, ownerId, source]

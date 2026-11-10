@@ -26,8 +26,9 @@ import tools.jackson.databind.json.JsonMapper;
 @Service
 class ResearchImportService {
 
+    /** {@code accountFacts} is optional; its non-empty fields update the account's profile (backlog item 1). */
     record Entry(String websiteDomain, String city, AccountResearcher.Summary summary,
-                 List<AccountResearcher.Source> sources) {}
+                 List<AccountResearcher.Source> sources, AccountRegistry.Profile accountFacts) {}
 
     record Upload(String researchedBy, List<Entry> accounts) {}
 
@@ -72,6 +73,9 @@ class ResearchImportService {
             if (e.summary() == null || blank(e.summary().centreOverview())) {
                 problems.add(where + "the summary needs a centre overview.");
             }
+            if (e.accountFacts() != null) {
+                AccountRegistry.check(e.accountFacts()).forEach(p -> problems.add(where + p));
+            }
             ids.add(id);
         }
         if (!problems.isEmpty()) {
@@ -91,6 +95,9 @@ class ResearchImportService {
                 .param("summary", json.writeValueAsString(withEmptyLists(e.summary())))
                 .param("sources", json.writeValueAsString(e.sources() == null ? List.of() : e.sources()))
                 .param("model", model).param("user", user.id()).update(key);
+            if (e.accountFacts() != null && !e.accountFacts().isEmpty()) {
+                accounts.updateProfile(accountId, e.accountFacts(), true);
+            }
             audit.record("account_research", key.getKey().longValue(), AuditLog.Action.CREATE,
                 Map.of("accountId", accountId, "uploaded", true), user.id());
             saved.add(new Saved(accountId, new AccountKey(e.websiteDomain(), e.city()).domain(), e.city().trim()));
