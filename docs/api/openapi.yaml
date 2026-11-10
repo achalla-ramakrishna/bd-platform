@@ -330,6 +330,36 @@ paths:
       parameters: [ { $ref: '#/components/parameters/Id' } ]
       responses:
         '200': { description: '{ event, conversations, connections }' }
+  /assistant/status:
+    get:
+      tags: [engagement]
+      operationId: assistantStatus
+      summary: Whether the BD assistant is switched on (ADR-0013)
+      responses:
+        '200': { description: '{ enabled }' }
+  /assistant/read:
+    post:
+      tags: [engagement]
+      operationId: assistantRead
+      summary: Read a note and/or screenshots about a touch and match it to conversations, connections and accounts. Saves nothing.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                text: { type: string, maxLength: 20000 }
+                images:
+                  type: array
+                  maxItems: 4
+                  description: PNG, JPEG, WebP or GIF, at most 5 MB each
+                  items: { type: string, format: binary }
+      responses:
+        '200': { description: '{ reading: { reply, fullName, title, company, city, linkedinUrl, topic, channel, occurredOn, summary, outcome, nextStep, nextStepDue, newConnection }, conversations: Conversation[], connections: Connection[], accounts: [{ id, name, parentCompany, city, websiteDomain }], contactId, suggestion: UPDATE_CONVERSATION | START_CONVERSATION | ADD_CONNECTION }' }
+        '400': { description: 'No text or screenshot, too long, or a file that is not a supported image' }
+        '403': { description: 'Not a pipeline role' }
+        '422': { description: 'The assistant is switched off (no ANTHROPIC_API_KEY)' }
   /heatmap:
     get:
       tags: [reporting]

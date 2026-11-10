@@ -39,6 +39,15 @@ public class ContactRegistry {
     }
 
     /** The account a contact belongs to, if the contact exists. */
+    /** A contact at the account with this name, ignoring case. */
+    public java.util.Optional<Long> findByName(long accountId, String fullName) {
+        if (fullName == null || fullName.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        return jdbc.sql("SELECT id FROM contact WHERE account_id = :a AND LOWER(full_name) = LOWER(:n) LIMIT 1")
+            .param("a", accountId).param("n", fullName.trim()).query(Long.class).optional();
+    }
+
     public java.util.Optional<Long> accountOf(long contactId) {
         return jdbc.sql("SELECT account_id FROM contact WHERE id = :id").param("id", contactId).query(Long.class).optional();
     }

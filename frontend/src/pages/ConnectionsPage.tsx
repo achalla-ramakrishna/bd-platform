@@ -46,7 +46,10 @@ export function ConnectionsPage({ me }: { me: Me }) {
     <>
       <div className="title-row">
         <h1>Connections</h1>
-        {canEditPipeline(me) && !adding && <button type="button" onClick={() => setAdding(true)}>Add connection</button>}
+        <div className="actions">
+          {canEditPipeline(me) && !adding && <button type="button" onClick={() => setAdding(true)}>Add connection</button>}
+          {canEditPipeline(me) && !adding && <Link className="button secondary" to="/assistant">Log with AI</Link>}
+        </div>
       </div>
       <p className="lead">
         People we know personally. Go to network, not go to market: grow this list, give these people value, and link

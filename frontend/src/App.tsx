@@ -9,6 +9,7 @@ import { ImprovementPage, ImprovementsPage } from './pages/ImprovementsPage';
 import { EventPage, EventsPage } from './pages/EventsPage';
 import { HeatmapPage } from './pages/HeatmapPage';
 import { InterviewPage, InterviewsPage } from './pages/InterviewsPage';
+import { AssistantPage } from './pages/AssistantPage';
 import { NavLink, Navigate, Route, Routes } from 'react-router';
 import { ApiError, api, type Me, type SignInInfo } from './lib/api';
 import { AccountsPage } from './pages/AccountsPage';
@@ -48,6 +49,7 @@ export function App() {
           <NavLink to="/heatmap">Heatmap</NavLink>
         </NavGroup>
         <NavGroup label="Network">
+          <NavLink to="/assistant">Log with AI</NavLink>
           <NavLink to="/connections">Connections</NavLink>
           <NavLink to="/conversations">Conversations</NavLink>
           <NavLink to="/events">Conferences</NavLink>
@@ -99,6 +101,7 @@ export function App() {
           <Route path="/events/:id" element={<EventPage me={user} />} />
           <Route path="/improvements" element={<ImprovementsPage />} />
           <Route path="/improvements/:id" element={<ImprovementPage />} />
+          <Route path="/assistant" element={<AssistantPage me={user} />} />
           <Route path="/connections" element={<ConnectionsPage me={user} />} />
           <Route path="/connections/:id" element={<ConnectionPage me={user} />} />
           <Route path="/conversations" element={<ConversationsPage me={user} />} />

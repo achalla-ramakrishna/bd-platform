@@ -64,7 +64,10 @@ export function ConversationsPage({ me }: { me: Me }) {
     <>
       <div className="title-row">
         <h1>Conversations</h1>
-        {canEditPipeline(me) && !adding && <button type="button" onClick={() => setAdding(true)}>New conversation</button>}
+        <div className="actions">
+          {canEditPipeline(me) && !adding && <button type="button" onClick={() => setAdding(true)}>New conversation</button>}
+          {canEditPipeline(me) && !adding && <Link className="button secondary" to="/assistant">Log with AI</Link>}
+        </div>
       </div>
       <p className="lead">
         Who we have spoken to, what happened and what we do next. Conversations are the early sign of future business,

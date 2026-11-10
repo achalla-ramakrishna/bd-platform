@@ -40,6 +40,15 @@ class AssistConfig {
         return new ClaudeGccFinder(client(apiKey));
     }
 
+    @Bean
+    NoteReader noteReader(@Value("${app.ai.anthropic-api-key:}") String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return new DisabledNoteReader();
+        }
+        LOG.info("BD assistant: ENABLED ({}).", ClaudeNoteReader.MODEL);
+        return new ClaudeNoteReader(client(apiKey));
+    }
+
     private static com.anthropic.client.AnthropicClient client(String apiKey) {
         // Research runs several web searches; allow up to 5 minutes per call.
         return AnthropicOkHttpClient.builder().apiKey(apiKey.strip()).timeout(java.time.Duration.ofMinutes(5)).build();

@@ -540,3 +540,34 @@ export interface GccSearch {
   requestedAt: string;
   finishedAt?: string | null;
 }
+
+/** What the BD assistant understood from a pasted note or screenshots (ADR-0013). */
+export interface AssistantReading {
+  reply: string;
+  fullName: string;
+  title: string;
+  company: string;
+  city: string;
+  linkedinUrl: string;
+  topic: string;
+  channel: string;
+  occurredOn: string;
+  summary: string;
+  outcome: string;
+  nextStep: string;
+  nextStepDue: string;
+  newConnection: boolean;
+}
+
+export interface FoundAccount { id: number; name: string; parentCompany: string; city: string; websiteDomain: string }
+
+export type AssistantSuggestion = 'UPDATE_CONVERSATION' | 'START_CONVERSATION' | 'ADD_CONNECTION';
+
+export interface AssistantAnswer {
+  reading: AssistantReading;
+  conversations: Conversation[];
+  connections: Connection[];
+  accounts: FoundAccount[];
+  contactId?: number | null;
+  suggestion: AssistantSuggestion;
+}

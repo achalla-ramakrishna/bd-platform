@@ -155,6 +155,19 @@ leaders are featured", not "can I supply you engineers" (V14 `interview`):
   not published and published this quarter.
 - Recording and publishing an interview count on the activity heatmap.
 
+## 9. Log with AI (Built)
+
+A chat where people type what they did or paste screenshots of a thread
+(ADR-0013):
+
+- Claude reads who it was with, the channel, date, summary, outcome and next
+  step. The page matches it to open conversations, connections and accounts.
+- Editable cards offer to update the conversation, start one, or add or update
+  the connection. Nothing is saved until the person presses the button.
+- Up to 4 screenshots per message, pasted, dropped or chosen. Nothing from the
+  chat is stored; the app reads nothing from LinkedIn.
+- Linked from the Conversations and Connections pages.
+
 ## Outside the platform
 
 - Vendor kit: one-page company write-up, 3 to 5 case studies, engagement

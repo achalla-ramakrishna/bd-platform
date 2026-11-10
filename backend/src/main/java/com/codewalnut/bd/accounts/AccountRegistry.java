@@ -156,6 +156,24 @@ public class AccountRegistry {
             .param("city", city.trim()).query(String.class).list();
     }
 
+    public record Found(long id, String name, String parentCompany, String city, String websiteDomain) {}
+
+    /** Accounts whose name, parent company or domain contains the text (for matching a company name). */
+    public List<Found> search(String text, int limit) {
+        if (text == null || text.isBlank()) {
+            return List.of();
+        }
+        return jdbc.sql("""
+                SELECT a.id, a.name, p.name, a.city, a.website_domain FROM account a
+                JOIN parent_company p ON p.id = a.parent_company_id
+                WHERE a.name LIKE :q OR p.name LIKE :q OR a.website_domain LIKE :q
+                ORDER BY (p.name = :exact OR a.name = :exact) DESC, a.relationship = 'CLIENT' DESC, a.name
+                LIMIT :limit
+                """).param("q", "%" + text.trim() + "%").param("exact", text.trim()).param("limit", limit)
+            .query((rs, n) -> new Found(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5)))
+            .list();
+    }
+
     public boolean exists(long accountId) {
         return jdbc.sql("SELECT COUNT(*) FROM account WHERE id = :id").param("id", accountId).query(Integer.class).single() > 0;
     }
