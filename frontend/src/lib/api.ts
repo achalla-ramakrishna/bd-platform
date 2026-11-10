@@ -316,6 +316,61 @@ export interface Activity {
   summary: string;
   outcome: string;
   createdAt: string;
+  conversationId?: number | null;
+}
+
+export type ConversationStatus = 'STARTED' | 'REPLIED' | 'MEETING_BOOKED' | 'OPPORTUNITY' | 'GONE_QUIET' | 'CLOSED';
+
+export const CONVERSATION_STATUS_LABELS: Record<ConversationStatus, string> = {
+  STARTED: 'Started',
+  REPLIED: 'Replied',
+  MEETING_BOOKED: 'Meeting booked',
+  OPPORTUNITY: 'Opportunity',
+  GONE_QUIET: 'Gone quiet',
+  CLOSED: 'Closed',
+};
+
+export interface Conversation {
+  id: number;
+  accountId: number;
+  accountName: string;
+  city: string;
+  websiteDomain: string;
+  contactId?: number | null;
+  personName: string;
+  personTitle?: string | null;
+  topic: string;
+  ownerId: number;
+  ownerName: string;
+  status: ConversationStatus;
+  nextStep?: string | null;
+  nextStepDue?: string | null;
+  opportunityId?: number | null;
+  opportunityName?: string | null;
+  lastTouchOn: string;
+  lastSummary?: string | null;
+  createdAt: string;
+  version: number;
+}
+
+export interface ConversationDetail {
+  conversation: Conversation;
+  updates: Activity[];
+}
+
+export interface ConversationSummary {
+  open: number;
+  overdue: number;
+  dueThisWeek: number;
+  meetingsBooked: number;
+  opportunities: number;
+  goneQuiet: number;
+  startedLast30Days: number;
+}
+
+export interface ConversationPage {
+  items: Conversation[];
+  summary: ConversationSummary;
 }
 
 export interface Stage {

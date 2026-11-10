@@ -40,12 +40,27 @@ out-of-date version is refused rather than overwriting someone else's change.
 The starting text comes from the 2026-11-10 session; client names are added
 in the app, not in the repository.
 
-## 3. Conversations (Proposed)
+## 3. Conversations (Built)
 
-Who we spoke to, at which account, when, on which channel, what was said, the
-next step and its date, and a status (started, replied, meeting booked,
-opportunity, gone quiet). A "next steps due" list. Converts to an opportunity.
-Builds on the activity log rather than adding a second one.
+A conversation is a thread with one person at an account (a contact, or just a
+typed name when they are not a contact yet): a topic, an owner, a status
+(started, replied, meeting booked, opportunity, gone quiet, closed), the next
+step with its due date, and an optional linked opportunity.
+
+- Started with its first touch; each later update is an activity in the
+  existing activity log (so account activity and the fit score keep working),
+  and moves the status (a reply, a meeting or "not interested" set it unless
+  chosen by hand) and the next step.
+- The Conversations page opens on what is due within 7 days, with cards for
+  overdue next steps, due this week, open conversations, meetings booked,
+  conversations that became opportunities and those started in the last 30
+  days; filters for status, "mine only" and search.
+- A conversation page shows every update, adds new ones, marks the
+  conversation gone quiet, closed or reopened, and links an opportunity at the
+  same account (which sets the status to Opportunity).
+- Each account page lists its conversations and can start one.
+- A next step needs a date so it shows in the due list. Saves based on an
+  out-of-date copy are refused. Pipeline roles write; everyone reads.
 
 ## 4. Connections (Proposed)
 

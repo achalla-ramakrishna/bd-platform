@@ -47,6 +47,12 @@ public class ActivityService {
 
     @Transactional
     public long log(Input in, CurrentUser user) {
+        return log(in, null, user);
+    }
+
+    /** Logs a touch, optionally as an update in a conversation (backlog item 3). */
+    @Transactional
+    long log(Input in, Long conversationId, CurrentUser user) {
         List<String> problems = new ArrayList<>();
         if (in.accountId() == null || !accounts.exists(in.accountId())) {
             problems.add("Choose an existing account.");
@@ -80,10 +86,11 @@ public class ActivityService {
         }
         var keys = new GeneratedKeyHolder();
         jdbc.sql("""
-                INSERT INTO activity (account_id, contact_id, user_id, channel, occurred_on, summary, outcome)
-                VALUES (:account, :contact, :user, :channel, :on, :summary, :outcome)
+                INSERT INTO activity (account_id, contact_id, conversation_id, user_id, channel, occurred_on, summary, outcome)
+                VALUES (:account, :contact, :conversation, :user, :channel, :on, :summary, :outcome)
                 """)
-            .param("account", in.accountId()).param("contact", in.contactId()).param("user", user.id())
+            .param("account", in.accountId()).param("contact", in.contactId()).param("conversation", conversationId)
+            .param("user", user.id())
             .param("channel", channel).param("on", in.occurredOn()).param("summary", in.summary().trim())
             .param("outcome", outcome)
             .update(keys);

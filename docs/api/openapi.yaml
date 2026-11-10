@@ -159,6 +159,57 @@ paths:
               schema: { $ref: '#/components/schemas/Account' }
         '409': { $ref: '#/components/responses/Problem' }
 
+  /conversations:
+    get:
+      tags: [engagement]
+      operationId: listConversations
+      summary: Conversations with summary counts; open ones with the earliest next step first
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [OPEN, STARTED, REPLIED, MEETING_BOOKED, OPPORTUNITY, GONE_QUIET, CLOSED] }, description: 'OPEN = not closed and not gone quiet' }
+        - { name: due, in: query, schema: { type: string, enum: [overdue, week] }, description: 'Open conversations with the next step before today, or within 7 days' }
+        - { name: mine, in: query, schema: { type: boolean } }
+        - { name: accountId, in: query, schema: { type: integer, format: int64 } }
+        - { name: q, in: query, schema: { type: string }, description: 'Account, person or topic contains' }
+      responses:
+        '200': { description: '{ items: Conversation[], summary: { open, overdue, dueThisWeek, meetingsBooked, opportunities, goneQuiet, startedLast30Days } }' }
+    post:
+      tags: [engagement]
+      operationId: startConversation
+      summary: Start a conversation with its first touch (pipeline roles)
+      description: 'Body: accountId, contactId or personName, topic, channel, occurredOn, summary, outcome, nextStep, nextStepDue. A next step needs a date.'
+      responses:
+        '201': { description: '{ conversation, updates }' }
+        '422': { description: Invalid, one problem each; nothing is saved }
+  /conversations/{id}:
+    get:
+      tags: [engagement]
+      operationId: getConversation
+      summary: One conversation with its updates (activities), newest first
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: '{ conversation, updates }' }
+        '404': { description: No such conversation }
+    patch:
+      tags: [engagement]
+      operationId: changeConversation
+      summary: Change status, next step, owner or linked opportunity without logging a touch (pipeline roles)
+      description: 'Body: status, nextStep, nextStepDue, ownerId, opportunityId, version. Linking an opportunity at the same account sets the status to OPPORTUNITY.'
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: '{ conversation, updates }' }
+        '409': { description: Someone else updated it first }
+        '422': { description: Invalid }
+  /conversations/{id}/updates:
+    post:
+      tags: [engagement]
+      operationId: addConversationUpdate
+      summary: Log a touch in the conversation and move its status and next step (pipeline roles)
+      description: 'Body: channel, occurredOn, summary, outcome, status (optional; otherwise REPLIED, MEETING_BOOKED and NOT_INTERESTED outcomes set it), nextStep, nextStepDue, version.'
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: '{ conversation, updates }' }
+        '409': { description: Someone else updated it first }
+        '422': { description: Invalid }
   /strategy:
     get:
       tags: [strategy]

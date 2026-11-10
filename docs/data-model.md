@@ -27,6 +27,7 @@ explains them.
 | imports | V5 | `import_batch`, `import_row_error` |
 | assist | V6, V7 | `account_research`, `gcc_discovery` |
 | accounts | V8 | `account` gains `employee_count`, `open_roles`, `open_roles_as_of`, `open_roles_source` (backlog item 1) |
+| engagement | V10 | `conversation`; `activity.conversation_id` links updates to their conversation |
 | strategy | V9 | `strategy_version` (every save kept; the newest is current) |
 
 ## Keys that carry business rules

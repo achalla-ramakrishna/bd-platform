@@ -11,11 +11,18 @@ import { AccountResearch } from './AccountResearch';
 import { useState } from 'react';
 import { CompanyLogo } from './CompanyLogo';
 import { AccountProfile } from './AccountProfile';
+import { ConversationTable, NewConversation } from './ConversationsPage';
+import type { ConversationPage as ConversationList } from '../lib/api';
 
 export function AccountDetailPage({ me }: { me: Me }) {
   const { id } = useParams();
   const detail = useQuery({ queryKey: ['account', id], queryFn: () => api.get<AccountDetail>(`/accounts/${id}`) });
   const [adding, setAdding] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const conversations = useQuery({
+    queryKey: ['conversations', 'account', id],
+    queryFn: () => api.get<ConversationList>(`/conversations?accountId=${id}`),
+  });
   const opportunities = useQuery({
     queryKey: ['opportunities', 'account', id],
     queryFn: () => api.get<Opportunity[]>(`/opportunities?accountId=${id}`),
@@ -54,6 +61,14 @@ export function AccountDetailPage({ me }: { me: Me }) {
       )}
 
       <AccountResearch accountId={a.id} editable={canEditPipeline(me)} />
+
+      <div className="title-row">
+        <h2>Conversations</h2>
+        {canEditPipeline(me) && !starting && <button type="button" className="secondary" onClick={() => setStarting(true)}>Start conversation</button>}
+      </div>
+      {starting && <NewConversation accountId={a.id} onDone={() => setStarting(false)} />}
+      <ConversationTable items={conversations.data?.items ?? []} loading={conversations.isPending} hideAccount
+        empty="No conversations with this account yet." />
 
       <div className="title-row">
         <h2>Opportunities</h2>
