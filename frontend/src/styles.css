@@ -13,6 +13,12 @@
   --warn-soft: #fbf0d9;
   --bad: #b3261e;
   --bad-soft: #fbe7e5;
+  /* Heatmap: one green ramp, validated (ordinal) against both surfaces; level 0 is the neutral line colour. */
+  --heat-0: #dde2e6;
+  --heat-1: #74c18c;
+  --heat-2: #3fa364;
+  --heat-3: #1f7a4d;
+  --heat-4: #0f4f30;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   color-scheme: light;
@@ -33,6 +39,11 @@
     --warn-soft: #362b14;
     --bad: #f1928b;
     --bad-soft: #3a1c1a;
+    --heat-0: #2c343b;
+    --heat-1: #1f5c3d;
+    --heat-2: #2e8a59;
+    --heat-3: #4fbf80;
+    --heat-4: #8ee0b0;
     color-scheme: dark;
   }
 }
@@ -333,3 +344,25 @@ button.link { all: unset; color: var(--accent); cursor: pointer; text-decoration
 .segmented button { all: unset; padding: 6px 12px; cursor: pointer; font-size: 14px; background: var(--surface); }
 .segmented button.on { background: var(--accent); color: var(--surface); }
 .segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Activity heatmap (backlog item 7) */
+.heat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.heat-scroll { position: relative; overflow-x: auto; padding-bottom: 4px; }
+.heat-svg { display: block; outline: none; }
+.heat-svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+.heat-label { font-size: 10px; fill: var(--muted); }
+.heat-cell { cursor: pointer; }
+.heat-cell.l0 { fill: var(--heat-0); }
+.heat-cell.l1 { fill: var(--heat-1); }
+.heat-cell.l2 { fill: var(--heat-2); }
+.heat-cell.l3 { fill: var(--heat-3); }
+.heat-cell.l4 { fill: var(--heat-4); }
+.heat-cell:hover { stroke: var(--fg); stroke-width: 1px; }
+.heat-cell.selected { stroke: var(--accent); stroke-width: 2px; }
+.heat-tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); white-space: nowrap; z-index: 2; font-size: 13px; }
+.heat-legend { display: flex; align-items: center; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+.heat-key { display: inline-flex; }
+.legend-note { margin-left: 12px; }
+.heat-day { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+.heat-day h2 { font-size: 15px; margin: 0 0 6px; }
+.heat-day ul { margin: 0; padding-left: 18px; }

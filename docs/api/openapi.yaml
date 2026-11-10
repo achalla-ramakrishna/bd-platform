@@ -330,6 +330,16 @@ paths:
       parameters: [ { $ref: '#/components/parameters/Id' } ]
       responses:
         '200': { description: '{ event, conversations, connections }' }
+  /heatmap:
+    get:
+      tags: [reporting]
+      operationId: activityHeatmap
+      summary: Activity per day (touches, new connections, events attended) for the team or one person
+      parameters:
+        - { name: weeks, in: query, schema: { type: integer, minimum: 4, maximum: 53, default: 26 } }
+        - { name: userId, in: query, schema: { type: integer, format: int64 }, description: One person; omit for the team }
+      responses:
+        '200': { description: '{ from, to, days: [{ date, total, touches, meetings, conversationsStarted, connections, events, items: [{ kind, text, link }], moreItems }], weeks: [{ weekStart, total }], summary: { total, thisWeek, lastWeek, activeDaysLast30, bestWeek }, people }' }
   /improvements:
     get:
       tags: [improvements]

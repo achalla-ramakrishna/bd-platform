@@ -118,11 +118,25 @@ A radar of webinars, roundtables, meetups and conferences (V13 `bd_event`):
   organise or have a stall, this quarter, and people met in the last 90
   days.
 
-## 7. Activity heatmap (Proposed)
+## 7. Activity heatmap (Built)
 
-A grid with one square per day, darker for more conversations, meetings,
-events and posts; per person and for the team; hover shows what happened.
-Needs items 3 and 6 first.
+A GitHub-style grid with one square per day for the last 12, 26 or 52 weeks,
+for the whole team or one person:
+
+- A day counts every logged touch (including conversation updates), every
+  new connection (for the team, the first day anyone connected) and every
+  event someone from the team went to. Meetings and conversations started
+  show in the breakdown.
+- Fixed levels (1, 2 to 3, 4 to 6, 7 or more a day), so the grid darkens as
+  the team does more over the months rather than relative to its busiest
+  day. One green ramp, checked with the palette validator against the light
+  and dark surfaces; empty days use the neutral line colour.
+- Hover shows the day's count and breakdown; clicking a day (or moving with
+  the arrow keys) lists what happened with links. Cards show this week
+  against last week, active days in the last 30, the best week and the
+  period total. "Show as a table" gives the same data week by week.
+- LinkedIn posts are not counted: nothing is read from LinkedIn (ADR-0005).
+  Log a post as an activity if it should count.
 
 ## 8. Leader interviews (Proposed)
 
