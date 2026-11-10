@@ -18,6 +18,9 @@ public enum Role {
     /** May create, edit and move opportunities and log activities. Delivery reads the pipeline. */
     public static final Set<Role> PIPELINE_EDITORS = EnumSet.of(LEADERSHIP, BD_LEAD, ACCOUNT_EXECUTIVE, SOLUTIONS, ADMIN);
 
+    /** May edit the BD strategy page (backlog item 2). Everyone signed in can read it. */
+    public static final Set<Role> STRATEGY_EDITORS = EnumSet.of(LEADERSHIP, ADMIN);
+
     /** May upload spreadsheets (ADR-0006). */
     public static final Set<Role> IMPORTERS = EnumSet.of(BD_LEAD, DELIVERY, ADMIN);
 }

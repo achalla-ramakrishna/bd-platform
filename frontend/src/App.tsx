@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { StrategyPage } from './pages/StrategyPage';
 import { NavLink, Navigate, Route, Routes } from 'react-router';
 import { ApiError, api, type Me, type SignInInfo } from './lib/api';
 import { AccountsPage } from './pages/AccountsPage';
@@ -33,6 +34,7 @@ export function App() {
     <div className="shell">
       <nav className="nav" aria-label="Main">
         <div className="brand">CodeWalnut <span>BD</span></div>
+        <NavLink to="/strategy">Strategy</NavLink>
         <NavLink to="/pipeline">Pipeline</NavLink>
         <NavLink to="/accounts">Accounts</NavLink>
         <NavLink to="/find-gccs">Find GCCs</NavLink>
@@ -60,6 +62,7 @@ export function App() {
         )}
         <Routes>
           <Route path="/" element={<Navigate to="/pipeline" replace />} />
+          <Route path="/strategy" element={<StrategyPage />} />
           <Route path="/pipeline" element={<PipelinePage me={user} />} />
           <Route path="/opportunities/new" element={<OpportunityPage me={user} />} />
           <Route path="/opportunities/:id" element={<OpportunityPage me={user} />} />

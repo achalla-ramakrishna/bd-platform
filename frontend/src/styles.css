@@ -266,3 +266,17 @@ a.pill.research-pill { margin-left: 8px; background: var(--info); color: #fff; t
 .account-cell { display: flex; gap: 10px; align-items: flex-start; }
 .account-cell .logo { margin-top: 2px; }
 h1.account-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+/* Strategy page (backlog item 2) */
+.strategy { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 28px 20px; max-width: 80ch; }
+.markdown h2 { font-size: 22px; margin: 18px 0 8px; }
+.markdown h3 { font-size: 17px; margin: 18px 0 6px; }
+.markdown h4 { font-size: 15px; margin: 14px 0 4px; }
+.markdown p, .markdown li { line-height: 1.55; }
+.markdown ul, .markdown ol { padding-left: 22px; margin: 6px 0 10px; }
+.strategy-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.strategy-columns textarea { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.strategy-preview { border: 1px solid var(--line); border-radius: 8px; padding: 4px 16px; max-height: 620px; overflow: auto; background: var(--surface); }
+.label-like { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.strategy-old { margin-top: 16px; }
+@media (max-width: 900px) { .strategy-columns { grid-template-columns: 1fr; } }

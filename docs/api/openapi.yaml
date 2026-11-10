@@ -159,6 +159,49 @@ paths:
               schema: { $ref: '#/components/schemas/Account' }
         '409': { $ref: '#/components/responses/Problem' }
 
+  /strategy:
+    get:
+      tags: [strategy]
+      operationId: getStrategy
+      summary: The current BD strategy (Markdown) and whether the caller may edit it
+      responses:
+        '200': { description: 'OK: { current: StrategyVersion or null, canEdit: boolean }' }
+    put:
+      tags: [strategy]
+      operationId: saveStrategy
+      summary: Save a new version (leadership and admins)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string, maxLength: 50000, description: Markdown }
+                note: { type: string, maxLength: 300, description: What changed }
+                baseVersionId: { type: integer, format: int64, description: 'The version the edit started from' }
+      responses:
+        '200': { description: 'The saved version (or the current one if nothing changed)' }
+        '403': { description: Not leadership or admin }
+        '409': { description: Someone saved a newer version first }
+        '422': { description: Empty or too long }
+  /strategy/versions:
+    get:
+      tags: [strategy]
+      operationId: listStrategyVersions
+      summary: Saved versions, newest first (id, note, editedBy, editedAt)
+      responses:
+        '200': { description: OK }
+  /strategy/versions/{id}:
+    get:
+      tags: [strategy]
+      operationId: getStrategyVersion
+      summary: One saved version with its text
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: OK }
+        '404': { description: No such version }
   /accounts/facets:
     get:
       tags: [accounts]

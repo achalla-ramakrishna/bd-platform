@@ -29,10 +29,16 @@ mortgages), where we already have delivery references.
   person or from public pages, never by automated scraping of job boards
   (ADR-0005 applies to job boards as it does to LinkedIn).
 
-## 2. Strategy page (Proposed)
+## 2. Strategy page (Built)
 
-A page with the agreed strategy, so nobody has to look elsewhere. Admins edit,
-everyone reads, with a version history.
+The agreed strategy in one page, first in the menu, so nobody has to look
+elsewhere. Written in Markdown with a live preview; everyone reads it,
+leadership and admins edit it. Every save is kept as a version with an
+optional change note; the history shows who changed what, any version can be
+viewed or used as the starting point for an edit, and a save based on an
+out-of-date version is refused rather than overwriting someone else's change.
+The starting text comes from the 2026-11-10 session; client names are added
+in the app, not in the repository.
 
 ## 3. Conversations (Proposed)
 
