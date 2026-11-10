@@ -82,6 +82,14 @@ export function AccountResearch({ accountId, editable }: { accountId: number; ed
 
       {s && r?.status === 'DONE' && (
         <div className="research-body">
+          {s.fitRating && (
+            <p className="small">
+              <span className={`pill ${s.fitRating === 'STRONG' ? 'good' : s.fitRating === 'MEDIUM' ? 'warn' : ''}`}>
+                Research fit: {s.fitRating.charAt(0) + s.fitRating.slice(1).toLowerCase()}
+              </span>{' '}
+              <span className="muted">Counts towards the fit score.</span>
+            </p>
+          )}
           <p className="overview">{s.centreOverview}</p>
 
           <div className="research-grid">

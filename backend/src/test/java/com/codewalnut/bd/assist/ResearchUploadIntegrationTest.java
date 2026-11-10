@@ -60,7 +60,7 @@ class ResearchUploadIntegrationTest {
               "websiteDomain": "https://www.Alpha-GCC.test/", "city": " bengaluru ",
               "summary": {"centreOverview": "Alpha's Bengaluru centre builds its online store.",
                 "buyingSignals": [{"statement": "Hiring React engineers", "source": "https://jobs.example.test/alpha"}],
-                "openingMessage": "Hello"},
+                "openingMessage": "Hello", "fitRating": "strong"},
               "sources": [{"url": "https://jobs.example.test/alpha", "title": "Jobs"}]}]}
             """;
 
@@ -76,7 +76,12 @@ class ResearchUploadIntegrationTest {
             .andExpect(jsonPath("$.requestedBy").value("Admin Person"))
             .andExpect(jsonPath("$.summary.buyingSignals[0].source").value("https://jobs.example.test/alpha"))
             .andExpect(jsonPath("$.summary.facts").isEmpty())
-            .andExpect(jsonPath("$.summary.cautions").isArray());
+            .andExpect(jsonPath("$.summary.cautions").isArray())
+            .andExpect(jsonPath("$.summary.fitRating").value("STRONG"));
+        // The research fit rating counts towards the fit score (ADR-0012).
+        mvc.perform(get("/api/v1/accounts?sort=fit").with(user(DELIVERY)))
+            .andExpect(jsonPath("$.items[0].fitReasons", org.hamcrest.Matchers.hasItem("Research rates the fit strong (+20)")))
+            .andExpect(jsonPath("$.items[0].fitScore").value(30));
         // The accounts list shows which accounts have research, and can filter by it.
         mvc.perform(get("/api/v1/accounts?researched=true").with(user(DELIVERY)))
             .andExpect(jsonPath("$.total").value(1))
@@ -99,6 +104,15 @@ class ResearchUploadIntegrationTest {
             .andExpect(jsonPath("$.status").value("DONE"))
             .andExpect(jsonPath("$.summary.centreOverview").isNotEmpty())
             .andExpect(jsonPath("$.laterFailure").value("The Anthropic API key was rejected (401)."));
+    }
+
+    @Test
+    void rejectsAnUnknownFitRating() throws Exception {
+        mvc.perform(post("/api/v1/research/uploads").with(user(ADMIN)).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(GOOD.replace("\"strong\"", "\"excellent\"")))
+            .andExpect(status().is4xxClientError());
+        org.assertj.core.api.Assertions.assertThat(
+            jdbc.sql("SELECT COUNT(*) FROM account_research").query(Integer.class).single()).isZero();
     }
 
     @Test

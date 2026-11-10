@@ -367,6 +367,7 @@ export interface AccountResearch {
     openingMessage: string;
     talkingPoints: string[];
     cautions: string[];
+    fitRating?: 'STRONG' | 'MEDIUM' | 'WEAK' | null;
   } | null;
   sources: { url: string; title: string }[];
   error?: string | null;

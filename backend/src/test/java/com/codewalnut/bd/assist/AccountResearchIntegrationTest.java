@@ -117,7 +117,8 @@ class AccountResearchIntegrationTest {
             List.of(new AccountResearcher.Offer("AI-fluent senior engineers", "They are hiring React engineers")),
             List.of(new AccountResearcher.Target("Centre head", "Signs vendor contracts", "Person One")),
             "Saw Alpha is growing its React team in Bengaluru. We place senior React engineers in two weeks.",
-            List.of("Ask about the checkout rebuild"), List.of("Headcount is from one article")),
+            List.of("Ask about the checkout rebuild"), List.of("Headcount is from one article"),
+            AccountResearcher.FitRating.STRONG),
             List.of(new AccountResearcher.Source("https://news.example.test/alpha", "Alpha expands")), "test-model");
     }
 

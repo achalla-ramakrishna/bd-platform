@@ -126,6 +126,8 @@ RESEARCH_UPLOAD_AS=<the email of a user with a pipeline role>
 
 The token works only for `POST /api/v1/research/uploads`, and the upload is
 recorded as that user. Deploy logs show `Research upload token: ENABLED`.
+Each entry's `summary` may carry `"fitRating": "STRONG" | "MEDIUM" | "WEAK"`,
+which counts towards the account fit score (ADR-0012).
 Delete the variable to switch it off; change it if it may have leaked.
 
 ### Troubleshooting

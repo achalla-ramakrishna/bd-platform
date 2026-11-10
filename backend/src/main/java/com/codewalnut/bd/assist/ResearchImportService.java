@@ -102,7 +102,8 @@ class ResearchImportService {
     private static AccountResearcher.Summary withEmptyLists(AccountResearcher.Summary s) {
         return new AccountResearcher.Summary(s.centreOverview(), orEmpty(s.facts()), orEmpty(s.buyingSignals()),
             orEmpty(s.likelyNeeds()), orEmpty(s.recommendedOffers()), orEmpty(s.whoToContact()),
-            s.openingMessage() == null ? "" : s.openingMessage(), orEmpty(s.talkingPoints()), orEmpty(s.cautions()));
+            s.openingMessage() == null ? "" : s.openingMessage(), orEmpty(s.talkingPoints()), orEmpty(s.cautions()),
+            s.fitRating());
     }
 
     private static <T> List<T> orEmpty(List<T> list) {

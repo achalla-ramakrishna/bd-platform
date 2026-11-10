@@ -153,7 +153,9 @@ class ClaudeAccountResearcher implements AccountResearcher {
         @JsonPropertyDescription("Who to approach, in order") List<TargetOut> whoToContact,
         @JsonPropertyDescription("LinkedIn connection note, at most 280 characters") String openingMessage,
         @JsonPropertyDescription("Three to five points for a first call") List<String> talkingPoints,
-        @JsonPropertyDescription("What is uncertain or should be checked") List<String> cautions) {}
+        @JsonPropertyDescription("What is uncertain or should be checked") List<String> cautions,
+        @JsonPropertyDescription("How well the account fits CodeWalnut: STRONG, MEDIUM or WEAK, as defined in the instructions")
+        FitRating fitRating) {}
 
     private Summary summarise(ResearchContextQueries.Context ctx, String notes, Map<String, Source> sources) {
         String prompt = """
@@ -161,6 +163,11 @@ class ClaudeAccountResearcher implements AccountResearcher {
             research notes and our records below. Do not add facts from anywhere else. Every fact and buying \
             signal must carry the web address it came from in the notes, or "Our records" for our own data. \
             If the notes are thin, say so in cautions instead of filling gaps.
+
+            Rate fitRating from the notes: STRONG when the centre builds software, data or AI products and is \
+            hiring or growing engineering teams; MEDIUM when it does some software work but the need for outside \
+            engineers is unclear; WEAK when its work is mainly hardware, chip, specialist or non-software, or it \
+            is cutting staff. When the notes are too thin to tell, choose MEDIUM and say why in cautions.
 
             %s
             Client names: you may mention only the clients listed as nameable. Describe any other client by \
@@ -203,7 +210,7 @@ class ClaudeAccountResearcher implements AccountResearcher {
                 : out.recommendedOffers().stream().map(o -> new Offer(o.offer(), o.why())).toList(),
             out.whoToContact() == null ? List.of()
                 : out.whoToContact().stream().map(t -> new Target(t.persona(), t.why(), t.knownContact())).toList(),
-            out.openingMessage(), list(out.talkingPoints()), list(out.cautions()));
+            out.openingMessage(), list(out.talkingPoints()), list(out.cautions()), out.fitRating());
     }
 
     private static List<Fact> facts(List<FactOut> in) {

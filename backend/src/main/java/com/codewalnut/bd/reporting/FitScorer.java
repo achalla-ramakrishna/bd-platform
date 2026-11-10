@@ -24,7 +24,7 @@ public class FitScorer {
     public record Fit(int score, List<String> reasons) {}
 
     /** The inputs for one account; kept separate so the rules can be unit tested. */
-    record Inputs(String headcountBand, List<String> techStack, String industry, int buyingSignals,
+    record Inputs(String headcountBand, List<String> techStack, String industry, int buyingSignals, String researchFit,
                   boolean decisionContact, boolean anyContact, boolean positiveEngagement, boolean anyEngagement) {}
 
     private static final Set<String> DECISION_PERSONAS = Set.of("CENTRE_HEAD", "ENGINEERING_LEADER", "PRODUCT_LEADER");
@@ -51,14 +51,23 @@ public class FitScorer {
             .query(String.class).list().forEach(clientIndustries::add);
 
         Map<Long, Integer> signals = new HashMap<>();
+        Map<Long, String> ratings = new HashMap<>();
         jdbc.sql("""
-                SELECT r.account_id, COALESCE(JSON_LENGTH(r.summary, '$.buyingSignals'), 0)
+                SELECT r.account_id, COALESCE(JSON_LENGTH(r.summary, '$.buyingSignals'), 0),
+                       JSON_UNQUOTE(JSON_EXTRACT(r.summary, '$.fitRating'))
                 FROM account_research r
                 JOIN (SELECT account_id, MAX(id) AS id FROM account_research WHERE status = 'DONE' GROUP BY account_id) l
                   ON l.id = r.id
                 WHERE r.account_id IN (:ids)
                 """).param("ids", accountIds)
-            .query((rs, n) -> signals.put(rs.getLong(1), rs.getInt(2))).list();
+            .query((rs, n) -> {
+                signals.put(rs.getLong(1), rs.getInt(2));
+                String rating = rs.getString(3);
+                if (rating != null && !"null".equals(rating)) {
+                    ratings.put(rs.getLong(1), rating.toUpperCase(Locale.ROOT));
+                }
+                return null;
+            }).list();
 
         Map<Long, Set<String>> personas = new HashMap<>();
         jdbc.sql("SELECT account_id, persona FROM contact WHERE account_id IN (:ids) AND NOT opted_out")
@@ -79,7 +88,7 @@ public class FitScorer {
                 List<String> tech = rs.getString(3) == null ? List.of() : List.of(json.readValue(rs.getString(3), String[].class));
                 Set<String> p = personas.getOrDefault(id, Set.of());
                 Inputs in = new Inputs(rs.getString(2), tech, rs.getString(4), signals.getOrDefault(id, 0),
-                    p.stream().anyMatch(DECISION_PERSONAS::contains), !p.isEmpty(),
+                    ratings.get(id), p.stream().anyMatch(DECISION_PERSONAS::contains), !p.isEmpty(),
                     engagement.getOrDefault(id, false), engagement.containsKey(id));
                 fits.put(id, rate(in, ourSkills, clientIndustries, weights));
                 return null;
@@ -115,6 +124,14 @@ public class FitScorer {
             reasons.add(in.buyingSignals() + " buying signal" + (in.buyingSignals() == 1 ? "" : "s") + " in research (+" + pts + ")");
         } else {
             reasons.add("No research yet, or no buying signals found");
+        }
+
+        if (in.researchFit() != null && w.researchFit().containsKey(in.researchFit())) {
+            int pts = w.researchFit().get(in.researchFit());
+            score += pts;
+            reasons.add("Research rates the fit " + in.researchFit().toLowerCase(Locale.ROOT) + " (+" + pts + ")");
+        } else {
+            reasons.add("No fit rating in research yet");
         }
 
         if (in.decisionContact()) {
