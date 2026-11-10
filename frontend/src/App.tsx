@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { StrategyPage } from './pages/StrategyPage';
 import { ConversationsPage } from './pages/ConversationsPage';
@@ -42,20 +43,30 @@ export function App() {
     <div className="shell">
       <nav className="nav" aria-label="Main">
         <div className="brand">CodeWalnut <span>BD</span></div>
-        <NavLink to="/strategy">Strategy</NavLink>
-        <NavLink to="/pipeline">Pipeline</NavLink>
-        <NavLink to="/accounts">Accounts</NavLink>
-        <NavLink to="/connections">Connections</NavLink>
-        <NavLink to="/conversations">Conversations</NavLink>
-        <NavLink to="/events">Conferences</NavLink>
-        <NavLink to="/interviews">Interviews</NavLink>
-        <NavLink to="/heatmap">Heatmap</NavLink>
-        <NavLink to="/find-gccs">Find GCCs</NavLink>
-        <NavLink to="/deployments">Deployed teams</NavLink>
-        <NavLink to="/engineers">Engineers</NavLink>
-        {user.canImport && <NavLink to="/uploads">Uploads</NavLink>}
-        <NavLink to="/improvements">Improvement areas</NavLink>
-        {user.roles.includes('ADMIN') && <NavLink to="/users">Users</NavLink>}
+        <NavGroup label="Plan">
+          <NavLink to="/strategy">Strategy</NavLink>
+          <NavLink to="/heatmap">Heatmap</NavLink>
+        </NavGroup>
+        <NavGroup label="Network">
+          <NavLink to="/connections">Connections</NavLink>
+          <NavLink to="/conversations">Conversations</NavLink>
+          <NavLink to="/events">Conferences</NavLink>
+          <NavLink to="/interviews">Interviews</NavLink>
+        </NavGroup>
+        <NavGroup label="Sales">
+          <NavLink to="/accounts">Accounts</NavLink>
+          <NavLink to="/find-gccs">Find GCCs</NavLink>
+          <NavLink to="/pipeline">Pipeline</NavLink>
+        </NavGroup>
+        <NavGroup label="Delivery">
+          <NavLink to="/deployments">Deployed teams</NavLink>
+          <NavLink to="/engineers">Engineers</NavLink>
+        </NavGroup>
+        <NavGroup label="Platform">
+          <NavLink to="/improvements">Improvement areas</NavLink>
+          {user.canImport && <NavLink to="/uploads">Uploads</NavLink>}
+          {user.roles.includes('ADMIN') && <NavLink to="/users">Users</NavLink>}
+        </NavGroup>
         <div className="who">
           {user.name}
           <br />
@@ -147,6 +158,17 @@ function NoRole({ user }: { user: Me }) {
           You are signed in as {user.email}, but you have no role yet. Ask an Admin to give you one on the Users page.
         </p>
       </div>
+    </div>
+  );
+}
+
+/** A labelled group of menu links. */
+function NavGroup({ label, children }: { label: string; children: ReactNode }) {
+  const id = `nav-${label.toLowerCase()}`;
+  return (
+    <div className="nav-group" role="group" aria-labelledby={id}>
+      <div className="nav-heading" id={id}>{label}</div>
+      {children}
     </div>
   );
 }

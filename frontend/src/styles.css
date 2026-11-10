@@ -79,6 +79,8 @@ a { color: var(--accent); }
 }
 .nav a:hover { background: var(--bg); }
 .nav a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.nav-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
+.nav-heading { padding: 4px 10px 2px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
 .nav .who { margin-top: auto; padding: 12px 10px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
 
 main { padding: 28px 32px 48px; min-width: 0; }
@@ -182,6 +184,8 @@ code { font-family: var(--mono); font-size: 12.5px; }
   .nav { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line); padding: 10px 16px; }
   .nav .brand { padding: 6px 10px; }
   .nav .who { display: none; }
+  .nav-group { flex-direction: row; flex-wrap: wrap; margin: 0; }
+  .nav-heading { display: none; }
   main { padding: 20px 16px 40px; }
 }
 
