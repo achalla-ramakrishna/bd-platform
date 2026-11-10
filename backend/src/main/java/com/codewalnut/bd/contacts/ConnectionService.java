@@ -35,7 +35,7 @@ class ConnectionService {
 
     /** The person. {@code accountLink} is needed when {@code accountId} is given. */
     record Person(String fullName, String currentCompany, String currentRole, String city, String linkedinUrl,
-                  String email, Long accountId, String accountLink, String notes, Integer version) {}
+                  String email, Long accountId, String accountLink, String notes, Integer version, Long metAtEventId) {}
 
     /** How the signed-in user knows them. */
     record Knowing(String strength, String howKnown, LocalDate connectedOn) {}
@@ -59,7 +59,7 @@ class ConnectionService {
 
     @Transactional
     long add(Add in, CurrentUser user) {
-        Person p = in.person() == null ? new Person(null, null, null, null, null, null, null, null, null, null) : in.person();
+        Person p = in.person() == null ? new Person(null, null, null, null, null, null, null, null, null, null, null) : in.person();
         Knowing k = in.knowing() == null ? new Knowing(null, null, null) : in.knowing();
         List<String> problems = personProblems(p);
         knowingProblems(k, problems);
@@ -79,8 +79,8 @@ class ConnectionService {
         var key = new GeneratedKeyHolder();
         bind(jdbc.sql("""
                 INSERT INTO connection (full_name, current_company, current_role, city, linkedin_url, email, account_id,
-                    account_link, notes, created_by)
-                VALUES (:name, :company, :role, :city, :linkedin, :email, :account, :link, :notes, :user)
+                    account_link, notes, met_at_event_id, created_by)
+                VALUES (:name, :company, :role, :city, :linkedin, :email, :account, :link, :notes, :event, :user)
                 """), p).param("user", user.id()).update(key);
         long id = key.getKey().longValue();
         saveKnowing(id, k, user);
@@ -102,7 +102,7 @@ class ConnectionService {
         bind(jdbc.sql("""
                 UPDATE connection SET full_name = :name, current_company = :company, current_role = :role, city = :city,
                     linkedin_url = :linkedin, email = :email, account_id = :account, account_link = :link, notes = :notes,
-                    version = version + 1
+                    met_at_event_id = :event, version = version + 1
                 WHERE id = :id
                 """), p).param("id", id).update();
         audit.record("connection", id, AuditLog.Action.UPDATE, Map.of(), user.id());
@@ -183,7 +183,8 @@ class ConnectionService {
         return spec.param("name", trim(p.fullName())).param("company", trim(p.currentCompany()))
             .param("role", trim(p.currentRole())).param("city", trim(p.city())).param("linkedin", trim(p.linkedinUrl()))
             .param("email", email == null ? null : email.toLowerCase(Locale.ROOT)).param("account", p.accountId())
-            .param("link", p.accountId() == null ? null : upper(p.accountLink())).param("notes", trim(p.notes()));
+            .param("link", p.accountId() == null ? null : upper(p.accountLink())).param("notes", trim(p.notes()))
+            .param("event", p.metAtEventId());
     }
 
     private List<String> personProblems(Person p) {
@@ -207,6 +208,10 @@ class ConnectionService {
         String email = trim(p.email());
         if (email != null && (email.length() > 254 || !EMAIL.matcher(email).matches())) {
             problems.add("The email address is not valid.");
+        }
+        if (p.metAtEventId() != null && jdbc.sql("SELECT COUNT(*) FROM bd_event WHERE id = :id")
+                .param("id", p.metAtEventId()).query(Integer.class).single() == 0) {
+            problems.add("Choose an existing event.");
         }
         if (p.accountId() != null) {
             if (!accounts.exists(p.accountId())) {

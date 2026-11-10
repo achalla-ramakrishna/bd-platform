@@ -19,7 +19,7 @@ public class ConversationQueries {
                                Long contactId, String personName, String personTitle, String topic, long ownerId,
                                String ownerName, String status, String nextStep, LocalDate nextStepDue,
                                Long opportunityId, String opportunityName, LocalDate lastTouchOn, String lastSummary,
-                               Instant createdAt, int version) {}
+                               Instant createdAt, int version, Long eventId, String eventName) {}
 
     public record Detail(Conversation conversation, List<ActivityQueries.Activity> updates) {}
 
@@ -34,8 +34,9 @@ public class ConversationQueries {
             COALESCE(c.full_name, v.person_name) AS person, c.title, v.topic, v.owner_user_id, u.full_name,
             v.status, v.next_step, v.next_step_due, v.opportunity_id, o.name AS opportunity, v.last_touch_on,
             (SELECT x.summary FROM activity x WHERE x.conversation_id = v.id ORDER BY x.occurred_on DESC, x.id DESC LIMIT 1),
-            v.created_at, v.version
+            v.created_at, v.version, v.event_id, ev.name
         FROM conversation v
+        LEFT JOIN bd_event ev ON ev.id = v.event_id
         JOIN account a ON a.id = v.account_id
         JOIN app_user u ON u.id = v.owner_user_id
         LEFT JOIN contact c ON c.id = v.contact_id
@@ -120,6 +121,6 @@ public class ConversationQueries {
             rs.getObject(6, Long.class), rs.getString(7), rs.getString(8), rs.getString(9), rs.getLong(10),
             rs.getString(11), rs.getString(12), rs.getString(13), rs.getObject(14, LocalDate.class),
             rs.getObject(15, Long.class), rs.getString(16), rs.getObject(17, LocalDate.class), rs.getString(18),
-            rs.getTimestamp(19).toInstant(), rs.getInt(20));
+            rs.getTimestamp(19).toInstant(), rs.getInt(20), rs.getObject(21, Long.class), rs.getString(22));
     }
 }

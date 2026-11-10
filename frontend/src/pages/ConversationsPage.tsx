@@ -140,8 +140,8 @@ export function ConversationTable({ items, loading, empty, hideAccount }: {
  * Start a conversation with its first touch. With `accountId`, the account is fixed (account page);
  * `contactId`, `personName` and `topic` prefill the form (for example from a connection).
  */
-export function NewConversation({ accountId, contactId, personName, topic, onDone }: {
-  accountId?: number; contactId?: number | null; personName?: string; topic?: string; onDone: () => void;
+export function NewConversation({ accountId, contactId, personName, topic, eventId, onDone }: {
+  accountId?: number; contactId?: number | null; personName?: string; topic?: string; eventId?: number; onDone: () => void;
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -152,7 +152,7 @@ export function NewConversation({ accountId, contactId, personName, topic, onDon
     enabled: chosenAccount !== null,
   });
   const [form, setForm] = useState({
-    contactId: contactId ? String(contactId) : personName ? 'other' : '', personName: personName ?? '', topic: topic ?? '', channel: 'LINKEDIN_MESSAGE', occurredOn: today(), summary: '',
+    contactId: contactId ? String(contactId) : personName ? 'other' : '', personName: personName ?? '', topic: topic ?? '', channel: eventId ? 'EVENT' : 'LINKEDIN_MESSAGE', occurredOn: today(), summary: '',
     outcome: 'NO_REPLY', nextStep: '', nextStepDue: today(3),
   });
   const save = useMutation({
@@ -160,7 +160,7 @@ export function NewConversation({ accountId, contactId, personName, topic, onDon
       accountId: chosenAccount, contactId: form.contactId && form.contactId !== 'other' ? Number(form.contactId) : null,
       personName: form.contactId === 'other' || !form.contactId ? form.personName : null, topic: form.topic,
       channel: form.channel, occurredOn: form.occurredOn, summary: form.summary, outcome: form.outcome,
-      nextStep: form.nextStep || null, nextStepDue: form.nextStep ? form.nextStepDue || null : null,
+      nextStep: form.nextStep || null, nextStepDue: form.nextStep ? form.nextStepDue || null : null, eventId: eventId ?? null,
     }),
     onSuccess: (d) => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });

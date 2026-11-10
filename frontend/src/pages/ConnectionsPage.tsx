@@ -173,7 +173,7 @@ export function KnowingFields({ knowing, setKnowing }: {
   );
 }
 
-function AddConnection({ onDone }: { onDone: () => void }) {
+export function AddConnection({ eventId, onDone }: { eventId?: number; onDone: () => void }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [form, setForm] = useState(blankPerson);
@@ -181,13 +181,14 @@ function AddConnection({ onDone }: { onDone: () => void }) {
   const [knowing, setKnowing] = useState({ strength: 'KNOW_WELL', howKnown: '', connectedOn: today() });
   const save = useMutation({
     mutationFn: () => api.post<Connection>('/connections', {
-      person: { ...form, accountId: account.id, accountLink: account.id ? account.link : null },
+      person: { ...form, accountId: account.id, accountLink: account.id ? account.link : null, metAtEventId: eventId ?? null },
       knowing: { ...knowing, connectedOn: knowing.connectedOn || null },
     }),
     onSuccess: (c) => {
       queryClient.invalidateQueries({ queryKey: ['connections'] });
+      queryClient.invalidateQueries({ queryKey: ['event'] });
       onDone();
-      navigate(`/connections/${c.id}`);
+      if (!eventId) navigate(`/connections/${c.id}`);
     },
   });
   const problems = save.error instanceof ApiError ? save.error.problems : [];

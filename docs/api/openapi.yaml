@@ -176,7 +176,7 @@ paths:
       tags: [contacts]
       operationId: addConnection
       summary: Add a person the caller knows (pipeline roles)
-      description: 'Body: { person: { fullName, currentCompany, currentRole, city, linkedinUrl, email, accountId, accountLink (WORKS_THERE or CAN_INTRODUCE), notes }, knowing: { strength, howKnown, connectedOn } }. The same name at the same company is refused: add yourself to the existing one.'
+      description: 'Body: { person: { fullName, currentCompany, currentRole, city, linkedinUrl, email, accountId, accountLink (WORKS_THERE or CAN_INTRODUCE), notes, metAtEventId }, knowing: { strength, howKnown, connectedOn } }. The same name at the same company is refused: add yourself to the existing one.'
       responses:
         '201': { description: The connection }
         '422': { description: Invalid or already there }
@@ -246,7 +246,7 @@ paths:
       tags: [engagement]
       operationId: startConversation
       summary: Start a conversation with its first touch (pipeline roles)
-      description: 'Body: accountId, contactId or personName, topic, channel, occurredOn, summary, outcome, nextStep, nextStepDue. A next step needs a date.'
+      description: 'Body: accountId, contactId or personName, topic, channel, occurredOn, summary, outcome, nextStep, nextStepDue, eventId (optional). A next step needs a date.'
       responses:
         '201': { description: '{ conversation, updates }' }
         '422': { description: Invalid, one problem each; nothing is saved }
@@ -280,6 +280,56 @@ paths:
         '200': { description: '{ conversation, updates }' }
         '409': { description: Someone else updated it first }
         '422': { description: Invalid }
+  /events:
+    get:
+      tags: [engagement]
+      operationId: listEvents
+      summary: Conferences and events with summary counts
+      parameters:
+        - { name: when, in: query, schema: { type: string, enum: [upcoming, past] }, description: 'upcoming: soonest first; past: latest first' }
+        - { name: role, in: query, schema: { type: string, enum: [WATCHING, SIGNED_UP, ATTENDING, PRESENTING, STALL, ORGANISING] } }
+        - { name: kind, in: query, schema: { type: string, enum: [CONFERENCE, MEETUP, WEBINAR, ROUNDTABLE, OTHER] } }
+        - { name: mine, in: query, schema: { type: boolean }, description: Events the caller is going to }
+      responses:
+        '200': { description: '{ items: Event[], summary: { next30Days, presentingOrOrganising, thisQuarter, peopleMetLast90Days } }' }
+    post:
+      tags: [engagement]
+      operationId: addEvent
+      summary: 'Add an event: { name, kind, startsOn, endsOn, city, online, url, organiser, ourRole, notes, outcome } (pipeline roles)'
+      responses:
+        '201': { description: '{ event, conversations, connections }' }
+        '422': { description: Invalid }
+  /events/{id}:
+    get:
+      tags: [engagement]
+      operationId: getEvent
+      summary: An event with the conversations started and connections met there
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: '{ event, conversations, connections }' }
+    put:
+      tags: [engagement]
+      operationId: updateEvent
+      summary: Edit an event, with version (pipeline roles)
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: '{ event, conversations, connections }' }
+        '409': { description: Changed by someone else }
+  /events/{id}/attendees/me:
+    put:
+      tags: [engagement]
+      operationId: attendEvent
+      summary: I am going (anyone signed in)
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: '{ event, conversations, connections }' }
+    delete:
+      tags: [engagement]
+      operationId: skipEvent
+      summary: I am not going
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: '{ event, conversations, connections }' }
   /improvements:
     get:
       tags: [improvements]

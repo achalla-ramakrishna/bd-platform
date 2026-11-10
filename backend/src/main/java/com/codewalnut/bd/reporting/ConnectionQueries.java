@@ -24,7 +24,7 @@ public class ConnectionQueries {
     public record Connection(long id, String fullName, String currentCompany, String currentRole, String city,
                              String linkedinUrl, String email, Long accountId, String accountName, String accountLink,
                              Long contactId, String notes, List<Knower> knownBy, LocalDate firstConnectedOn,
-                             Instant createdAt, int version) {}
+                             Instant createdAt, int version, Long metAtEventId, String metAtEventName) {}
 
     /** Connections first made in one week (Monday start), for the growth line. */
     public record Week(LocalDate weekStart, long added) {}
@@ -35,9 +35,10 @@ public class ConnectionQueries {
 
     private static final String SELECT = """
         SELECT n.id, n.full_name, n.current_company, n.current_role, n.city, n.linkedin_url, n.email, n.account_id,
-            a.name, n.account_link, n.contact_id, n.notes, n.created_at, n.version
+            a.name, n.account_link, n.contact_id, n.notes, n.created_at, n.version, n.met_at_event_id, ev.name
         FROM connection n
         LEFT JOIN account a ON a.id = n.account_id
+        LEFT JOIN bd_event ev ON ev.id = n.met_at_event_id
         """;
 
     private final JdbcClient jdbc;
@@ -119,11 +120,13 @@ public class ConnectionQueries {
 
     private List<Connection> load(String sql, Map<String, ?> params) {
         record Base(long id, String name, String company, String role, String city, String linkedin, String email,
-                    Long account, String accountName, String link, Long contact, String notes, Instant created, int version) {}
+                    Long account, String accountName, String link, Long contact, String notes, Instant created, int version,
+                    Long event, String eventName) {}
         List<Base> rows = jdbc.sql(sql).params(params)
             .query((rs, n) -> new Base(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5),
                 rs.getString(6), rs.getString(7), rs.getObject(8, Long.class), rs.getString(9), rs.getString(10),
-                rs.getObject(11, Long.class), rs.getString(12), rs.getTimestamp(13).toInstant(), rs.getInt(14)))
+                rs.getObject(11, Long.class), rs.getString(12), rs.getTimestamp(13).toInstant(), rs.getInt(14),
+                rs.getObject(15, Long.class), rs.getString(16)))
             .list();
         if (rows.isEmpty()) {
             return List.of();
@@ -142,7 +145,7 @@ public class ConnectionQueries {
             List<Knower> k = knowers.getOrDefault(b.id(), List.of());
             LocalDate first = k.stream().map(Knower::connectedOn).min(LocalDate::compareTo).orElse(null);
             return new Connection(b.id(), b.name(), b.company(), b.role(), b.city(), b.linkedin(), b.email(), b.account(),
-                b.accountName(), b.link(), b.contact(), b.notes(), k, first, b.created(), b.version());
+                b.accountName(), b.link(), b.contact(), b.notes(), k, first, b.created(), b.version(), b.event(), b.eventName());
         }).toList();
     }
 }

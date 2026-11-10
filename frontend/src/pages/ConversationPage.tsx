@@ -55,7 +55,8 @@ export function ConversationPage({ me }: { me: Me }) {
     <>
       <p><Link to="/conversations">← Conversations</Link></p>
       <h1>{c.personName} <span className="muted" style={{ fontWeight: 400 }}>at</span> <Link to={`/accounts/${c.accountId}`}>{c.accountName}</Link> <StatusPill status={c.status} /></h1>
-      <p className="lead">{c.topic}{c.personTitle ? ` · ${c.personTitle}` : ''} · {c.city} · owned by {c.ownerName} · started {formatDate(c.createdAt)}</p>
+      <p className="lead">{c.topic}{c.personTitle ? ` · ${c.personTitle}` : ''} · {c.city} · owned by {c.ownerName} · started {formatDate(c.createdAt)}
+        {c.eventId && <> at <Link to={`/events/${c.eventId}`}>{c.eventName}</Link></>}</p>
 
       <div className="cards">
         <div className="card wide-card"><div className="label">Next step</div><div className="value value-text"><NextStep c={c} /></div></div>

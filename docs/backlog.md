@@ -100,12 +100,23 @@ list.
   change from.
 - Saves based on an out-of-date copy are refused (V12 `improvement`).
 
-## 6. Conferences and events (Proposed)
+## 6. Conferences and events (Built)
 
-Webinars, roundtables, meetups and public conferences, with our role
-(watching, signed up, attending, presenting, stall, organising), and the
-people met linked to connections or conversations. Includes our own AI
-roundtable for engineering leaders.
+A radar of webinars, roundtables, meetups and conferences (V13 `bd_event`):
+
+- Each event has its kind, dates, city or online, link, organiser, our role
+  (watching, signed up, attending, presenting, stall, organising), notes on
+  why we go and, afterwards, how it went. Our own AI roundtable for
+  engineering leaders is an event we organise.
+- Anyone can say "I'm going" (or "I went"); pipeline roles add and edit
+  events.
+- People met: from an event page, log a conversation (account first, channel
+  Event, linked to the event) or add a connection (marked "met at"). The
+  event page lists both, and conversations and connections link back.
+- The page shows upcoming, past or all events, filters by role, kind and
+  "I'm going", and cards for the next 30 days, events where we present,
+  organise or have a stall, this quarter, and people met in the last 90
+  days.
 
 ## 7. Activity heatmap (Proposed)
 

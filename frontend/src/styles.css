@@ -327,3 +327,9 @@ button.link { all: unset; color: var(--accent); cursor: pointer; text-decoration
 .declined { padding-left: 18px; }
 @media (max-width: 1000px) { .board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .board { grid-template-columns: 1fr; } }
+
+/* Conferences and events (backlog item 6) */
+.segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.segmented button { all: unset; padding: 6px 12px; cursor: pointer; font-size: 14px; background: var(--surface); }
+.segmented button.on { background: var(--accent); color: var(--surface); }
+.segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }

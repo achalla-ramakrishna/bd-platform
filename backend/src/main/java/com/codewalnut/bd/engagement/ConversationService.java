@@ -33,7 +33,8 @@ class ConversationService {
 
     /** Opens a conversation with its first touch. Give a contact from the account, or a person's name. */
     record Start(Long accountId, Long contactId, String personName, String topic, String channel,
-                 LocalDate occurredOn, String summary, String outcome, String nextStep, LocalDate nextStepDue) {}
+                 LocalDate occurredOn, String summary, String outcome, String nextStep, LocalDate nextStepDue,
+                 Long eventId) {}
 
     /** A new touch in the conversation. Status is optional: without it, the outcome decides. */
     record Update(String channel, LocalDate occurredOn, String summary, String outcome, String status,
@@ -80,6 +81,10 @@ class ConversationService {
             problems.add("The topic can be at most 200 characters.");
         }
         nextStepProblems(in.nextStep(), in.nextStepDue(), problems);
+        if (in.eventId() != null && jdbc.sql("SELECT COUNT(*) FROM bd_event WHERE id = :id").param("id", in.eventId())
+                .query(Integer.class).single() == 0) {
+            problems.add("Choose an existing event.");
+        }
         if (!problems.isEmpty()) {
             throw new RuleViolationException(problems);
         }
@@ -87,13 +92,13 @@ class ConversationService {
         var key = new GeneratedKeyHolder();
         jdbc.sql("""
                 INSERT INTO conversation (account_id, contact_id, person_name, topic, owner_user_id, status, next_step,
-                    next_step_due, last_touch_on)
-                VALUES (:account, :contact, :person, :topic, :owner, :status, :next, :due, :on)
+                    next_step_due, last_touch_on, event_id)
+                VALUES (:account, :contact, :person, :topic, :owner, :status, :next, :due, :on, :event)
                 """)
             .param("account", in.accountId()).param("contact", in.contactId()).param("person", in.contactId() == null ? person : null)
             .param("topic", topic).param("owner", user.id()).param("status", status)
             .param("next", trimOrNull(in.nextStep())).param("due", in.nextStepDue())
-            .param("on", in.occurredOn() == null ? LocalDate.now() : in.occurredOn())
+            .param("on", in.occurredOn() == null ? LocalDate.now() : in.occurredOn()).param("event", in.eventId())
             .update(key);
         long id = key.getKey().longValue();
         // The first touch is checked by the activity rules (account exists, contact at the account, channel...).

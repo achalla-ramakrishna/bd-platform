@@ -50,6 +50,7 @@ export function ConnectionPage({ me }: { me: Me }) {
           {c.contactId ? <Link to={`/accounts/${c.accountId}`}>At the account</Link> : <span className="muted">None</span>}
         </div></div>
       </div>
+      {c.metAtEventId && <p>Met at <Link to={`/events/${c.metAtEventId}`}>{c.metAtEventName}</Link></p>}
       {c.notes && <p className="notes">{c.notes}</p>}
 
       <h2>Who knows them</h2>
@@ -86,6 +87,7 @@ function EditConnection({ c, onDone }: { c: Connection; onDone: (c?: Connection)
   const save = useMutation({
     mutationFn: () => api.put<Connection>(`/connections/${c.id}`, {
       ...form, accountId: account.id, accountLink: account.id ? account.link : null, version: c.version,
+      metAtEventId: c.metAtEventId ?? null,
     }),
     onSuccess: (updated) => onDone(updated),
   });

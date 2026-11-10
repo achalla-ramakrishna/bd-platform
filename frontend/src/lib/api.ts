@@ -352,6 +352,8 @@ export interface Conversation {
   lastSummary?: string | null;
   createdAt: string;
   version: number;
+  eventId?: number | null;
+  eventName?: string | null;
 }
 
 export interface ConversationDetail {
@@ -397,6 +399,44 @@ export interface Connection {
   firstConnectedOn?: string | null;
   createdAt: string;
   version: number;
+  metAtEventId?: number | null;
+  metAtEventName?: string | null;
+}
+
+export type EventKind = 'CONFERENCE' | 'MEETUP' | 'WEBINAR' | 'ROUNDTABLE' | 'OTHER';
+export type EventRole = 'WATCHING' | 'SIGNED_UP' | 'ATTENDING' | 'PRESENTING' | 'STALL' | 'ORGANISING';
+export const EVENT_KIND_LABELS: Record<EventKind, string> = {
+  CONFERENCE: 'Conference', MEETUP: 'Meetup', WEBINAR: 'Webinar', ROUNDTABLE: 'Roundtable', OTHER: 'Other',
+};
+export const EVENT_ROLE_LABELS: Record<EventRole, string> = {
+  WATCHING: 'Watching', SIGNED_UP: 'Signed up', ATTENDING: 'Attending', PRESENTING: 'Presenting', STALL: 'Stall',
+  ORGANISING: 'Organising',
+};
+
+export interface BdEvent {
+  id: number;
+  name: string;
+  kind: EventKind;
+  startsOn: string;
+  endsOn?: string | null;
+  city?: string | null;
+  online: boolean;
+  url?: string | null;
+  organiser?: string | null;
+  ourRole: EventRole;
+  notes?: string | null;
+  outcome?: string | null;
+  attendees: { userId: number; name: string }[];
+  conversations: number;
+  connections: number;
+  version: number;
+}
+
+export interface BdEventDetail { event: BdEvent; conversations: Conversation[]; connections: Connection[] }
+
+export interface BdEventPage {
+  items: BdEvent[];
+  summary: { next30Days: number; presentingOrOrganising: number; thisQuarter: number; peopleMetLast90Days: number };
 }
 
 export interface ConnectionPage {
