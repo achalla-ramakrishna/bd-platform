@@ -12,7 +12,8 @@ import java.util.List;
 public interface NoteReader {
 
     /** What the material is mainly about; the page leads with the matching card. */
-    List<String> ABOUT = List.of("TOUCH", "EVENT", "INTERVIEW");
+    List<String> ABOUT = List.of("TOUCH", "EVENT", "INTERVIEW", "ACCOUNT", "OPPORTUNITY");
+    List<String> OPPORTUNITY_TYPES = List.of("STAFF_AUGMENTATION", "PROJECT");
     List<String> EVENT_KINDS = List.of("CONFERENCE", "MEETUP", "WEBINAR", "ROUNDTABLE", "OTHER");
     List<String> EVENT_ROLES = List.of("WATCHING", "SIGNED_UP", "ATTENDING", "PRESENTING", "STALL", "ORGANISING");
     List<String> INTERVIEW_FORMATS = List.of("BLOG", "PODCAST", "VIDEO", "LINKEDIN_ARTICLE");
@@ -20,13 +21,23 @@ public interface NoteReader {
 
     record Image(byte[] bytes, String mediaType) {}
 
-    record Request(String text, List<Image> images, LocalDate today, List<String> channels, List<String> outcomes) {}
+    /** {@code stages} are the configured opportunity stage codes, in order. */
+    record Request(String text, List<Image> images, LocalDate today, List<String> channels, List<String> outcomes,
+                   List<String> stages) {}
 
     /** Empty strings mean "not shown". Dates are ISO (YYYY-MM-DD) or empty. */
     record Reading(String reply, String fullName, String title, String company, String city, String linkedinUrl,
                    String topic, String channel, String occurredOn, String summary, String outcome, String nextStep,
                    String nextStepDue, boolean newConnection, Photo photo, String about, Event event,
-                   Interview interview) {}
+                   Interview interview, Account account, Opportunity opportunity) {}
+
+    /** A company or GCC centre and the facts shown about it; null when none. Numbers are null when not shown. */
+    record Account(String name, String parentCompany, String parentHqCountry, String city, String websiteDomain,
+                   String industry, Integer yearEstablished, Integer employeeCount, Integer openRoles, String notes) {}
+
+    /** Business with an account: what they need, its size and stage; null when none. */
+    record Opportunity(String name, String type, Long valueInr, String expectedCloseDate, String needSummary,
+                       String targetStartDate, String stage) {}
 
     /** A conference, meetup or webinar mentioned in the material; null when there is none. */
     record Event(String name, String kind, String startsOn, String endsOn, String city, boolean online, String url,

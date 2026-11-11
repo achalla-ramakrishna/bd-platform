@@ -64,6 +64,17 @@ public class OpportunityQueries {
         return withRequirements(base, requirements(List.of(id)).getOrDefault(id, List.of()));
     }
 
+    /** The configured stage codes, in pipeline order. */
+    public List<String> stageCodes() {
+        return jdbc.sql("SELECT code FROM opportunity_stage ORDER BY sort_order").query(String.class).list();
+    }
+
+    /** Opportunities at the account that are still open (not won or lost), most recently changed first. */
+    public List<Opportunity> openAt(long accountId) {
+        return list(accountId, null, null, null).stream().filter(o -> "OPEN".equals(o.stageOutcome()))
+            .sorted(java.util.Comparator.comparing(Opportunity::updatedAt).reversed()).toList();
+    }
+
     public List<Opportunity> list(Long accountId, Long ownerId, String type, String stage) {
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
         Map<String, Object> params = new LinkedHashMap<>();

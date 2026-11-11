@@ -173,6 +173,9 @@ A chat where people type what they did or paste screenshots of a thread
 - Conferences and leader interviews too: an event page, a registration or a
   note adds or updates the conference (and "I'm going"); a note about a
   leader interview adds it or moves it to the stage reached.
+- Accounts and opportunities too: a news item or careers page adds the centre
+  or updates its facts; a client's request adds an opportunity at the account
+  or updates and moves an open one (stage rules still apply).
 - A LinkedIn invitation that is not yet accepted is logged as a conversation
   (connection request, no reply yet); add the connection once they accept.
 

@@ -21,6 +21,7 @@ import com.codewalnut.bd.reporting.ConnectionQueries;
 import com.codewalnut.bd.reporting.ConversationQueries;
 import com.codewalnut.bd.reporting.EventQueries;
 import com.codewalnut.bd.reporting.InterviewQueries;
+import com.codewalnut.bd.reporting.OpportunityQueries;
 import com.codewalnut.bd.shared.CurrentUser;
 import com.codewalnut.bd.shared.Role;
 
@@ -50,7 +51,7 @@ class AssistantController {
     record Answer(NoteReader.Reading reading, List<ConversationQueries.Conversation> conversations,
                   List<ConnectionQueries.Connection> connections, List<AccountRegistry.Found> accounts,
                   Long contactId, List<EventQueries.Event> events, List<InterviewQueries.Match> interviews,
-                  String suggestion) {}
+                  List<OpportunityQueries.Opportunity> opportunities, String suggestion) {}
 
     private final NoteReader reader;
     private final ConversationQueries conversations;
@@ -59,11 +60,13 @@ class AssistantController {
     private final ContactRegistry contacts;
     private final EventQueries events;
     private final InterviewQueries interviews;
+    private final OpportunityQueries opportunities;
     private final CurrentUserProvider currentUser;
 
     AssistantController(NoteReader reader, ConversationQueries conversations, ConnectionQueries connections,
                         AccountRegistry accounts, ContactRegistry contacts, EventQueries events,
-                        InterviewQueries interviews, CurrentUserProvider currentUser) {
+                        InterviewQueries interviews, OpportunityQueries opportunities, CurrentUserProvider currentUser) {
+        this.opportunities = opportunities;
         this.events = events;
         this.interviews = interviews;
         this.reader = reader;
@@ -106,7 +109,7 @@ class AssistantController {
             throw new IllegalArgumentException("Paste at most " + MAX_IMAGES + " screenshots at a time.");
         }
         NoteReader.Reading r = reader.read(new NoteReader.Request(hasText ? text : null, pictures, LocalDate.now(),
-            CHANNELS, OUTCOMES));
+            CHANNELS, OUTCOMES, opportunities.stageCodes()));
         return match(r, user);
     }
 
@@ -117,7 +120,16 @@ class AssistantController {
             : conversations.list(null, null, null, null, who).items().stream().limit(5).toList();
         List<ConnectionQueries.Connection> conns = who.isBlank() ? List.of()
             : connections.list(who, null, null, null, null, user.id()).items().stream().limit(5).toList();
-        List<AccountRegistry.Found> accs = new ArrayList<>(accounts.search(r.company(), 5));
+        List<AccountRegistry.Found> accs = new ArrayList<>();
+        if (r.account() != null) {
+            // The centre described: by its web domain first (the key, with the city), then by name.
+            accs.addAll(accounts.search(r.account().websiteDomain(), 5).stream()
+                .filter(a -> r.account().city().isBlank() || a.city().equalsIgnoreCase(r.account().city())).toList());
+            accs.addAll(accounts.search(r.account().name(), 5));
+            accs.addAll(accounts.search(r.account().parentCompany(), 5));
+        }
+        accs.addAll(accounts.search(r.company(), 5));
+        accs = new ArrayList<>(accs.stream().filter(distinctBy()).toList());
         // Fall back to the account of a matching conversation or connection.
         for (var c : convs) {
             if (accs.stream().noneMatch(a -> a.id() == c.accountId())) {
@@ -134,8 +146,15 @@ class AssistantController {
         List<EventQueries.Event> evs = r.event() == null ? List.of() : events.findByName(r.event().name(), 5);
         String leader = r.interview() == null ? "" : r.interview().leaderName();
         List<InterviewQueries.Match> ivs = leader.isBlank() ? List.of() : interviews.findByLeader(leader, 5);
-        String suggestion = "EVENT".equals(r.about()) ? "EVENT" : "INTERVIEW".equals(r.about()) ? "INTERVIEW"
+        List<OpportunityQueries.Opportunity> opps = r.opportunity() == null || accs.isEmpty() ? List.of()
+            : opportunities.openAt(accs.get(0).id()).stream().limit(5).toList();
+        String suggestion = List.of("EVENT", "INTERVIEW", "ACCOUNT", "OPPORTUNITY").contains(r.about()) ? r.about()
             : openConversation ? "UPDATE_CONVERSATION" : !accs.isEmpty() ? "START_CONVERSATION" : "ADD_CONNECTION";
-        return new Answer(r, convs, conns, accs.stream().distinct().limit(5).toList(), contactId, evs, ivs, suggestion);
+        return new Answer(r, convs, conns, accs.stream().limit(5).toList(), contactId, evs, ivs, opps, suggestion);
+    }
+
+    private static java.util.function.Predicate<AccountRegistry.Found> distinctBy() {
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        return a -> seen.add(a.id());
     }
 }

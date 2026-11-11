@@ -8,7 +8,7 @@ import {
 import { formatDate } from '../lib/format';
 import { today } from './ConversationsPage';
 import { PhotoChooser } from './PersonPhoto';
-import { EventCard, InterviewCard } from './AssistantCards';
+import { AccountCard, EventCard, InterviewCard, OpportunityCard, type NewAccount } from './AssistantCards';
 import { photoForm } from '../lib/photo';
 
 /*
@@ -119,9 +119,9 @@ export function AssistantPage({ me }: { me: Me }) {
         {messages.length > 0 && <button type="button" className="secondary" onClick={() => setMessages([])}>New chat</button>}
       </div>
       <p className="lead">
-        Tell it what you did, or paste screenshots: a conversation, a profile, an event page, an interview you
-        arranged. It works out what it is about and offers to add or update the conversation, connection,
-        conference or interview. Nothing is saved until you press a button.
+        Tell it what you did, or paste screenshots: a conversation, a profile, an event page, a news item about a
+        GCC, a client's request. It works out what it is about and offers to add or update the conversation,
+        connection, conference, interview, account or opportunity. Nothing is saved until you press a button.
       </p>
       {!editable && <div className="notice">Your role can read conversations but not log them.</div>}
       {disabled && (
@@ -141,6 +141,8 @@ export function AssistantPage({ me }: { me: Me }) {
               <li>“Met Person B at the meetup yesterday, connected on LinkedIn. Platform lead at Example Bank GCC.”</li>
               <li>“Registered for Example Tech Summit, 4–5 Dec in Bengaluru, two of us going.” Or paste the event page.</li>
               <li>“Person C agreed to a podcast on AI-native teams, recording on the 20th.”</li>
+              <li>“Example Corp is opening a 500-person tech centre in Pune; 40 open engineering roles.”</li>
+              <li>“Alpha wants 4 React engineers from January for the payments rebuild.”</li>
             </ul>
             <p className="small">Screenshots go to Anthropic’s Claude to be read and are not stored. The app reads nothing from LinkedIn itself.</p>
           </div>
@@ -202,15 +204,18 @@ function errorText(e: unknown): string {
   return (e instanceof Error && e.message.trim()) || 'Something went wrong. Try again.';
 }
 
-type Tab = 'UPDATE_CONVERSATION' | 'START_CONVERSATION' | 'CONNECTION' | 'EVENT' | 'INTERVIEW';
+type Tab = 'UPDATE_CONVERSATION' | 'START_CONVERSATION' | 'CONNECTION' | 'EVENT' | 'INTERVIEW' | 'ACCOUNT' | 'OPPORTUNITY';
 
 /** The assistant's reply: what it read, and one editable card per thing it can do. */
 export function Proposals({ answer, shots = [], editable }: { answer: AssistantAnswer; shots?: { url: string }[]; editable: boolean }) {
   const r = answer.reading;
   const hasConversation = answer.conversations.length > 0;
   // Person cards when a person is involved (or nothing else was found); event and interview cards when read.
-  const aboutPerson = !!r.fullName || (!r.event && !r.interview);
+  const aboutPerson = !!r.fullName || (!r.event && !r.interview && !r.account && !r.opportunity);
+  const [addedAccount, setAddedAccount] = useState<NewAccount | null>(null);
   const tabs: { key: Tab; label: string }[] = [
+    ...(r.opportunity ? [{ key: 'OPPORTUNITY' as Tab, label: answer.opportunities?.length ? 'Update opportunity' : 'Add opportunity' }] : []),
+    ...(r.account ? [{ key: 'ACCOUNT' as Tab, label: answer.accounts.length ? 'Update account' : 'Add account' }] : []),
     ...(r.event ? [{ key: 'EVENT' as Tab, label: answer.events?.length ? 'Update conference' : 'Add conference' }] : []),
     ...(r.interview ? [{ key: 'INTERVIEW' as Tab, label: answer.interviews?.length ? 'Update interview' : 'Add interview' }] : []),
     ...(aboutPerson && hasConversation ? [{ key: 'UPDATE_CONVERSATION' as Tab, label: 'Update conversation' }] : []),
@@ -230,6 +235,8 @@ export function Proposals({ answer, shots = [], editable }: { answer: AssistantA
         {r.fullName && r.outcome && <><dt>Outcome</dt><dd>{OUTCOME_LABELS[r.outcome] ?? r.outcome}</dd></>}
         {r.fullName && r.nextStep && <><dt>Next</dt><dd>{r.nextStep}{r.nextStepDue ? ` by ${formatDate(r.nextStepDue)}` : ''}</dd></>}
         {r.event && <><dt>Event</dt><dd>{r.event.name}{r.event.startsOn ? `, ${formatDate(r.event.startsOn)}` : ''}{r.event.city ? `, ${r.event.city}` : r.event.online ? ', online' : ''}</dd></>}
+        {r.account && <><dt>Account</dt><dd>{r.account.name}{r.account.city ? `, ${r.account.city}` : ''}{r.account.employeeCount ? ` · ${r.account.employeeCount} people` : ''}{r.account.openRoles ? ` · ${r.account.openRoles} open roles` : ''}</dd></>}
+        {r.opportunity && <><dt>Opportunity</dt><dd>{r.opportunity.name}{r.opportunity.needSummary ? `: ${r.opportunity.needSummary}` : ''}</dd></>}
         {r.interview && <><dt>Interview</dt><dd>{r.interview.leaderName}{r.interview.topic ? `: ${r.interview.topic}` : ''}</dd></>}
       </dl>
       {editable && (
@@ -241,6 +248,8 @@ export function Proposals({ answer, shots = [], editable }: { answer: AssistantA
             ))}
           </div>
           {/* Keep every card mounted so edits and "done" states survive switching tabs. */}
+          {r.opportunity && <div hidden={tab !== 'OPPORTUNITY'}><OpportunityCard answer={answer} added={addedAccount} /></div>}
+          {r.account && <div hidden={tab !== 'ACCOUNT'}><AccountCard answer={answer} onAdded={setAddedAccount} /></div>}
           {r.event && <div hidden={tab !== 'EVENT'}><EventCard answer={answer} /></div>}
           {r.interview && <div hidden={tab !== 'INTERVIEW'}><InterviewCard answer={answer} /></div>}
           <div hidden={tab !== 'UPDATE_CONVERSATION'}>{hasConversation && <UpdateConversation answer={answer} />}</div>

@@ -78,6 +78,23 @@ class ClaudeNoteReader implements NoteReader {
         RECORDED, PUBLISHED with a link, DECLINED); on is the date of that stage as YYYY-MM-DD (the booked \
         date for BOOKED); publishedUrl only if published. Leave leaderName empty if there is no interview. \
         When about is INTERVIEW also fill the person fields with the leader.
+
+        "about" can also be ACCOUNT (a company or GCC centre we might sell to: a news item, a careers page, \
+        a note that a centre is opening or growing) or OPPORTUNITY (a client need that could become \
+        business: a request for engineers, a project, a proposal, a deal moving forward or lost).
+        - account: fill it when a company or centre is described, whatever "about" is. name as the centre \
+        is known (for example "Example Corp India Technology Centre"), parentCompany the global company, \
+        parentHqCountry its home country, city of the centre, websiteDomain the company's main web domain \
+        only if shown or certain (example.com, no www), industry in a few words, yearEstablished, \
+        employeeCount and openRoles only if stated (0 when not), notes with the key facts in one or two \
+        sentences. Leave name empty if no company is described.
+        - opportunity: fill it when there is a concrete need or deal. name a short title (for example \
+        "4 React engineers for payments"), type STAFF_AUGMENTATION for engineers joining their team or \
+        PROJECT for work we deliver, valueInr only if a value in rupees is stated or can be computed from \
+        stated rates and headcount (0 when not), expectedCloseDate and targetStartDate as YYYY-MM-DD if \
+        stated, needSummary in one or two sentences, stage one of the stage codes if the material says how \
+        far it got, else empty. Leave name empty if there is no need or deal. When about is OPPORTUNITY \
+        and a person is named, fill the person fields too.
         """;
 
     record NoteFields(
@@ -102,7 +119,30 @@ class ClaudeNoteReader implements NoteReader {
         @JsonPropertyDescription("Photo box height, fraction of image height") double photoHeight,
         @JsonPropertyDescription("TOUCH, EVENT or INTERVIEW") String about,
         @JsonPropertyDescription("An event mentioned, or an empty name") EventFields event,
-        @JsonPropertyDescription("A leader interview, or an empty leaderName") InterviewFields interview) {}
+        @JsonPropertyDescription("A leader interview, or an empty leaderName") InterviewFields interview,
+        @JsonPropertyDescription("A company or centre, or an empty name") AccountFields account,
+        @JsonPropertyDescription("A need or deal, or an empty name") OpportunityFields opportunity) {}
+
+    record AccountFields(
+        @JsonPropertyDescription("The centre's name, or empty") String name,
+        @JsonPropertyDescription("The global parent company") String parentCompany,
+        @JsonPropertyDescription("Parent's home country") String parentHqCountry,
+        @JsonPropertyDescription("City of the centre") String city,
+        @JsonPropertyDescription("Main web domain, e.g. example.com") String websiteDomain,
+        @JsonPropertyDescription("Industry in a few words") String industry,
+        @JsonPropertyDescription("Year formed, or 0") int yearEstablished,
+        @JsonPropertyDescription("Employees at the centre, or 0") int employeeCount,
+        @JsonPropertyDescription("Open engineering roles, or 0") int openRoles,
+        @JsonPropertyDescription("Key facts, one or two sentences") String notes) {}
+
+    record OpportunityFields(
+        @JsonPropertyDescription("Short title, or empty") String name,
+        @JsonPropertyDescription("STAFF_AUGMENTATION or PROJECT") String type,
+        @JsonPropertyDescription("Value in rupees, or 0") long valueInr,
+        @JsonPropertyDescription("Expected close, YYYY-MM-DD") String expectedCloseDate,
+        @JsonPropertyDescription("The need, one or two sentences") String needSummary,
+        @JsonPropertyDescription("Target start, YYYY-MM-DD") String targetStartDate,
+        @JsonPropertyDescription("One stage code, or empty") String stage) {}
 
     record EventFields(
         @JsonPropertyDescription("Event name, or empty") String name,
@@ -173,7 +213,8 @@ class ClaudeNoteReader implements NoteReader {
             .append("\nEvent kind codes: ").append(String.join(", ", EVENT_KINDS))
             .append("\nEvent role codes: ").append(String.join(", ", EVENT_ROLES))
             .append("\nInterview format codes: ").append(String.join(", ", INTERVIEW_FORMATS))
-            .append("\nInterview status codes: ").append(String.join(", ", INTERVIEW_STATUSES)).append('\n');
+            .append("\nInterview status codes: ").append(String.join(", ", INTERVIEW_STATUSES))
+            .append("\nOpportunity stage codes, in order: ").append(String.join(", ", request.stages())).append('\n');
         if (request.text() != null && !request.text().isBlank()) {
             text.append("\n<pasted_by_team_member>\n").append(request.text().strip()).append("\n</pasted_by_team_member>\n");
         }
@@ -204,14 +245,30 @@ class ClaudeNoteReader implements NoteReader {
                 code(i.format(), INTERVIEW_FORMATS, "BLOG"), code(i.status(), INTERVIEW_STATUSES, "IDEA"), c(i.on()),
                 c(i.publishedUrl()), c(i.notes()));
         }
+        Account account = null;
+        if (f.account() != null && !c(f.account().name()).isEmpty()) {
+            AccountFields a = f.account();
+            account = new Account(c(a.name()), c(a.parentCompany()), c(a.parentHqCountry()), c(a.city()),
+                c(a.websiteDomain()).toLowerCase(Locale.ROOT), c(a.industry()), positive(a.yearEstablished()),
+                positive(a.employeeCount()), positive(a.openRoles()), c(a.notes()));
+        }
+        Opportunity opportunity = null;
+        if (f.opportunity() != null && !c(f.opportunity().name()).isEmpty()) {
+            OpportunityFields o = f.opportunity();
+            String stage = c(o.stage()).toUpperCase(Locale.ROOT);
+            opportunity = new Opportunity(c(o.name()), code(o.type(), OPPORTUNITY_TYPES, "STAFF_AUGMENTATION"),
+                o.valueInr() > 0 ? o.valueInr() : null, c(o.expectedCloseDate()), c(o.needSummary()),
+                c(o.targetStartDate()), request.stages().contains(stage) ? stage : "");
+        }
         String about = code(f.about(), ABOUT, "TOUCH");
-        if ("EVENT".equals(about) && event == null || "INTERVIEW".equals(about) && interview == null) {
+        if ("EVENT".equals(about) && event == null || "INTERVIEW".equals(about) && interview == null
+            || "ACCOUNT".equals(about) && account == null || "OPPORTUNITY".equals(about) && opportunity == null) {
             about = "TOUCH";
         }
         return new Reading(c(f.reply()), c(f.fullName()), c(f.title()), c(f.company()), c(f.city()), c(f.linkedinUrl()),
             c(f.topic()), code(f.channel(), request.channels(), "LINKEDIN_MESSAGE"), c(f.occurredOn()), c(f.summary()),
             code(f.outcome(), request.outcomes(), "DONE"), c(f.nextStep()), c(f.nextStepDue()), f.newConnection(),
-            photo(f, request.images().size()), about, event, interview);
+            photo(f, request.images().size()), about, event, interview, account, opportunity);
     }
 
     /** The photo box, if it names a screenshot that was sent and is a sensible size; otherwise null. */
@@ -227,6 +284,10 @@ class ClaudeNoteReader implements NoteReader {
             return null;
         }
         return new Photo(f.photoImage(), x, y, w, h);
+    }
+
+    private static Integer positive(int v) {
+        return v > 0 ? v : null;
     }
 
     private static double clamp(double v) {

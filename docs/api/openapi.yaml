@@ -359,6 +359,32 @@ paths:
       parameters: [ { $ref: '#/components/parameters/Id' } ]
       responses:
         '200': { description: '{ event, conversations, connections }' }
+  /accounts:
+    post:
+      tags: [accounts]
+      operationId: addAccount
+      summary: Add one account by hand (Log with AI, ADR-0013). Keyed by website domain and city (BR-BD-01).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, parentCompany, city, websiteDomain]
+              properties:
+                name: { type: string }
+                parentCompany: { type: string }
+                parentHqCountry: { type: string }
+                city: { type: string }
+                websiteDomain: { type: string }
+                industry: { type: string }
+                notes: { type: string }
+                source: { type: string }
+                profile: { type: object, description: '{ yearEstablished, headcountBand, employeeCount, openRoles, openRolesAsOf, openRolesSource }' }
+      responses:
+        '201': { description: '{ id }' }
+        '409': { description: Already in the app }
+        '422': { description: Missing or invalid fields }
   /assistant/status:
     get:
       tags: [engagement]
@@ -385,7 +411,7 @@ paths:
                   description: PNG, JPEG, WebP or GIF, at most 5 MB each
                   items: { type: string, format: binary }
       responses:
-        '200': { description: '{ reading: { reply, fullName, title, company, city, linkedinUrl, topic, channel, occurredOn, summary, outcome, nextStep, nextStepDue, newConnection, photo: { image, x, y, width, height } | null, about: TOUCH | EVENT | INTERVIEW, event: { name, kind, startsOn, endsOn, city, online, url, organiser, ourRole, notes } | null, interview: { leaderName, leaderTitle, company, topic, format, status, on, publishedUrl, notes } | null }, conversations: Conversation[], connections: Connection[], accounts: [{ id, name, parentCompany, city, websiteDomain }], contactId, events: Event[], interviews: [{ id, leaderName, leaderTitle, company, topic, format, status, scheduledOn, version }], suggestion: UPDATE_CONVERSATION | START_CONVERSATION | ADD_CONNECTION | EVENT | INTERVIEW }' }
+        '200': { description: '{ reading: { reply, fullName, title, company, city, linkedinUrl, topic, channel, occurredOn, summary, outcome, nextStep, nextStepDue, newConnection, photo: { image, x, y, width, height } | null, about: TOUCH | EVENT | INTERVIEW, event: { name, kind, startsOn, endsOn, city, online, url, organiser, ourRole, notes } | null, interview: { leaderName, leaderTitle, company, topic, format, status, on, publishedUrl, notes } | null, account: { name, parentCompany, parentHqCountry, city, websiteDomain, industry, yearEstablished, employeeCount, openRoles, notes } | null, opportunity: { name, type, valueInr, expectedCloseDate, needSummary, targetStartDate, stage } | null }, conversations: Conversation[], connections: Connection[], accounts: [{ id, name, parentCompany, city, websiteDomain }], contactId, events: Event[], interviews: [{ id, leaderName, leaderTitle, company, topic, format, status, scheduledOn, version }], opportunities: Opportunity[], suggestion: UPDATE_CONVERSATION | START_CONVERSATION | ADD_CONNECTION | EVENT | INTERVIEW | ACCOUNT | OPPORTUNITY }' }
         '400': { description: 'No text or screenshot, too long, or a file that is not a supported image' }
         '403': { description: 'Not a pipeline role' }
         '422': { description: 'The assistant is switched off (no ANTHROPIC_API_KEY)' }

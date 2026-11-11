@@ -24,8 +24,9 @@ the thread, and have the conversation or connection added or updated.
    the app's channel and outcome codes. Any other code is replaced by a default.
 3. Claude also says what the material is mainly about: a touch with a person,
    a conference or event (an invitation, a registration, an agenda), or a
-   leader interview (asked, agreed, booked, recorded, published), and fills in
-   the event's or interview's details with the app's codes.
+   leader interview (asked, agreed, booked, recorded, published), an account
+   (a GCC centre and its facts) or an opportunity (a client need or deal), and
+   fills in the details with the app's codes and the configured stages.
 4. The server matches the reading to open conversations and connections by the
    person's name, to accounts by company, to conferences by name and to
    interviews by the leader's name, and suggests one action: the conference or
@@ -35,8 +36,11 @@ the thread, and have the conversation or connection added or updated.
 5. The page shows editable cards for **Update conversation**, **Start
    conversation**, **Add / Update connection**, **Add / Update conference**
    (with "I'm going") and **Add / Update interview** (moving it one stage at a
-   time to the stage read, as the interview rules require), prefilled from the
-   reading.
+   time to the stage read, as the interview rules require), **Add / Update
+   account** (a new centre, keyed by website domain and city as in BR-BD-01, or
+   the year formed, size and open roles of one we have) and **Add / Update
+   opportunity** (moved to the stage read; the stage rules still apply, and
+   what is missing is shown with a link), prefilled from the reading.
    Nothing is saved until the person presses the card's button, and saving
    uses the existing endpoints with their rules, roles and optimistic locking.
 6. Nothing from the chat is stored: not the note, the screenshots or Claude's

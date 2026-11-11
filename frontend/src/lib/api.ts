@@ -585,9 +585,21 @@ export interface AssistantReading {
   /** Where their profile photo is: screenshot index and a box as fractions of that screenshot. */
   photo?: PhotoBox | null;
   /** TOUCH (a person), EVENT (a conference or meetup) or INTERVIEW (a leader interview). */
-  about?: 'TOUCH' | 'EVENT' | 'INTERVIEW';
+  about?: 'TOUCH' | 'EVENT' | 'INTERVIEW' | 'ACCOUNT' | 'OPPORTUNITY';
   event?: AssistantEvent | null;
   interview?: AssistantInterview | null;
+  account?: AssistantAccount | null;
+  opportunity?: AssistantOpportunity | null;
+}
+
+export interface AssistantAccount {
+  name: string; parentCompany: string; parentHqCountry: string; city: string; websiteDomain: string; industry: string;
+  yearEstablished?: number | null; employeeCount?: number | null; openRoles?: number | null; notes: string;
+}
+
+export interface AssistantOpportunity {
+  name: string; type: OpportunityType; valueInr?: number | null; expectedCloseDate: string; needSummary: string;
+  targetStartDate: string; stage: string;
 }
 
 export interface AssistantEvent {
@@ -609,7 +621,8 @@ export interface PhotoBox { image: number; x: number; y: number; width: number; 
 
 export interface FoundAccount { id: number; name: string; parentCompany: string; city: string; websiteDomain: string }
 
-export type AssistantSuggestion = 'UPDATE_CONVERSATION' | 'START_CONVERSATION' | 'ADD_CONNECTION' | 'EVENT' | 'INTERVIEW';
+export type AssistantSuggestion = 'UPDATE_CONVERSATION' | 'START_CONVERSATION' | 'ADD_CONNECTION' | 'EVENT' | 'INTERVIEW'
+  | 'ACCOUNT' | 'OPPORTUNITY';
 
 export interface AssistantAnswer {
   reading: AssistantReading;
@@ -619,5 +632,6 @@ export interface AssistantAnswer {
   contactId?: number | null;
   events?: BdEvent[];
   interviews?: InterviewMatch[];
+  opportunities?: Opportunity[];
   suggestion: AssistantSuggestion;
 }

@@ -87,7 +87,7 @@ class AssistantIntegrationTest {
     NoteReader.Reading reading(String name, String company) {
         return new NoteReader.Reading("Call with " + name, name, "Engineering Director", company, "Bengaluru", "",
             "AI pod", "CALL", TODAY.toString(), "Back on Friday; wants a show and tell", "MEETING_BOOKED",
-            "Book the show and tell", TODAY.plusDays(3).toString(), false, null, "TOUCH", null, null);
+            "Book the show and tell", TODAY.plusDays(3).toString(), false, null, "TOUCH", null, null, null, null);
     }
 
     @Test
@@ -101,13 +101,30 @@ class AssistantIntegrationTest {
         NEXT.set(new NoteReader.Reading("Registered for the summit", "", "", "", "", "", "", "EVENT", TODAY.toString(), "",
             "DONE", "", "", false, null, "EVENT",
             new NoteReader.Event("Example Tech Summit 2026", "CONFERENCE", TODAY.plusDays(20).toString(), "", "Bengaluru",
-                false, "", "", "SIGNED_UP", "Registered two of us"), null));
+                false, "", "", "SIGNED_UP", "Registered two of us"), null, null, null));
         mvc.perform(multipart("/api/v1/assistant/read").param("text", "Registered for Example Tech Summit 2026")
                 .with(user(ADMIN)).with(csrf()))
             .andExpect(jsonPath("$.suggestion").value("EVENT"))
             .andExpect(jsonPath("$.events[0].name").value("Example Tech Summit"))
             .andExpect(jsonPath("$.reading.event.ourRole").value("SIGNED_UP"));
         org.assertj.core.api.Assertions.assertThat(r.about()).isEqualTo("TOUCH");
+    }
+
+    @Test
+    void aCentreIsMatchedByDomainAndCityAndItsOpenOpportunitiesListed() throws Exception {
+        mvc.perform(post("/api/v1/opportunities").with(user(ADMIN)).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"accountId": %d, "name": "React team", "type": "STAFF_AUGMENTATION"}""".formatted(account)))
+            .andExpect(status().isCreated());
+        NEXT.set(new NoteReader.Reading("They want 4 React engineers", "", "", "", "", "", "", "EMAIL", TODAY.toString(), "",
+            "REPLIED", "", "", false, null, "OPPORTUNITY", null, null,
+            new NoteReader.Account("Alpha India Tech Centre", "Alpha Corp", "", "Bengaluru", "alpha-gcc.test", "", null, 1200, 40, ""),
+            new NoteReader.Opportunity("4 React engineers", "STAFF_AUGMENTATION", null, "", "Payments rebuild", "", "")));
+        mvc.perform(multipart("/api/v1/assistant/read").param("text", "Alpha wants 4 React engineers").with(user(ADMIN)).with(csrf()))
+            .andExpect(jsonPath("$.suggestion").value("OPPORTUNITY"))
+            .andExpect(jsonPath("$.accounts[0].id").value(account))
+            .andExpect(jsonPath("$.opportunities[0].name").value("React team"));
+        org.assertj.core.api.Assertions.assertThat(LAST.get().stages()).isNotEmpty();
     }
 
     @Test
@@ -119,7 +136,7 @@ class AssistantIntegrationTest {
         NEXT.set(new NoteReader.Reading("Person Five agreed to the podcast", "Person Five", "CTO", "Alpha Corp", "", "", "",
             "LINKEDIN_MESSAGE", TODAY.toString(), "", "REPLIED", "", "", false, null, "INTERVIEW", null,
             new NoteReader.Interview("Person Five", "CTO", "Alpha Corp", "AI-native teams", "PODCAST", "AGREED",
-                TODAY.toString(), "", "")));
+                TODAY.toString(), "", ""), null, null));
         mvc.perform(multipart("/api/v1/assistant/read").param("text", "Person Five said yes to the podcast")
                 .with(user(ADMIN)).with(csrf()))
             .andExpect(jsonPath("$.suggestion").value("INTERVIEW"))
