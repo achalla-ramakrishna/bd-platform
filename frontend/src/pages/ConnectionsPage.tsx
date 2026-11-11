@@ -27,6 +27,21 @@ export function KnownBy({ c }: { c: Connection }) {
 
 /** Connections (backlog item 4): go to network, not go to market. */
 export function ConnectionsPage({ me }: { me: Me }) {
+  const [view, setView] = useState<'cards' | 'table'>(() => {
+    try {
+      return localStorage.getItem('connections.view') === 'table' ? 'table' : 'cards';
+    } catch {
+      return 'cards';
+    }
+  });
+  const chooseView = (v: 'cards' | 'table') => {
+    setView(v);
+    try {
+      localStorage.setItem('connections.view', v);
+    } catch {
+      // Storage may be blocked; the choice then lasts for this visit only.
+    }
+  };
   const [q, setQ] = useState('');
   const [mine, setMine] = useState(false);
   const [linked, setLinked] = useState('');
@@ -43,6 +58,7 @@ export function ConnectionsPage({ me }: { me: Me }) {
   const thisWeek = weeks.at(-1)?.added ?? 0;
   const lastWeek = weeks.at(-2)?.added ?? 0;
 
+  const emptyText = q || linked || strength || mine ? 'No connections match.' : 'No connections yet. Add the people you know.';
   return (
     <>
       <div className="title-row">
@@ -81,10 +97,50 @@ export function ConnectionsPage({ me }: { me: Me }) {
         </select>
         <label className="inline-check"><input type="checkbox" id="conn-mine" checked={mine} onChange={(e) => setMine(e.target.checked)} /> Known by me</label>
         {list.data && <span className="muted">{list.data.items.length} shown</span>}
+        <div className="segmented view-toggle" role="group" aria-label="Show as">
+          <button type="button" className={view === 'cards' ? 'on' : ''} aria-pressed={view === 'cards'} onClick={() => chooseView('cards')}>Cards</button>
+          <button type="button" className={view === 'table' ? 'on' : ''} aria-pressed={view === 'table'} onClick={() => chooseView('table')}>Table</button>
+        </div>
       </div>
-      <ConnectionTable items={list.data?.items ?? []} loading={list.isPending}
-        empty={q || linked || strength || mine ? 'No connections match.' : 'No connections yet. Add the people you know.'} />
+      {view === 'cards'
+        ? <ConnectionCards items={list.data?.items ?? []} loading={list.isPending} empty={emptyText} />
+        : <ConnectionTable items={list.data?.items ?? []} loading={list.isPending} empty={emptyText} />}
     </>
+  );
+}
+
+/** Connections as a grid of people cards: photo, name, role, company, who knows them, the account they lead to. */
+export function ConnectionCards({ items, loading, empty }: { items: Connection[]; loading?: boolean; empty: string }) {
+  const navigate = useNavigate();
+  if (loading) return <p className="muted">Loading…</p>;
+  if (items.length === 0) return <p className="muted">{empty}</p>;
+  return (
+    <ul className="person-cards">
+      {items.map((c) => (
+        <li key={c.id} className="person-card" onClick={() => navigate(`/connections/${c.id}`)}>
+          <div className="banner" aria-hidden="true" />
+          <PersonPhoto c={c} size={88} />
+          <Link className="name" to={`/connections/${c.id}`} onClick={(e) => e.stopPropagation()}>{c.fullName}</Link>
+          <p className="role">{c.currentRole || <span className="muted">No role yet</span>}</p>
+          <p className="company muted">{[c.currentCompany, c.city].filter(Boolean).join(' · ') || '—'}</p>
+          <div className="meta">
+            {c.accountId ? (
+              <p>
+                <Link to={`/accounts/${c.accountId}`} onClick={(e) => e.stopPropagation()}>{c.accountName}</Link>
+                {c.accountLink && <span className="muted"> · {ACCOUNT_LINK_LABELS[c.accountLink]}</span>}
+              </p>
+            ) : <p className="muted">Not linked to an account</p>}
+            <KnownBy c={c} />
+            <p className="muted small">Connected {formatDate(c.firstConnectedOn)}</p>
+          </div>
+          {c.linkedinUrl && (
+            <a className="profile-link small" href={c.linkedinUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+              Profile ↗
+            </a>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 
