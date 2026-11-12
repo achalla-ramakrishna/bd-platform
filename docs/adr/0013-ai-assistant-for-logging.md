@@ -49,6 +49,12 @@ the thread, and have the conversation or connection added or updated.
 7. Only pipeline roles may use it. Without `ANTHROPIC_API_KEY` the page says
    it is switched off and points to the manual forms.
 
+**Voice (added 2026-11-12).** A Speak button on Log with AI and Walnut types what
+the person says into the box, using the browser's own speech recognition
+(Chrome and Edge send the audio to their speech service; Safari works on the
+device). The app receives only the text, which the person can edit before
+sending. Browsers without speech recognition do not show the button.
+
 ## Alternatives considered
 
 - **Read LinkedIn messages directly**: automates LinkedIn and is ruled out by

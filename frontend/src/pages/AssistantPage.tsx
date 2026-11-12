@@ -8,6 +8,8 @@ import {
 import { formatDate } from '../lib/format';
 import { today } from './ConversationsPage';
 import { PhotoChooser } from './PersonPhoto';
+import { VoiceButton } from './VoiceButton';
+import { appendSpoken } from '../lib/dictation';
 import { AccountCard, EventCard, InterviewCard, OpportunityCard, type NewAccount } from './AssistantCards';
 import { photoForm } from '../lib/photo';
 
@@ -144,6 +146,8 @@ export function AssistantPage({ me }: { me: Me }) {
               <li>“Example Corp is opening a 500-person tech centre in Pune; 40 open engineering roles.”</li>
               <li>“Alpha wants 4 React engineers from January for the payments rebuild.”</li>
             </ul>
+            <p className="small">Or press <strong>Speak</strong> and say it: your browser turns speech into text (Chrome and Edge use their
+              own speech service for this), and you can edit the text before sending.</p>
             <p className="small">Screenshots go to Anthropic’s Claude to be read and are not stored. The app reads nothing from LinkedIn itself.</p>
           </div>
         )}
@@ -180,7 +184,7 @@ export function AssistantPage({ me }: { me: Me }) {
         )}
         <textarea id="assistant-text" rows={3} value={text} maxLength={20000} disabled={!editable || disabled}
           aria-label="What happened"
-          placeholder="What happened? Type it, or paste or drop screenshots here."
+          placeholder="What happened? Type or speak it, or paste or drop screenshots here."
           onPaste={onPaste} onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submit(); } }} />
         {warning && <p className="small" role="alert" style={{ color: 'var(--warn)' }}>{warning}</p>}
@@ -190,6 +194,7 @@ export function AssistantPage({ me }: { me: Me }) {
           </button>
           <button type="button" className="secondary" disabled={!editable || disabled || shots.length >= MAX_IMAGES}
             onClick={() => fileInput.current?.click()}>Add screenshot</button>
+          <VoiceButton disabled={!editable || disabled} onText={(t) => setText((cur) => appendSpoken(cur, t))} />
           <input ref={fileInput} type="file" accept={IMAGE_TYPES.join(',')} multiple hidden aria-label="Choose screenshots"
             onChange={(e) => { void addFiles(Array.from(e.target.files ?? [])); e.target.value = ''; }} />
           <span className="muted small">Ctrl+Enter to send</span>

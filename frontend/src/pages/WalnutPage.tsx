@@ -8,6 +8,8 @@ import {
 import { formatDate } from '../lib/format';
 import { Markdown } from '../lib/markdown';
 import { today } from './ConversationsPage';
+import { VoiceButton } from './VoiceButton';
+import { appendSpoken } from '../lib/dictation';
 
 /*
  * Walnut, the BD agent (ADR-0015). Each weekday morning it writes a plan (and emails it); people reply in
@@ -137,11 +139,12 @@ export function WalnutPage() {
       </div>
       <form className="composer" aria-label="Message Walnut" onSubmit={(e) => { e.preventDefault(); submit(text); }}>
         <textarea id="walnut-text" rows={2} value={text} maxLength={4000} disabled={chatOff} aria-label="Message Walnut"
-          placeholder="Tell Walnut what happened, or ask what to do next"
+          placeholder="Tell Walnut what happened (type or speak), or ask what to do next"
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(text); } }} />
         <div className="actions">
           <button type="submit" disabled={chatOff || send.isPending || !text.trim()}>{send.isPending ? 'Sending…' : 'Send'}</button>
+          <VoiceButton disabled={chatOff} onText={(t) => setText((cur) => appendSpoken(cur, t))} />
           <span className="muted small">Enter to send · Shift+Enter for a new line</span>
         </div>
       </form>

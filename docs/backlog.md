@@ -167,6 +167,8 @@ A chat where people type what they did or paste screenshots of a thread
 - Up to 4 screenshots per message, pasted, dropped or chosen. Nothing from the
   chat is stored; the app reads nothing from LinkedIn.
 - Linked from the Conversations and Connections pages.
+- Voice: press Speak and say what happened; the browser turns it into text to
+  check and send (also on Walnut).
 - Photos (ADR-0014): when a screenshot shows the person's profile photo, the
   card crops it (drag to adjust) and saves it with the connection if ticked.
   Photos can also be added, changed or removed on the connection page.
