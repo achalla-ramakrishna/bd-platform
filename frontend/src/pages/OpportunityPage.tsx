@@ -3,11 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import {
   ApiError, api, canEditFulfilment, canEditPipeline,
-  type Account, type Contact, type Me, type Opportunity, type OpportunityType, type Page, type Requirement,
+  type Contact, type Me, type Opportunity, type OpportunityType, type Requirement,
 } from '../lib/api';
 import { formatDate, formatInr, humanise } from '../lib/format';
 import { typeLabel, useReference } from './PipelinePage';
 import { CandidatesPanel } from './Candidates';
+import { AccountCombo } from './AccountCombo';
 
 interface FormState {
   accountId: string;
@@ -127,7 +128,6 @@ function OpportunityEditor({ me, existing }: { me: Me; existing?: Opportunity })
   const [saved, setSaved] = useState(false);
   const set = (patch: Partial<FormState>) => { setForm((f) => ({ ...f, ...patch })); setSaved(false); };
 
-  const accounts = useQuery({ queryKey: ['accounts-all'], queryFn: () => api.get<Page<Account>>('/accounts?size=200') });
   const people = useQuery({ queryKey: ['people'], queryFn: () => api.get<{ id: number; name: string }[]>('/users') });
   const contacts = useQuery({
     queryKey: ['contacts', form.accountId],
@@ -176,10 +176,8 @@ function OpportunityEditor({ me, existing }: { me: Me; existing?: Opportunity })
           <h2>Details</h2>
           <div className="grid">
             <label>Account
-              <select id="opp-account" required value={form.accountId} onChange={(e) => set({ accountId: e.target.value, decisionMakerContactId: '' })}>
-                <option value="">Choose an account</option>
-                {accounts.data?.items.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
+              <AccountCombo id="opp-account" value={form.accountId ? Number(form.accountId) : null}
+                onChange={(id) => set({ accountId: id === null ? '' : String(id), decisionMakerContactId: '' })} />
             </label>
             <label>Name
               <input id="opp-name" required maxLength={200} value={form.name} onChange={(e) => set({ name: e.target.value })} placeholder="For example: Payments team extension" />

@@ -481,3 +481,18 @@ button.link { all: unset; color: var(--accent); cursor: pointer; text-decoration
 .propose-form .segmented { margin-bottom: 10px; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .bad-text { color: var(--bad); }
+
+/* Editable account select. */
+.combo { position: relative; }
+.combo input { width: 100%; box-sizing: border-box; padding-right: 28px; }
+.combo-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: 0; color: var(--muted);
+  padding: 2px 6px; font-size: 16px; line-height: 1; }
+.combo-list { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 4px); max-height: 320px; overflow-y: auto;
+  margin: 0; padding: 4px 0; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); }
+.combo-list [role='option'] { display: flex; flex-direction: column; padding: 6px 12px; cursor: pointer; color: var(--fg); font-weight: 400; }
+.combo-list { min-width: 280px; }
+.combo-list [role='option'].active { background: var(--accent-soft); }
+.combo-list [role='option'][aria-selected='true'] { font-weight: 600; }
+.combo-group { padding: 8px 12px 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.combo-note { padding: 6px 12px; }
