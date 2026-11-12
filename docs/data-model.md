@@ -30,6 +30,7 @@ explains them.
 | engagement | V10 | `conversation`; `activity.conversation_id` links updates to their conversation |
 | contacts | V11 | `connection`, `connection_knower` (who in the team knows each person, how well, since when); replaces the unused `warm_path` |
 | contacts | V15 | `connection_photo`: one small JPEG per connection (ADR-0014), removed with the connection |
+| walnut | V16 | `walnut_message` (each person's thread with Walnut, private), `walnut_brief` (one plan per person per day, emailed or not), `walnut_settings` (email the plan or not) |
 | improvements | V12 | `improvement` (status, build-queue rank, decision and delivery) |
 | engagement | V13 | `bd_event`, `bd_event_attendee`; `conversation.event_id` and `connection.met_at_event_id` record who we met where |
 | engagement | V14 | `interview` (leader interviews and their stage dates) |

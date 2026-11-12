@@ -179,6 +179,20 @@ A chat where people type what they did or paste screenshots of a thread
 - A LinkedIn invitation that is not yet accepted is logged as a conversation
   (connection request, no reply yet); add the connection once they accept.
 
+## 10. Walnut, the BD agent (Built)
+
+An agent that works with every Admin (ADR-0015):
+
+- Each weekday at 08:30 IST, a plan per person in the app and by email:
+  follow-ups, the next life-cycle step for each conversation (request sent,
+  connected and needs a first message, nudge, book a meeting, record the
+  opportunity), the top 5 accounts to approach and who to connect with, deals
+  and what they are missing, events, interviews, the team's week and
+  questions. Fridays add a week review.
+- A chat: tell Walnut what happened or ask what to do; it drafts messages and
+  proposes updates (next step, log a touch) that you apply with one click.
+- Nothing is saved or sent without a click; nothing automates LinkedIn.
+
 ## Outside the platform
 
 - Vendor kit: one-page company write-up, 3 to 5 case studies, engagement

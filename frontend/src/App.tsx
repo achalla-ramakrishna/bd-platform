@@ -10,6 +10,7 @@ import { EventPage, EventsPage } from './pages/EventsPage';
 import { HeatmapPage } from './pages/HeatmapPage';
 import { InterviewPage, InterviewsPage } from './pages/InterviewsPage';
 import { AssistantPage } from './pages/AssistantPage';
+import { WalnutPage } from './pages/WalnutPage';
 import { NavLink, Navigate, Route, Routes } from 'react-router';
 import { ApiError, api, type Me, type SignInInfo } from './lib/api';
 import { AccountsPage } from './pages/AccountsPage';
@@ -45,6 +46,7 @@ export function App() {
       <nav className="nav" aria-label="Main">
         <div className="brand">CodeWalnut <span>BD</span></div>
         <NavGroup label="Plan">
+          <NavLink to="/walnut">Walnut</NavLink>
           <NavLink to="/strategy">Strategy</NavLink>
           <NavLink to="/heatmap">Heatmap</NavLink>
         </NavGroup>
@@ -101,6 +103,7 @@ export function App() {
           <Route path="/events/:id" element={<EventPage me={user} />} />
           <Route path="/improvements" element={<ImprovementsPage />} />
           <Route path="/improvements/:id" element={<ImprovementPage />} />
+          <Route path="/walnut" element={<WalnutPage />} />
           <Route path="/assistant" element={<AssistantPage me={user} />} />
           <Route path="/connections" element={<ConnectionsPage me={user} />} />
           <Route path="/connections/:id" element={<ConnectionPage me={user} />} />

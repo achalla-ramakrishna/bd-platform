@@ -4,6 +4,8 @@ spring:
     username: ${TEST_DATABASE_USERNAME:bd}
     password: ${TEST_DATABASE_PASSWORD:bd}
 app:
+  walnut:
+    scheduler-enabled: false
   security:
     allowed-domain: example-gcc.test
     bootstrap-admins: admin@example-gcc.test

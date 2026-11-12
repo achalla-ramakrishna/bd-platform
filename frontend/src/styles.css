@@ -446,3 +446,19 @@ button.link { all: unset; color: var(--accent); cursor: pointer; text-decoration
 .person-card .meta .known-by { justify-content: center; }
 .person-card .profile-link { margin-top: 8px; }
 @media (max-width: 760px) { .view-toggle { margin-left: 0; } }
+
+/* Walnut, the BD agent (ADR-0015). */
+.walnut-settings { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin: 4px 0 8px; }
+.chat.walnut .bubble.ai.brief { border-left: 4px solid var(--accent); }
+.chat.walnut .bubble .markdown h3 { font-size: 15px; margin: 14px 0 4px; }
+.chat.walnut .bubble .markdown ul, .chat.walnut .bubble .markdown ol { margin: 4px 0 8px; padding-left: 20px; }
+.chat.walnut .bubble .markdown p { margin: 4px 0 8px; }
+.walnut-meta { margin-bottom: 4px; }
+.walnut-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.walnut-update { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.walnut-draft { align-self: stretch; }
+.draft-box { margin-top: 6px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 8px; background: var(--bg); }
+.draft-box p { margin: 0 0 8px; }
+.prompts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; max-width: 860px; }
+.chip { background: var(--surface); color: var(--accent); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-weight: 500; font-size: 13px; }
+.chip:hover:not(:disabled) { border-color: var(--accent); }

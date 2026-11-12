@@ -123,6 +123,24 @@ the variable holds another key, or a `${{...}}` reference points at a stale one:
 the key itself. If they match, the key was revoked or belongs to a disabled
 organization: create a new one. Surrounding spaces and quotes are ignored.
 
+### Walnut, the BD agent (ADR-0015)
+
+Walnut works with every active user who has the Admin role. Its morning plan
+is written at 08:30 IST on weekdays and works without any key. Chat needs
+`ANTHROPIC_API_KEY` (above). To email the plan, create a Resend account
+(resend.com), verify the sending domain, and add to the app service:
+
+```
+MAIL_API_KEY=<the Resend API key>
+MAIL_FROM=Walnut <walnut@your-verified-domain>
+APP_BASE_URL=https://<the app's public address>
+```
+
+Deploy logs then show `Walnut email briefs: ENABLED`. On the Walnut page,
+"Email me today's plan now" checks the set-up. Optional: `WALNUT_ROLES`
+(default `ADMIN`, comma-separated), `WALNUT_BRIEF_CRON` (default
+`0 30 8 * * MON-FRI`), `WALNUT_ZONE` (default `Asia/Kolkata`).
+
 ### Optional: research upload by script (ADR-0010)
 
 Lets a script (for example a Claude Code session) upload account research

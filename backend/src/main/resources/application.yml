@@ -49,6 +49,17 @@ management:
 app:
   ai:
     anthropic-api-key: ${ANTHROPIC_API_KEY:}
+  # Walnut, the BD agent (ADR-0015): who it works with, when it writes the morning plan, links in emails.
+  walnut:
+    roles: ${WALNUT_ROLES:ADMIN}
+    brief-cron: ${WALNUT_BRIEF_CRON:0 30 8 * * MON-FRI}
+    zone: ${WALNUT_ZONE:Asia/Kolkata}
+    scheduler-enabled: ${WALNUT_SCHEDULER:true}
+    base-url: ${APP_BASE_URL:}
+  # Email for Walnut's morning plan, through Resend's API. Off unless both are set.
+  mail:
+    api-key: ${MAIL_API_KEY:}
+    from: ${MAIL_FROM:}
   security:
     allowed-domain: ${ALLOWED_DOMAIN:codewalnut.com}
     bootstrap-admins: ${BOOTSTRAP_ADMINS:}

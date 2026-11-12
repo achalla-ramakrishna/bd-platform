@@ -41,7 +41,7 @@ class DiscoveryService {
     private final TaskExecutor executor;
     private final AuditLog audit;
 
-    DiscoveryService(JdbcClient jdbc, JsonMapper json, GccFinder finder, AccountRegistry accounts, TaskExecutor executor,
+    DiscoveryService(JdbcClient jdbc, JsonMapper json, GccFinder finder, AccountRegistry accounts, @org.springframework.beans.factory.annotation.Qualifier("applicationTaskExecutor") TaskExecutor executor,
                      AuditLog audit) {
         this.jdbc = jdbc;
         this.json = json;

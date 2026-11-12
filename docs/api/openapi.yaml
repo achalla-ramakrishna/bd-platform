@@ -415,6 +415,68 @@ paths:
         '400': { description: 'No text or screenshot, too long, or a file that is not a supported image' }
         '403': { description: 'Not a pipeline role' }
         '422': { description: 'The assistant is switched off (no ANTHROPIC_API_KEY)' }
+  /walnut/status:
+    get:
+      tags: [walnut]
+      operationId: walnutStatus
+      summary: Whether Walnut works with me, and whether chat and email are set up (ADR-0015)
+      responses:
+        '200': { description: '{ available, chatEnabled, emailEnabled, worksWith: [name] }' }
+  /walnut/messages:
+    get:
+      tags: [walnut]
+      operationId: walnutMessages
+      summary: My thread with Walnut, oldest first (50 at a time)
+      parameters:
+        - { name: before, in: query, schema: { type: integer, format: int64 }, description: Messages before this id }
+      responses:
+        '200': { description: '[{ id, author: PERSON | WALNUT, kind: CHAT | BRIEF | REVIEW, body (Markdown), actions: [{ type: OPEN | DRAFT | SET_NEXT_STEP | LOG_UPDATE, label, path, text, conversationId, nextStep, nextStepDue, channel, summary, outcome }], createdAt }]' }
+        '403': { description: Walnut does not work with my role }
+    post:
+      tags: [walnut]
+      operationId: walnutChat
+      summary: Send Walnut a message; returns my message and Walnut's reply. Saves nothing else.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [text], properties: { text: { type: string, maxLength: 4000 } } }
+      responses:
+        '200': { description: '[my message, Walnut reply]' }
+        '422': { description: Empty or too long, or chat is not set up }
+  /walnut/brief:
+    post:
+      tags: [walnut]
+      operationId: walnutBrief
+      summary: Today's plan (written now if the morning run has not done it yet; one per day)
+      responses:
+        '200': { description: The plan message }
+  /walnut/brief/email:
+    post:
+      tags: [walnut]
+      operationId: walnutEmailMe
+      summary: Email today's plan to me now (checks the email set-up)
+      responses:
+        '200': { description: '{ sent }' }
+        '422': { description: Email is not set up }
+  /walnut/settings:
+    get:
+      tags: [walnut]
+      operationId: walnutSettings
+      summary: Whether the morning plan is emailed to me
+      responses:
+        '200': { description: '{ emailBrief, emailAvailable, email }' }
+    put:
+      tags: [walnut]
+      operationId: updateWalnutSettings
+      summary: Turn the morning plan email on or off
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [emailBrief], properties: { emailBrief: { type: boolean } } }
+      responses:
+        '200': { description: '{ emailBrief, emailAvailable, email }' }
   /heatmap:
     get:
       tags: [reporting]

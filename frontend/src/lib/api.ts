@@ -635,3 +635,30 @@ export interface AssistantAnswer {
   opportunities?: Opportunity[];
   suggestion: AssistantSuggestion;
 }
+
+/** Walnut, the BD agent (ADR-0015). */
+export interface WalnutAction {
+  type: 'OPEN' | 'DRAFT' | 'SET_NEXT_STEP' | 'LOG_UPDATE';
+  label: string;
+  path: string;
+  text: string;
+  conversationId?: number | null;
+  nextStep: string;
+  nextStepDue: string;
+  channel: string;
+  summary: string;
+  outcome: string;
+}
+
+export interface WalnutMessage {
+  id: number;
+  author: 'PERSON' | 'WALNUT';
+  kind: 'CHAT' | 'BRIEF' | 'REVIEW';
+  body: string;
+  actions: WalnutAction[];
+  createdAt: string;
+}
+
+export interface WalnutStatus { available: boolean; chatEnabled: boolean; emailEnabled: boolean; worksWith: string[] }
+
+export interface WalnutSettings { emailBrief: boolean; emailAvailable: boolean; email: string }

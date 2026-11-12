@@ -49,6 +49,15 @@ class AssistConfig {
         return new ClaudeNoteReader(client(apiKey));
     }
 
+    @Bean
+    Coach coach(@Value("${app.ai.anthropic-api-key:}") String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return new DisabledCoach();
+        }
+        LOG.info("Walnut chat: ENABLED ({}).", ClaudeCoach.MODEL);
+        return new ClaudeCoach(client(apiKey));
+    }
+
     private static com.anthropic.client.AnthropicClient client(String apiKey) {
         ClaudeErrors.keyHint = hint(apiKey);
         // Research runs several web searches; allow up to 5 minutes per call.

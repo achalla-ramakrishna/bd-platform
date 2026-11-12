@@ -29,3 +29,16 @@ describe('Markdown', () => {
     expect(container.textContent).toContain('<img');
   });
 });
+
+import { render as renderApp, screen as appScreen, cleanup as cleanupApp } from '@testing-library/react';
+import { afterEach as afterEachApp, describe as describeApp, expect as expectApp, it as itApp } from 'vitest';
+
+describeApp('Markdown app links', () => {
+  afterEachApp(cleanupApp);
+  itApp('hands links to pages in the app to the app link renderer, and keeps web links as they are', () => {
+    renderApp(<Markdown text={'See [Person One](/conversations/12) and [docs](https://example-gcc.test/x)'}
+      appLink={(path, label, key) => <b key={key} data-path={path}>{label}</b>} />);
+    expectApp(appScreen.getByText('Person One').getAttribute('data-path')).toBe('/conversations/12');
+    expectApp(appScreen.getByText('docs').getAttribute('href')).toBe('https://example-gcc.test/x');
+  });
+});

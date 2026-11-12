@@ -44,7 +44,7 @@ class ResearchService {
     private final AuditLog audit;
 
     ResearchService(JdbcClient jdbc, JsonMapper json, AccountResearcher researcher, ResearchContextQueries context,
-                    TaskExecutor executor, AuditLog audit) {
+                    @org.springframework.beans.factory.annotation.Qualifier("applicationTaskExecutor") TaskExecutor executor, AuditLog audit) {
         this.jdbc = jdbc;
         this.json = json;
         this.researcher = researcher;
