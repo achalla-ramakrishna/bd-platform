@@ -23,5 +23,6 @@ Status values: **Proposed** (under review), **Accepted**, **Superseded by ADR-nn
 | [0013](0013-ai-assistant-for-logging.md) | An AI assistant logs BD work from notes and screenshots | Proposed |
 | [0014](0014-connection-photos.md) | Connection photos, cropped from the team member's own screenshots | Proposed |
 | [0015](0015-walnut-bd-agent.md) | Walnut, a BD agent that plans, asks and drafts; people decide | Proposed |
+| [0016](0016-requirements-and-fulfilment.md) | Requirements come in on opportunities; candidates are tracked to a start | Proposed |
 
 Template: Context → Decision → Alternatives considered → Consequences.

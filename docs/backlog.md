@@ -193,6 +193,19 @@ An agent that works with every Admin (ADR-0015):
   proposes updates (next step, log a touch) that you apply with one click.
 - Nothing is saved or sent without a click; nothing automates LinkedIn.
 
+## 11. Opportunities and fulfilment (Built)
+
+Realising the business, not only winning it (ADR-0016):
+
+- An Opportunities menu: every opportunity by account with its requirements
+  and how far each is from being filled; a Fulfilment view of requirements
+  not yet filled with the next thing to do.
+- New requirement: add it to an open opportunity at the account or start one.
+- Candidates per requirement, from the bench or external (with a source):
+  Proposed → Profile shared → Client interview → Selected → Onboarding →
+  Started, or Rejected or Withdrawn; consent before a profile is shared.
+- Walnut's morning plan (and email) reminds about each step.
+
 ## Outside the platform
 
 - Vendor kit: one-page company write-up, 3 to 5 case studies, engagement

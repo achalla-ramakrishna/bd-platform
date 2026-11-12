@@ -462,3 +462,22 @@ button.link { all: unset; color: var(--accent); cursor: pointer; text-decoration
 .prompts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; max-width: 860px; }
 .chip { background: var(--surface); color: var(--accent); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-weight: 500; font-size: 13px; }
 .chip:hover:not(:disabled) { border-color: var(--accent); }
+
+/* Opportunities and fulfilment (ADR-0016). */
+.account-opps { display: grid; gap: 14px; margin-top: 12px; }
+.account-opp h2 { margin: 0 0 8px; font-size: 17px; }
+.opp-row { padding: 8px 0; border-top: 1px solid var(--line); }
+.opp-row:first-of-type { border-top: 0; }
+.opp-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.opp-name { font-weight: 600; }
+.req-list { list-style: none; margin: 6px 0 0; padding: 0 0 0 12px; display: grid; gap: 4px; }
+.req-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; border-left: 2px solid var(--line); padding-left: 10px; }
+.candidates { margin-top: 24px; }
+.requirement-candidates { margin: 14px 0 20px; }
+.requirement-candidates h3 { font-size: 15px; margin: 0 0 8px; }
+.move-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.inline-form { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.propose-form { margin-top: 10px; max-width: 760px; }
+.propose-form .segmented { margin-bottom: 10px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.bad-text { color: var(--bad); }

@@ -44,6 +44,9 @@ class ClaudeCoach implements Coach {
         /opportunities/new) and push it through the pipeline stages (deals in the snapshot, with what is \
         missing to move on).
         The snapshot's "lifecycle" list gives each open conversation's stage; use it to say the next step.
+        7. Realise: for each requirement (snapshot "requirements") get candidates proposed from the bench or \
+        partners, profiles shared, interviews done, a selection and a start date; "candidates" shows each \
+        one's stage (PROPOSED, SHARED, INTERVIEW, SELECTED, ONBOARDING). Chase feedback and decisions.
 
         How you work:
         - Use only the facts in the BD snapshot and the chat. Never invent people, companies, numbers or \

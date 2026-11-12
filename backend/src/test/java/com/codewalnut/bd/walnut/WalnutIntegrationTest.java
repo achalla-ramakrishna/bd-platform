@@ -193,6 +193,31 @@ class WalnutIntegrationTest {
     }
 
     @Test
+    void remindsAboutRealisingTheDeals() throws Exception {
+        long opp = jdbc.sql("SELECT id FROM opportunity").query(Long.class).single();
+        for (String role : new String[] {"React engineer", "QA engineer"}) {
+            mvc.perform(post("/api/v1/opportunities/{id}/requirements", opp).with(user(ADMIN)).with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"role": "%s", "skills": ["React"], "seniority": "SENIOR", "headcount": 2, "locationMode": "REMOTE",
+                         "startDate": "%s", "durationMonths": 6}""".formatted(role, today.plusDays(20))))
+                .andExpect(status().isCreated());
+        }
+        long react = jdbc.sql("SELECT id FROM opportunity_requirement WHERE role = 'React engineer'").query(Long.class).single();
+        mvc.perform(post("/api/v1/requirements/{id}/candidates", react).with(user(ADMIN)).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"candidateName\": \"Candidate C\"}"))
+            .andExpect(status().isCreated());
+        jdbc.sql("UPDATE submission SET status = 'SHARED', status_on = :d").param("d", today.minusDays(4)).update();
+
+        String body = JsonPath.read(mvc.perform(post("/api/v1/walnut/brief").with(user(ADMIN)).with(csrf()))
+            .andReturn().getResponse().getContentAsString(), "$.body");
+        assertThat(body).contains("## Realise the deals")
+            .contains("[2 × QA engineer](/opportunities/" + opp + ") at Alpha Bengaluru: nobody proposed yet")
+            .contains("[Candidate C](/opportunities/" + opp + ") for React engineer at Alpha Bengaluru: profile shared 4 days ago")
+            .contains("Who can we put forward for 2 × QA engineer at Alpha Bengaluru?")
+            .doesNotContain("2 × React engineer](/opportunities/" + opp + ") at Alpha Bengaluru: nobody proposed");
+    }
+
+    @Test
     void chatsAndKeepsOnlyActionsThePageCanApply() throws Exception {
         ANSWER.set(new Coach.Reply("Logged? Not yet: here is the update for [Person One](/conversations/" + overdue + ").", List.of(
             new Coach.Action("LOG_UPDATE", "Log the call", "", "", overdue, "Send profiles", today.plusDays(2).toString(),

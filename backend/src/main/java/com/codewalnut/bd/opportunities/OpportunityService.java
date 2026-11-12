@@ -38,7 +38,7 @@ public class OpportunityService {
 
     public record RequirementInput(String role, List<String> skills, String seniority, Integer headcount,
                                    String locationMode, String location, LocalDate startDate, Integer durationMonths,
-                                   Integer allocationPercent, BigDecimal rateInr, String rateUnit) {}
+                                   Integer allocationPercent, BigDecimal rateInr, String rateUnit, Long id) {}
 
     public record StageMove(String stage, String lossReasonCode) {}
 
@@ -63,7 +63,7 @@ public class OpportunityService {
         StageRules.Stage first = stages.values().iterator().next();
         Validated v = validate(in, user, first.defaultProbability());
         long id = repo.insert(v.data(), first.code());
-        repo.replaceRequirements(id, v.requirements());
+        repo.replaceRequirements(id, v.requirements(), v.requirementIds());
         repo.recordStage(id, null, first.code(), user.id());
         audit.record("opportunity", id, AuditLog.Action.CREATE, Map.of("name", v.data().name()), user.id());
         return id;
@@ -81,7 +81,7 @@ public class OpportunityService {
         }
         // Once won, requirement lines have gone to Delivery as deployment requests (BR-BD-12): keep them as they are.
         if (in.requirements() != null && !repo.hasDeploymentRequests(id)) {
-            repo.replaceRequirements(id, v.requirements());
+            repo.replaceRequirements(id, v.requirements(), v.requirementIds());
         }
         audit.record("opportunity", id, AuditLog.Action.UPDATE, Map.of("fromVersion", state.version()), user.id());
     }
@@ -110,7 +110,8 @@ public class OpportunityService {
             Map.of("stage", state.stage() + " -> " + target.code(), "deploymentRequests", requests), user.id());
     }
 
-    private record Validated(OpportunityRepository.Data data, List<OpportunityRepository.Requirement> requirements) {}
+    private record Validated(OpportunityRepository.Data data, List<OpportunityRepository.Requirement> requirements,
+                             List<Long> requirementIds) {}
 
     private Validated validate(Input in, CurrentUser user, int defaultProbability) {
         List<String> problems = new ArrayList<>();
@@ -148,6 +149,7 @@ public class OpportunityService {
             problems.add("Pricing model must be fixed price or time and materials.");
         }
         List<OpportunityRepository.Requirement> requirements = new ArrayList<>();
+        List<Long> requirementIds = new ArrayList<>();
         if (in.requirements() != null) {
             if (!"STAFF_AUGMENTATION".equals(type) && !in.requirements().isEmpty()) {
                 problems.add("Only staff augmentation opportunities have requirement lines.");
@@ -156,7 +158,49 @@ public class OpportunityService {
             int line = 0;
             for (RequirementInput r : in.requirements()) {
                 line++;
-                String prefix = "Requirement " + line + ": ";
+                requirements.add(checkRequirement(r, "Requirement " + line + ": ", seniorities, problems));
+                requirementIds.add(r.id());
+            }
+        }
+        if (!problems.isEmpty()) {
+            throw new RuleViolationException(problems);
+        }
+        var data = new OpportunityRepository.Data(in.accountId(), in.name().trim(), type, ownerId, in.valueInr(),
+            probability, in.expectedCloseDate(), in.decisionMakerContactId(), blankToNull(in.needSummary()),
+            in.targetStartDate(), blankToNull(in.scopeSummary()), pricing, in.estimateInr(),
+            blankToNull(in.teamShape()), blankToNull(in.timeline()));
+        return new Validated(data, requirements, requirementIds);
+    }
+
+    /**
+     * A new requirement that came in for an opportunity (Opportunities page, ADR-0016). Staff augmentation
+     * only, and not once the opportunity is lost. On a won opportunity it also becomes a request to Delivery.
+     */
+    @Transactional
+    public long addRequirement(long opportunityId, RequirementInput in, CurrentUser user) {
+        var state = repo.load(opportunityId).orElseThrow(() -> new NotFoundException("Opportunity", opportunityId));
+        List<String> problems = new ArrayList<>();
+        if (!"STAFF_AUGMENTATION".equals(state.type())) {
+            problems.add("Only staff augmentation opportunities have requirement lines.");
+        }
+        StageRules.Stage stage = repo.stages().get(state.stage());
+        if (stage != null && "LOST".equals(stage.outcome())) {
+            problems.add("This opportunity is lost. Start a new opportunity for the new requirement.");
+        }
+        var requirement = checkRequirement(in, "", repo.seniorities(), problems);
+        if (!problems.isEmpty()) {
+            throw new RuleViolationException(problems);
+        }
+        long id = repo.addRequirement(opportunityId, requirement);
+        if (stage != null && "WON".equals(stage.outcome())) {
+            repo.createDeploymentRequests(opportunityId);
+        }
+        audit.record("opportunity", opportunityId, AuditLog.Action.UPDATE, Map.of("requirementAdded", id), user.id());
+        return id;
+    }
+
+    private static OpportunityRepository.Requirement checkRequirement(RequirementInput r, String prefix, Set<String> seniorities,
+                                                                     List<String> problems) {
                 String seniority = r.seniority() == null ? null : r.seniority().toUpperCase(Locale.ROOT);
                 String mode = r.locationMode() == null ? null : r.locationMode().toUpperCase(Locale.ROOT);
                 String unit = r.rateUnit() == null || r.rateUnit().isBlank() ? null : r.rateUnit().toUpperCase(Locale.ROOT);
@@ -174,19 +218,9 @@ public class OpportunityService {
                 if (unit != null && !isIn(RATE_UNITS, unit)) problems.add(prefix + "rate unit must be month, day or hour.");
                 if (r.rateInr() != null && unit == null) problems.add(prefix + "choose a rate unit for the rate.");
                 if (r.rateInr() != null && r.rateInr().signum() < 0) problems.add(prefix + "rate cannot be negative.");
-                requirements.add(new OpportunityRepository.Requirement(r.role(), skills, seniority,
+                return new OpportunityRepository.Requirement(r.role() == null ? null : r.role().trim(), skills, seniority,
                     r.headcount() == null ? 0 : r.headcount(), mode, r.location(), r.startDate(), r.durationMonths(),
-                    allocation, r.rateInr(), unit));
-            }
-        }
-        if (!problems.isEmpty()) {
-            throw new RuleViolationException(problems);
-        }
-        var data = new OpportunityRepository.Data(in.accountId(), in.name().trim(), type, ownerId, in.valueInr(),
-            probability, in.expectedCloseDate(), in.decisionMakerContactId(), blankToNull(in.needSummary()),
-            in.targetStartDate(), blankToNull(in.scopeSummary()), pricing, in.estimateInr(),
-            blankToNull(in.teamShape()), blankToNull(in.timeline()));
-        return new Validated(data, requirements);
+                    allocation, r.rateInr(), unit);
     }
 
     private static String blankToNull(String s) {

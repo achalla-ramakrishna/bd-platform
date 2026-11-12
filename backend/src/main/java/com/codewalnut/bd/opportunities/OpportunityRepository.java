@@ -92,21 +92,69 @@ class OpportunityRepository {
             .param("timeline", d.timeline());
     }
 
-    void replaceRequirements(long opportunityId, List<Requirement> requirements) {
-        jdbc.sql("DELETE FROM opportunity_requirement WHERE opportunity_id = :id").param("id", opportunityId).update();
-        for (Requirement r : requirements) {
-            jdbc.sql("""
-                    INSERT INTO opportunity_requirement (opportunity_id, role, skills, seniority, headcount,
-                        location_mode, location, start_date, duration_months, allocation_percent, rate_inr, rate_unit)
-                    VALUES (:opp, :role, :skills, :seniority, :headcount, :mode, :location, :start, :duration,
-                        :allocation, :rate, :unit)
-                    """)
-                .param("opp", opportunityId).param("role", r.role()).param("skills", json.writeValueAsString(r.skills()))
-                .param("seniority", r.seniority()).param("headcount", r.headcount()).param("mode", r.locationMode())
-                .param("location", r.location()).param("start", r.startDate()).param("duration", r.durationMonths())
-                .param("allocation", r.allocationPercent()).param("rate", r.rateInr()).param("unit", r.rateUnit())
-                .update();
+    /**
+     * Saves the requirement lines from the form: lines with a known id are updated in place (so candidates
+     * proposed against them stay), new lines are added, and lines left out are removed unless they have
+     * candidates (ADR-0016).
+     */
+    void replaceRequirements(long opportunityId, List<Requirement> requirements, List<Long> ids) {
+        java.util.Set<Long> existing = new java.util.HashSet<>(jdbc.sql(
+                "SELECT id FROM opportunity_requirement WHERE opportunity_id = :id").param("id", opportunityId)
+            .query(Long.class).list());
+        java.util.Set<Long> kept = new java.util.HashSet<>();
+        for (Long id : ids) {
+            if (id != null && existing.contains(id)) {
+                kept.add(id);
+            }
         }
+        for (Long gone : existing) {
+            if (kept.contains(gone)) {
+                continue;
+            }
+            int candidates = jdbc.sql("SELECT COUNT(*) FROM submission WHERE requirement_id = :id").param("id", gone)
+                .query(Integer.class).single();
+            if (candidates > 0) {
+                String role = jdbc.sql("SELECT role FROM opportunity_requirement WHERE id = :id").param("id", gone)
+                    .query(String.class).single();
+                throw new com.codewalnut.bd.shared.RuleViolationException(List.of("The " + role
+                    + " requirement has candidates, so it cannot be removed. Withdraw or reject them first."));
+            }
+            jdbc.sql("DELETE FROM opportunity_requirement WHERE id = :id").param("id", gone).update();
+        }
+        for (int i = 0; i < requirements.size(); i++) {
+            Requirement r = requirements.get(i);
+            Long id = i < ids.size() ? ids.get(i) : null;
+            if (id != null && kept.contains(id)) {
+                bind(jdbc.sql("""
+                        UPDATE opportunity_requirement SET role = :role, skills = :skills, seniority = :seniority,
+                            headcount = :headcount, location_mode = :mode, location = :location, start_date = :start,
+                            duration_months = :duration, allocation_percent = :allocation, rate_inr = :rate, rate_unit = :unit
+                        WHERE id = :id
+                        """), r).param("id", id).update();
+            } else {
+                addRequirement(opportunityId, r);
+            }
+        }
+    }
+
+    long addRequirement(long opportunityId, Requirement r) {
+        var key = new org.springframework.jdbc.support.GeneratedKeyHolder();
+        bind(jdbc.sql("""
+                INSERT INTO opportunity_requirement (opportunity_id, role, skills, seniority, headcount,
+                    location_mode, location, start_date, duration_months, allocation_percent, rate_inr, rate_unit)
+                VALUES (:opp, :role, :skills, :seniority, :headcount, :mode, :location, :start, :duration,
+                    :allocation, :rate, :unit)
+                """), r).param("opp", opportunityId).update(key);
+        jdbc.sql("UPDATE opportunity SET version = version + 1 WHERE id = :id").param("id", opportunityId).update();
+        return key.getKey().longValue();
+    }
+
+    private org.springframework.jdbc.core.simple.JdbcClient.StatementSpec bind(
+            org.springframework.jdbc.core.simple.JdbcClient.StatementSpec spec, Requirement r) {
+        return spec.param("role", r.role()).param("skills", json.writeValueAsString(r.skills()))
+            .param("seniority", r.seniority()).param("headcount", r.headcount()).param("mode", r.locationMode())
+            .param("location", r.location()).param("start", r.startDate()).param("duration", r.durationMonths())
+            .param("allocation", r.allocationPercent()).param("rate", r.rateInr()).param("unit", r.rateUnit());
     }
 
     boolean hasDeploymentRequests(long opportunityId) {

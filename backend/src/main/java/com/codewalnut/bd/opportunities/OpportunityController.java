@@ -45,6 +45,16 @@ class OpportunityController {
         return queries.get(id);
     }
 
+    /** A new requirement that came in for this opportunity (ADR-0016). */
+    @PostMapping("/{id}/requirements")
+    @ResponseStatus(HttpStatus.CREATED)
+    OpportunityQueries.Opportunity addRequirement(@PathVariable long id, @RequestBody OpportunityService.RequirementInput in) {
+        CurrentUser user = currentUser.get();
+        user.require(Role.PIPELINE_EDITORS);
+        opportunities.addRequirement(id, in, user);
+        return queries.get(id);
+    }
+
     @PostMapping("/{id}/stage")
     OpportunityQueries.Opportunity moveStage(@PathVariable long id, @RequestBody OpportunityService.StageMove move) {
         CurrentUser user = currentUser.get();

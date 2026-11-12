@@ -415,6 +415,68 @@ paths:
         '400': { description: 'No text or screenshot, too long, or a file that is not a supported image' }
         '403': { description: 'Not a pipeline role' }
         '422': { description: 'The assistant is switched off (no ANTHROPIC_API_KEY)' }
+  /opportunities/{id}/requirements:
+    post:
+      tags: [opportunities]
+      operationId: addRequirement
+      summary: A new requirement for a staff augmentation opportunity (ADR-0016); on a won one it also goes to Delivery
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, description: '{ role, skills[], seniority, headcount, locationMode, location, startDate, durationMonths, allocationPercent, rateInr, rateUnit }' }
+      responses:
+        '201': { description: The opportunity with its requirements }
+        '422': { description: Missing fields, not staff augmentation, or the opportunity is lost }
+  /opportunities/{id}/candidates:
+    get:
+      tags: [talent]
+      operationId: opportunityCandidates
+      summary: Candidates for every requirement of the opportunity
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: '[{ id, requirementId, engineerId, name, source, seniority, availability, consent, status, statusOn, interviewOn, startOn, notes, proposedBy, createdAt, version }]' }
+  /requirements/{id}/candidates:
+    post:
+      tags: [talent]
+      operationId: proposeCandidate
+      summary: Propose a bench engineer or an external candidate for a requirement
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { engineerId: { type: integer }, candidateName: { type: string }, candidateSource: { type: string }, notes: { type: string } } }
+      responses:
+        '201': { description: The candidate }
+        '422': { description: Neither or both given, unknown engineer, or already proposed }
+  /candidates/{id}/move:
+    post:
+      tags: [talent]
+      operationId: moveCandidate
+      summary: Move a candidate (PROPOSED, SHARED, INTERVIEW, SELECTED, ONBOARDING, STARTED, REJECTED, WITHDRAWN)
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [status, version], properties: { status: { type: string }, on: { type: string, format: date, description: 'Interview date for INTERVIEW, start date for ONBOARDING and STARTED' }, notes: { type: string }, version: { type: integer } } }
+      responses:
+        '200': { description: The candidate }
+        '409': { description: Someone else moved it first }
+        '422': { description: Not an allowed move, no consent to share (BR-BD-10), or a missing or future date }
+  /fulfilment:
+    get:
+      tags: [talent]
+      operationId: fulfilment
+      summary: Requirements being realised, with candidate counts by stage
+      parameters:
+        - { name: mine, in: query, schema: { type: boolean } }
+        - { name: accountId, in: query, schema: { type: integer, format: int64 } }
+        - { name: all, in: query, schema: { type: boolean }, description: Include filled requirements and lost opportunities }
+      responses:
+        '200': { description: '[{ requirementId, opportunityId, opportunityName, accountId, accountName, stage, stageOutcome, ownerId, ownerName, role, seniority, skills, headcount, startDate, receivedOn, byStatus, active, selected, started, deploymentRequest }]' }
   /walnut/status:
     get:
       tags: [walnut]

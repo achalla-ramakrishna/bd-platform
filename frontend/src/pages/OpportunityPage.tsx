@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import {
-  ApiError, api, canEditPipeline,
+  ApiError, api, canEditFulfilment, canEditPipeline,
   type Account, type Contact, type Me, type Opportunity, type OpportunityType, type Page, type Requirement,
 } from '../lib/api';
 import { formatDate, formatInr, humanise } from '../lib/format';
 import { typeLabel, useReference } from './PipelinePage';
+import { CandidatesPanel } from './Candidates';
 
 interface FormState {
   accountId: string;
@@ -28,6 +29,7 @@ interface FormState {
 }
 
 interface RequirementRow {
+  id?: number;
   role: string;
   skills: string;
   seniority: string;
@@ -58,7 +60,7 @@ function toForm(o: Opportunity): FormState {
     targetStartDate: str(o.targetStartDate), scopeSummary: str(o.scopeSummary), pricingModel: str(o.pricingModel),
     estimateInr: str(o.estimateInr), teamShape: str(o.teamShape), timeline: str(o.timeline),
     requirements: o.requirements.map((r: Requirement) => ({
-      role: r.role, skills: r.skills.join('; '), seniority: r.seniority, headcount: String(r.headcount),
+      id: r.id, role: r.role, skills: r.skills.join('; '), seniority: r.seniority, headcount: String(r.headcount),
       locationMode: r.locationMode, location: str(r.location), startDate: str(r.startDate),
       durationMonths: str(r.durationMonths), allocationPercent: String(r.allocationPercent), rateInr: str(r.rateInr),
       rateUnit: str(r.rateUnit), deploymentRequest: r.deploymentRequest,
@@ -75,7 +77,7 @@ function toBody(f: FormState, version?: number) {
     estimateInr: num(f.estimateInr), teamShape: f.teamShape, timeline: f.timeline,
     requirements: f.type === 'STAFF_AUGMENTATION'
       ? f.requirements.map((r) => ({
-        role: r.role, skills: r.skills.split(/[;,]/).map((s) => s.trim()).filter(Boolean), seniority: r.seniority,
+        id: r.id ?? null, role: r.role, skills: r.skills.split(/[;,]/).map((s) => s.trim()).filter(Boolean), seniority: r.seniority,
         headcount: num(r.headcount), locationMode: r.locationMode, location: r.location || null,
         startDate: r.startDate || null, durationMonths: num(r.durationMonths), allocationPercent: num(r.allocationPercent),
         rateInr: num(r.rateInr), rateUnit: r.rateInr.trim() ? r.rateUnit : null,
@@ -150,7 +152,7 @@ function OpportunityEditor({ me, existing }: { me: Me; existing?: Opportunity })
 
   return (
     <>
-      <p><Link to="/pipeline">← Pipeline</Link></p>
+      <p><Link to="/opportunities">← Opportunities</Link> · <Link to="/pipeline">Pipeline</Link></p>
       <div className="title-row">
         <div>
           <h1>{existing ? existing.name : 'New opportunity'}</h1>
@@ -270,6 +272,10 @@ function OpportunityEditor({ me, existing }: { me: Me; existing?: Opportunity })
           )}
         </fieldset>
       </form>
+
+      {existing && existing.type === 'STAFF_AUGMENTATION' && (
+        <CandidatesPanel opportunityId={existing.id} requirements={existing.requirements} editable={canEditFulfilment(me)} />
+      )}
 
       {existing && existing.history.length > 0 && (
         <>

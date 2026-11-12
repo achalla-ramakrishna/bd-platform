@@ -11,6 +11,7 @@ import { HeatmapPage } from './pages/HeatmapPage';
 import { InterviewPage, InterviewsPage } from './pages/InterviewsPage';
 import { AssistantPage } from './pages/AssistantPage';
 import { WalnutPage } from './pages/WalnutPage';
+import { OpportunitiesPage } from './pages/OpportunitiesPage';
 import { NavLink, Navigate, Route, Routes } from 'react-router';
 import { ApiError, api, type Me, type SignInInfo } from './lib/api';
 import { AccountsPage } from './pages/AccountsPage';
@@ -60,6 +61,7 @@ export function App() {
         <NavGroup label="Sales">
           <NavLink to="/accounts">Accounts</NavLink>
           <NavLink to="/find-gccs">Find GCCs</NavLink>
+          <NavLink to="/opportunities">Opportunities</NavLink>
           <NavLink to="/pipeline">Pipeline</NavLink>
         </NavGroup>
         <NavGroup label="Delivery">
@@ -93,6 +95,7 @@ export function App() {
           <Route path="/" element={<Navigate to="/pipeline" replace />} />
           <Route path="/strategy" element={<StrategyPage />} />
           <Route path="/pipeline" element={<PipelinePage me={user} />} />
+          <Route path="/opportunities" element={<OpportunitiesPage me={user} />} />
           <Route path="/opportunities/new" element={<OpportunityPage me={user} />} />
           <Route path="/opportunities/:id" element={<OpportunityPage me={user} />} />
           <Route path="/accounts" element={<AccountsPage me={user} />} />

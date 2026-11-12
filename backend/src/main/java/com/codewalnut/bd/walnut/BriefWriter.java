@@ -125,6 +125,11 @@ final class BriefWriter {
             questions.add("Which of these will you send a connection request to today?");
         }
 
+        String realise = realise(s, questions);
+        if (!realise.isEmpty()) {
+            b.append("## Realise the deals\n").append(realise).append('\n');
+        }
+
         if (!s.quiet().isEmpty()) {
             b.append("## Gone quiet\n");
             for (BdSnapshot.FollowUp f : s.quiet()) {
@@ -172,7 +177,8 @@ final class BriefWriter {
             }
         }
 
-        if (due.isEmpty() && s.deals().isEmpty() && s.targets().isEmpty() && s.quiet().isEmpty() && steps.isEmpty()) {
+        if (due.isEmpty() && s.deals().isEmpty() && s.targets().isEmpty() && s.quiet().isEmpty() && steps.isEmpty()
+            && realise.isEmpty()) {
             b.append("Nothing is due today. A good day to add the people you know as connections and log last week's touches.\n\n");
         }
 
@@ -190,6 +196,59 @@ final class BriefWriter {
         }
         String subject = (friday ? "Your Friday review, " : "Your BD plan for ") + s.today().format(DAY);
         return new Brief(subject, b.toString().strip(), actions);
+    }
+
+    /**
+     * Requirements to fill and candidates to move (ADR-0016): requirements with nobody proposed, profiles
+     * waiting for feedback, interviews, selections without a start date and starts coming up.
+     */
+    static String realise(BdSnapshot.Snapshot s, List<String> questions) {
+        StringBuilder b = new StringBuilder();
+        java.util.Map<Long, com.codewalnut.bd.reporting.FulfilmentQueries.RequirementStatus> reqs = new java.util.HashMap<>();
+        s.requirements().forEach(r -> reqs.put(r.requirementId(), r));
+        int lines = 0;
+        for (var r : s.requirements()) {
+            if (r.active() == 0 && r.started() < r.headcount() && lines < 8) {
+                b.append("- [").append(r.headcount()).append(" × ").append(r.role()).append("](/opportunities/")
+                    .append(r.opportunityId()).append(") at ").append(r.accountName()).append(": nobody proposed yet")
+                    .append(r.receivedOn() == null ? "" : " (came in " + r.receivedOn().format(DAY) + ")")
+                    .append(". Propose from the bench or a partner; starts ").append(r.startDate().format(DAY)).append('\n');
+                lines++;
+            }
+        }
+        for (var c : s.candidates()) {
+            if (lines >= 12) {
+                break;
+            }
+            var r = reqs.get(c.requirementId());
+            String where = r == null ? "" : " for " + r.role() + " at " + r.accountName();
+            String link = r == null ? c.name() : "[" + c.name() + "](/opportunities/" + r.opportunityId() + ")";
+            long days = c.statusOn() == null ? 0 : java.time.temporal.ChronoUnit.DAYS.between(c.statusOn(), s.today());
+            String line = switch (c.status()) {
+                case "PROPOSED" -> days >= 2 ? "proposed " + days + " days ago: share the profile with the client" : null;
+                case "SHARED" -> days >= 3 ? "profile shared " + days + " days ago: **chase the client for feedback**" : null;
+                case "INTERVIEW" -> c.interviewOn() == null ? "in interview: get the feedback"
+                    : c.interviewOn().isBefore(s.today()) ? "interviewed " + c.interviewOn().format(DAY) + ": **get the client's decision**"
+                    : !c.interviewOn().isAfter(s.today().plusDays(1)) ? "**interview " + (c.interviewOn().equals(s.today()) ? "today" : "tomorrow") + "**: brief the candidate"
+                    : null;
+                case "SELECTED" -> "selected: **confirm the start date** and begin onboarding";
+                case "ONBOARDING" -> c.startOn() != null && !c.startOn().isAfter(s.today().plusDays(7))
+                    ? "starts " + c.startOn().format(DAY) + ": check laptop, access and first-day plan" : null;
+                default -> null;
+            };
+            if (line != null) {
+                b.append("- ").append(link).append(where).append(": ").append(line).append('\n');
+                lines++;
+                if ("INTERVIEW".equals(c.status()) && c.interviewOn() != null && c.interviewOn().isBefore(s.today())) {
+                    questions.add("How did " + c.name() + "'s interview" + where + " go? Selected or not?");
+                }
+            }
+        }
+        if (s.requirements().stream().anyMatch(r -> r.active() == 0 && r.started() < r.headcount())) {
+            var r = s.requirements().stream().filter(x -> x.active() == 0 && x.started() < x.headcount()).findFirst().get();
+            questions.add("Who can we put forward for " + r.headcount() + " × " + r.role() + " at " + r.accountName() + "?");
+        }
+        return b.toString();
     }
 
     /** A LinkedIn connection note: under 300 characters, about them, no pitch. */

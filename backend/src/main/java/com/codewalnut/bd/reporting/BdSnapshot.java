@@ -46,17 +46,21 @@ public class BdSnapshot {
     public record Snapshot(LocalDate today, Person me, List<Person> team, List<FollowUp> overdue,
                            List<FollowUp> dueSoon, List<FollowUp> quiet, List<Deal> deals, List<Target> targets,
                            List<EventItem> events, List<InterviewItem> interviews, List<TeamWeek> teamWeek,
-                           String strategyExcerpt, List<Step> lifecycle) {}
+                           String strategyExcerpt, List<Step> lifecycle,
+                           List<FulfilmentQueries.RequirementStatus> requirements,
+                           List<FulfilmentQueries.Candidate> candidates) {}
 
     static final int QUIET_DAYS = 14;
     static final int TARGETS = 5;
 
     private final JdbcClient jdbc;
     private final FitScorer fit;
+    private final FulfilmentQueries fulfilment;
 
-    BdSnapshot(JdbcClient jdbc, FitScorer fit) {
+    BdSnapshot(JdbcClient jdbc, FitScorer fit, FulfilmentQueries fulfilment) {
         this.jdbc = jdbc;
         this.fit = fit;
+        this.fulfilment = fulfilment;
     }
 
     /** Active people holding any of the roles (Walnut's audience), in a stable order. */
@@ -77,7 +81,8 @@ public class BdSnapshot {
             followUps(me.id(), "v.next_step_due BETWEEN :today AND :soon", "v.next_step_due", today, 8),
             followUps(me.id(), "v.next_step_due IS NULL AND v.last_touch_on < :quiet", "v.last_touch_on", today, 5),
             deals(me.id(), today), targets(me, team), events(me.id(), today), interviews(me.id()),
-            teamWeek(team, today), strategy(), lifecycle(me.id()));
+            teamWeek(team, today), strategy(), lifecycle(me.id()),
+            fulfilment.requirements(me.id(), null, false), fulfilment.activeFor(me.id()));
     }
 
     static final java.util.Set<String> MESSAGE_CHANNELS = java.util.Set.of("LINKEDIN_MESSAGE", "INMAIL", "EMAIL", "CALL", "MEETING");

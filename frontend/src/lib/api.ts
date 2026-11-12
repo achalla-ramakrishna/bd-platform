@@ -662,3 +662,60 @@ export interface WalnutMessage {
 export interface WalnutStatus { available: boolean; chatEnabled: boolean; emailEnabled: boolean; worksWith: string[] }
 
 export interface WalnutSettings { emailBrief: boolean; emailAvailable: boolean; email: string }
+
+/** Realising opportunities (ADR-0016). */
+export type CandidateStatus = 'PROPOSED' | 'SHARED' | 'INTERVIEW' | 'SELECTED' | 'ONBOARDING' | 'STARTED' | 'REJECTED' | 'WITHDRAWN';
+
+export const CANDIDATE_STATUS_LABELS: Record<CandidateStatus, string> = {
+  PROPOSED: 'Proposed', SHARED: 'Profile shared', INTERVIEW: 'Client interview', SELECTED: 'Selected',
+  ONBOARDING: 'Onboarding', STARTED: 'Started', REJECTED: 'Rejected', WITHDRAWN: 'Withdrawn',
+};
+
+export const CANDIDATE_FLOW: CandidateStatus[] = ['PROPOSED', 'SHARED', 'INTERVIEW', 'SELECTED', 'ONBOARDING', 'STARTED'];
+
+export interface Candidate {
+  id: number;
+  requirementId: number;
+  engineerId?: number | null;
+  name: string;
+  source: string;
+  seniority?: string | null;
+  availability?: string | null;
+  consent?: boolean | null;
+  status: CandidateStatus;
+  statusOn?: string | null;
+  interviewOn?: string | null;
+  startOn?: string | null;
+  notes?: string | null;
+  proposedBy?: string | null;
+  createdAt: string;
+  version: number;
+}
+
+export interface RequirementStatus {
+  requirementId: number;
+  opportunityId: number;
+  opportunityName: string;
+  accountId: number;
+  accountName: string;
+  stage: string;
+  stageOutcome: 'OPEN' | 'WON' | 'LOST';
+  ownerId: number;
+  ownerName: string;
+  role: string;
+  seniority: string;
+  skills: string[];
+  headcount: number;
+  startDate: string;
+  receivedOn?: string | null;
+  byStatus: Partial<Record<CandidateStatus, number>>;
+  active: number;
+  selected: number;
+  started: number;
+  deploymentRequest?: string | null;
+}
+
+/** Roles that may propose and move candidates: BD and Delivery. */
+export function canEditFulfilment(me: Me): boolean {
+  return me.roles.some((r) => ['LEADERSHIP', 'BD_LEAD', 'ACCOUNT_EXECUTIVE', 'SOLUTIONS', 'DELIVERY', 'ADMIN'].includes(r));
+}
