@@ -208,6 +208,14 @@ Realising the business, not only winning it (ADR-0016):
   Started, or Rejected or Withdrawn; consent before a profile is shared.
 - Walnut's morning plan (and email) reminds about each step.
 
+## 12. GTN, Go To Network (Proposed)
+
+Work our existing network through a fixed pipeline (Initiate → Responded →
+Intro made → Call scheduled → Warm commitment → Monthly beep), with a Why?
+diagnosis and capped nudges for people who go quiet, and a tracked profile
+page with video. Gap analysis, design decisions and the phased plan are in
+[gtn-plan.md](gtn-plan.md); nothing is built until that is agreed.
+
 ## Outside the platform
 
 - Vendor kit: one-page company write-up, 3 to 5 case studies, engagement
