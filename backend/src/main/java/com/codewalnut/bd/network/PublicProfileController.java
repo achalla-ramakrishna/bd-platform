@@ -27,13 +27,30 @@ class PublicProfileController {
 
     record EventBody(String kind, String value) {}
 
+    record BookBody(String start, String email) {}
+
     private static final Pattern RANGE = Pattern.compile("^bytes=(\\d*)-(\\d*)$");
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final ProfileService profiles;
+    private final BookingService booking;
 
-    PublicProfileController(ProfileService profiles) {
+    PublicProfileController(ProfileService profiles, BookingService booking) {
         this.profiles = profiles;
+        this.booking = booking;
+    }
+
+    /** The owner's free slots, when the page books on their calendar (ADR-0020). */
+    @GetMapping("/p/{token}/slots")
+    BookingService.Slots slots(@PathVariable String token, HttpServletResponse res) {
+        res.setHeader("Cache-Control", "no-store");
+        return booking.slots(token);
+    }
+
+    /** Book a slot: the meeting goes on the owner's calendar and the person is invited. */
+    @PostMapping("/p/{token}/book")
+    BookingService.Booked book(@PathVariable String token, @RequestBody(required = false) BookBody body) {
+        return booking.book(token, body == null ? null : body.start(), body == null ? null : body.email());
     }
 
     @GetMapping("/p/{token}")
@@ -50,7 +67,7 @@ class PublicProfileController {
         ProfileService.Page p = view.get().page();
         String base = "/p/" + token;
         res.getWriter().write(ProfileHtml.page(view.get(), base, p.videoBytes() == null ? null : base + "/video",
-            p.hasCaptions() ? base + "/captions.vtt" : null, false, nonce));
+            p.hasCaptions() ? base + "/captions.vtt" : null, false, nonce, booking.calendarBooking(p)));
     }
 
     @GetMapping("/p/{token}/video")

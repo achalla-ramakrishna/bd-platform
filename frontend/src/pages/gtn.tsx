@@ -5,7 +5,7 @@ import {
   ApiError, COMMITMENT_LABELS, GTN_CHANNEL_LABELS, GTN_STAGES, GTN_STAGE_LABELS, STRENGTH_LABELS, WHY_HINTS, WHY_LABELS, api,
   canEditPipeline,
   type CommitmentKind, type Connection, type GtnNext, type GtnStage, type GtnSuggestion, type GtnTemplate, type GtnTrack,
-  type GtnTrackPage, type ImportResult, type Me, type WhyReason,
+  type GoogleStatus, type GtnTrackPage, type ImportResult, type Me, type WhyReason,
 } from '../lib/api';
 import { formatDate } from '../lib/format';
 import { today } from './ConversationsPage';
@@ -54,7 +54,11 @@ const MESSAGE_CHANNELS = ['LINKEDIN', 'WHATSAPP', 'EMAIL'] as const;
  * The message to send: pick a template and channel, edit the text, open the right app with it filled in, then
  * confirm "I sent it" so it is logged and the track moves. Nothing is sent by the platform (ADR-0005, ADR-0018).
  */
-export function Composer({ person, suggestion, trackId, connectionId, stage, reason, confirmLabel = 'I sent it', busy, onSent }: {
+export function useGoogleStatus() {
+  return useQuery({ queryKey: ['google-status'], queryFn: () => api.get<GoogleStatus>('/google/status'), staleTime: 60_000 });
+}
+
+export function Composer({ person, suggestion, trackId, connectionId, stage, reason, confirmLabel = 'I sent it', busy, onSent, onSendEmail }: {
   person: Person;
   suggestion?: GtnSuggestion | null;
   trackId?: number;
@@ -64,7 +68,10 @@ export function Composer({ person, suggestion, trackId, connectionId, stage, rea
   confirmLabel?: string;
   busy?: boolean;
   onSent: (m: { channel: string; summary: string; templateId: number | null }) => void;
+  /** Send from the person's own Gmail (ADR-0020); offered when Google is connected. */
+  onSendEmail?: (m: { subject: string; body: string; templateId: number | null }) => void;
 }) {
+  const google = useGoogleStatus();
   const templates = useQuery({ queryKey: ['gtn-templates'], queryFn: () => api.get<GtnTemplate[]>('/network/templates') });
   const [channel, setChannel] = useState<string>(suggestion?.channel ?? (person.linkedinUrl ? 'LINKEDIN' : person.whatsapp ? 'WHATSAPP' : 'EMAIL'));
   const [subject, setSubject] = useState(suggestion?.subject ?? '');
@@ -138,9 +145,16 @@ export function Composer({ person, suggestion, trackId, connectionId, stage, rea
             : <a className="button secondary" href={link} target="_blank" rel="noreferrer">
               {channel === 'WHATSAPP' ? 'Open WhatsApp with the message' : 'Open in Gmail'}</a>}
         {copied && <span className="muted small">Copied. Paste it in the LinkedIn message box.</span>}
-        <button type="button" disabled={busy || !body.trim()} onClick={() => onSent({ channel, summary: body.trim(), templateId })}>
-          {confirmLabel}
-        </button>
+        {channel === 'EMAIL' && onSendEmail && person.email && google.data?.connected && google.data.canSend ? (
+          <button type="button" disabled={busy || !body.trim() || !subject.trim()}
+            onClick={() => onSendEmail({ subject: subject.trim(), body: body.trim(), templateId })}>
+            {busy ? 'Sending…' : `Send from Gmail (${google.data.email})`}
+          </button>
+        ) : (
+          <button type="button" disabled={busy || !body.trim()} onClick={() => onSent({ channel, summary: body.trim(), templateId })}>
+            {confirmLabel}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -168,6 +182,31 @@ export function StageActions({ page, onDone, compact }: { page: GtnTrackPage; on
   });
   const can = (stages: GtnStage[]) => stages.includes(t.stage);
   const replyChannel = t.lastChannel && ['LINKEDIN', 'EMAIL', 'WHATSAPP'].includes(t.lastChannel) ? t.lastChannel : 'LINKEDIN';
+  if (t.replyCheck) {
+    return (
+      <div className="stage-actions">
+        <div className="notice warn reply-check" role="status">
+          <strong>They replied by email.</strong> {t.lastTopic?.replace(/^Replied by email: /, '“') ?? ''}{t.lastTopic ? '”' : ''}
+        </div>
+        <div className="toolbar quick-actions">
+          <button type="button" disabled={act.isPending} onClick={() => act.mutate({ action: 'CONFIRM_REPLY', outcome: 'POSITIVE' })}>Positive: carry on</button>
+          <button type="button" className="secondary" onClick={() => setOpen(open === 'notNow' ? '' : 'notNow')}>Not the right time</button>
+        </div>
+        {open === 'notNow' && (
+          <form className="inline-form" aria-label="Not the right time" onSubmit={(e) => {
+            e.preventDefault();
+            act.mutate({ action: 'CONFIRM_REPLY', outcome: 'NOT_RIGHT_TIME', revisitOn, revisitReason });
+          }}>
+            <label>Revisit on <input type="date" aria-label="Revisit on" value={revisitOn} min={today(1)} onChange={(e) => setRevisitOn(e.target.value)} /></label>
+            <input aria-label="Why not now" placeholder="Why, e.g. budget cycle, busy quarter, role change" value={revisitReason} maxLength={300}
+              onChange={(e) => setRevisitReason(e.target.value)} />
+            <button type="submit" disabled={act.isPending}>Park in monthly beep</button>
+          </form>
+        )}
+        <ErrorNote error={act.error} />
+      </div>
+    );
+  }
   return (
     <div className="stage-actions">
       <div className="toolbar quick-actions">
@@ -259,7 +298,17 @@ export function SendStep({ page, onDone }: { page: GtnTrackPage; onDone: (p: Gtn
       onDone(p);
     },
   });
+  const email = useMutation({
+    mutationFn: (m: { subject: string; body: string; templateId: number | null }) =>
+      api.post<GtnTrackPage>(`/network/tracks/${t.id}/email`, { action: n.task === 'INTRO' ? 'INTRO_DONE' : 'SENT', ...m, version: t.version }),
+    onSuccess: (p) => {
+      queryClient.invalidateQueries({ queryKey: ['gtn'] });
+      onDone(p);
+    },
+  });
   // Waiting for a first reply or a call outcome: nothing to send; the stage actions say what happened.
+  if (n.task === 'REPLY_CHECK') return null;
+
   if (!n.suggestion && !['ASK_NOW', 'BEEP', 'NUDGE', 'INTRO', 'BOOK_CALL', 'CALL_REMINDER'].includes(n.task)) return null;
   if (n.task === 'CHECK') return null;
   if (t.stage === 'UNRESPONSIVE' && !t.whyReason) return null;
@@ -270,8 +319,8 @@ export function SendStep({ page, onDone }: { page: GtnTrackPage; onDone: (p: Gtn
         stage={ask ? 'UNRESPONSIVE' : n.task === 'BEEP' ? 'MONTHLY_BEEP' : t.stage} reason={ask ? 'INERTIA' : t.whyReason}
         confirmLabel={ask ? 'I sent the ask' : n.task === 'INTRO' ? 'I sent the intro' : n.task === 'NUDGE' ? 'I sent the nudge'
           : n.task === 'BEEP' ? 'I sent the beep' : 'I sent it'}
-        busy={send.isPending} onSent={(m) => send.mutate(m)} />
-      <ErrorNote error={send.error} />
+        busy={send.isPending || email.isPending} onSent={(m) => send.mutate(m)} onSendEmail={(m) => email.mutate(m)} />
+      <ErrorNote error={send.error ?? email.error} />
     </>
   );
 }
@@ -288,14 +337,23 @@ export function StartGtn({ c, onStarted, onCancel }: { c: Pick<Connection, 'id' 
       onStarted(p);
     },
   });
+  const startEmail = useMutation({
+    mutationFn: (m: { subject: string; body: string; templateId: number | null }) =>
+      api.post<GtnTrackPage>('/network/tracks/email', { connectionId: c.id, ...m }),
+    onSuccess: (p) => {
+      queryClient.invalidateQueries({ queryKey: ['gtn'] });
+      queryClient.invalidateQueries({ queryKey: ['connections'] });
+      onStarted(p);
+    },
+  });
   return (
     <section className="form" aria-label={`Start ${c.fullName} on GTN`}>
       <h2>First message to {c.fullName}</h2>
       <p className="muted small">Send it from your own LinkedIn, WhatsApp or Gmail, then confirm. They move to Initiate; if they don't reply, they
         come back as Unresponsive.</p>
-      <Composer person={c} connectionId={c.id} stage="INITIATE" confirmLabel="I sent it: start GTN" busy={start.isPending}
-        onSent={(m) => start.mutate(m)} />
-      <ErrorNote error={start.error} />
+      <Composer person={c} connectionId={c.id} stage="INITIATE" confirmLabel="I sent it: start GTN" busy={start.isPending || startEmail.isPending}
+        onSent={(m) => start.mutate(m)} onSendEmail={(m) => startEmail.mutate(m)} />
+      <ErrorNote error={start.error ?? startEmail.error} />
       {onCancel && <button type="button" className="link-plain" onClick={onCancel}>Cancel</button>}
     </section>
   );

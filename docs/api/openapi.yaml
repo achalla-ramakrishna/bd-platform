@@ -678,6 +678,56 @@ paths:
       summary: Make the person's link now
       responses:
         '200': { description: The stats with the url }
+  /google/status:
+    get:
+      tags: [google]
+      operationId: googleStatus
+      summary: My Google connection for GTN (ADR-0020)
+      responses:
+        '200': { description: '{ available, connected, email, canSend, canRead, canCalendar, connectedAt, problem }' }
+  /google/connect:
+    get:
+      tags: [google]
+      operationId: googleConnect
+      summary: Redirects to Google's consent page for GTN's scopes (offline access)
+      responses:
+        '302': { description: To Google }
+  /google/callback:
+    get:
+      tags: [google]
+      operationId: googleCallback
+      summary: Google returns here; checks the state and that it is the person's own mailbox, then back to GTN
+      responses:
+        '302': { description: To /network?tab=profile&google=<outcome> }
+  /google:
+    delete:
+      tags: [google]
+      operationId: googleDisconnect
+      summary: Disconnect, revoking access at Google
+      responses:
+        '204': { description: Disconnected }
+  /network/tracks/{id}/email:
+    post:
+      tags: [network]
+      operationId: networkEmail
+      summary: Send from my Gmail { action SENT | INTRO_DONE, subject, body, templateId, version }, then log and move as "I sent it"
+      responses:
+        '200': { description: The track page }
+        '422': { description: Not connected, no email address, or Gmail refused }
+  /network/tracks/email:
+    post:
+      tags: [network]
+      operationId: networkStartByEmail
+      summary: Start someone with a first message sent from my Gmail { connectionId, subject, body, templateId }
+      responses:
+        '201': { description: The track page }
+  /network/replies/check:
+    post:
+      tags: [network]
+      operationId: networkCheckReplies
+      summary: Look for replies in my Gmail threads now
+      responses:
+        '200': { description: '{ found }' }
   /walnut/brief:
     post:
       tags: [walnut]
@@ -1596,3 +1646,6 @@ components:
 # Public, outside /api/v1 (ADR-0019): GET /p/{token} (HTML page), GET /p/{token}/video (byte ranges),
 # GET /p/{token}/captions.vtt, POST /p/{token}/events { kind: VISIT | VIDEO_PLAY | VIDEO_PROGRESS | CTA_CLICK |
 # INTERESTED, value } (always 204).
+# Public booking (ADR-0020): GET /p/{token}/slots -> { available, minutes, zone, slots, needEmail };
+# POST /p/{token}/book { start, email } -> { start, when, meetLink } or 422 { problems }.
+# Track actions gain CONFIRM_REPLY { outcome, revisitOn, revisitReason }.

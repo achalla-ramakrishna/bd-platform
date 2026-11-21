@@ -17,7 +17,8 @@ final class ProfileHtml {
      * {@code base}: where the page's video, captions and events live (e.g. /p/{token}); {@code preview}: the owner
      * looking at their own page, nothing is recorded.
      */
-    static String page(ProfileService.View view, String base, String videoUrl, String captionsUrl, boolean preview, String nonce) {
+    static String page(ProfileService.View view, String base, String videoUrl, String captionsUrl, boolean preview, String nonce,
+                       boolean calendarBooking) {
         ProfileService.Page p = view.page();
         String owner = p.ownerName() == null ? "CodeWalnut" : p.ownerName();
         String ownerFirst = Suggestions.firstName(owner);
@@ -54,7 +55,10 @@ final class ProfileHtml {
             h.append("</ul>");
         }
         h.append("<div class=\"cta\">");
-        if (p.bookingUrl() != null) {
+        if (calendarBooking) {
+            h.append("<button type=\"button\" class=\"btn primary\" id=\"book\">Book a ").append(p.slotMinutes())
+                .append("-minute call</button>");
+        } else if (p.bookingUrl() != null) {
             h.append("<a class=\"btn primary\" data-cta=\"BOOK\" target=\"_blank\" rel=\"noopener\" href=\"").append(escape(p.bookingUrl()))
                 .append("\">Book a 20-minute call</a>");
         }
@@ -66,7 +70,16 @@ final class ProfileHtml {
         if (p.interestedEnabled()) {
             h.append("<button type=\"button\" class=\"btn\" id=\"interested\">Interested, tell me more</button>");
         }
-        h.append("</div><p id=\"thanks\" class=\"thanks\" hidden>Thank you! ").append(escape(ownerFirst))
+        h.append("</div>");
+        if (calendarBooking) {
+            h.append("<section id=\"slots\" class=\"slots\" hidden aria-label=\"Choose a time\"><h2>Choose a time</h2>")
+                .append("<p class=\"muted\" id=\"slot-zone\"></p><div id=\"days\" class=\"days\"></div><div id=\"times\" class=\"times\"></div>")
+                .append("<div id=\"confirm\" hidden><label id=\"email-label\" hidden>Your email for the invitation")
+                .append("<input id=\"email\" type=\"email\" autocomplete=\"email\"></label>")
+                .append("<button type=\"button\" class=\"btn primary\" id=\"confirm-btn\">Confirm</button></div>")
+                .append("<p id=\"book-msg\" class=\"thanks\" role=\"status\"></p></section>");
+        }
+        h.append("<p id=\"thanks\" class=\"thanks\" hidden>Thank you! ").append(escape(ownerFirst))
             .append(" will be in touch shortly.</p>")
             .append("<footer><p>").append(escape(owner)).append(" · CodeWalnut · <a href=\"https://www.codewalnut.com\" target=\"_blank\" rel=\"noopener\">codewalnut.com</a></p>")
             .append("<p class=\"note\">This page tells ").append(escape(ownerFirst))
@@ -85,6 +98,33 @@ final class ProfileHtml {
             .append("document.querySelectorAll('[data-cta]').forEach(function(a){a.addEventListener('click',function(){post('CTA_CLICK',a.getAttribute('data-cta'));});});")
             .append("var i=document.getElementById('interested');if(i){i.addEventListener('click',function(){post('INTERESTED');")
             .append("i.disabled=true;document.getElementById('thanks').hidden=false;});}")
+            .append("var B=document.getElementById('book');if(B){var S=null,pick=null,need=false;var msg=document.getElementById('book-msg');")
+            .append("var fmtD=new Intl.DateTimeFormat(undefined,{weekday:'short',day:'numeric',month:'short'}),")
+            .append("fmtT=new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'});")
+            .append("function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x)e.textContent=x;return e;}")
+            .append("function times(day){var box=document.getElementById('times');box.innerHTML='';")
+            .append("S.slots.filter(function(s){return fmtD.format(new Date(s))===day;}).forEach(function(s){")
+            .append("var b=el('button','chip',fmtT.format(new Date(s)));b.type='button';b.onclick=function(){pick=s;")
+            .append("box.querySelectorAll('.chip').forEach(function(x){x.classList.remove('on');});b.classList.add('on');")
+            .append("document.getElementById('confirm').hidden=false;document.getElementById('email-label').hidden=!need;")
+            .append("document.getElementById('confirm-btn').textContent='Confirm '+fmtD.format(new Date(s))+', '+fmtT.format(new Date(s));};box.appendChild(b);});}")
+            .append("B.addEventListener('click',function(){post('CTA_CLICK','BOOK');var sec=document.getElementById('slots');sec.hidden=false;")
+            .append("if(P){msg.textContent='Booking works on the links you share.';return;}if(S)return;msg.textContent='Loading free times…';")
+            .append("fetch(").append(js(base + "/slots")).append(").then(function(r){return r.json();}).then(function(d){S=d;need=d.needEmail;")
+            .append("if(!d.available||!d.slots.length){msg.textContent='No free times right now. Please message on WhatsApp.';return;}")
+            .append("msg.textContent='';document.getElementById('slot-zone').textContent='Times in your time zone; '+d.minutes+' minutes, with a Google Meet link.';")
+            .append("var days=[];d.slots.forEach(function(s){var k=fmtD.format(new Date(s));if(days.indexOf(k)<0)days.push(k);});")
+            .append("var dbox=document.getElementById('days');days.forEach(function(k,i){var b=el('button','chip',k);b.type='button';")
+            .append("b.onclick=function(){dbox.querySelectorAll('.chip').forEach(function(x){x.classList.remove('on');});b.classList.add('on');times(k);};")
+            .append("dbox.appendChild(b);if(i===0){b.classList.add('on');times(k);}});}).catch(function(){msg.textContent='Could not load free times.';});});")
+            .append("document.getElementById('confirm-btn').addEventListener('click',function(){if(!pick)return;var c=this;c.disabled=true;")
+            .append("msg.textContent='Booking…';fetch(").append(js(base + "/book")).append(",{method:'POST',headers:{'Content-Type':'application/json'},")
+            .append("body:JSON.stringify({start:pick,email:need?document.getElementById('email').value:null})})")
+            .append(".then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});}).then(function(x){if(x.ok){")
+            .append("document.getElementById('days').hidden=true;document.getElementById('times').hidden=true;document.getElementById('confirm').hidden=true;")
+            .append("msg.textContent='Booked for '+fmtD.format(new Date(x.d.start))+', '+fmtT.format(new Date(x.d.start))+'. A calendar invitation is on its way.';}")
+            .append("else{c.disabled=false;msg.textContent=(x.d.problems&&x.d.problems[0])||'That did not work. Please try again.';}})")
+            .append(".catch(function(){c.disabled=false;msg.textContent='That did not work. Please try again.';});});}")
             .append("})();</script></body></html>");
         return h.toString();
     }
@@ -116,5 +156,12 @@ final class ProfileHtml {
         .btn.primary{background:var(--accent);color:#fff}.btn:disabled{opacity:.6;cursor:default}
         .thanks{font-weight:600;color:var(--accent)}footer{margin-top:28px;border-top:1px solid var(--line);padding-top:12px;color:var(--muted);font-size:14px}
         footer a{color:var(--accent)}.note{font-size:12px}
+        .slots{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 18px}
+        .slots h2{font-size:18px;margin:0 0 4px}.muted{color:var(--muted);font-size:14px;margin:0 0 10px}
+        .days,.times{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+        .chip{font:inherit;font-size:15px;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--fg);cursor:pointer}
+        .chip.on{border-color:var(--accent);background:var(--accent);color:#fff}
+        #confirm label{display:grid;gap:4px;margin:0 0 10px;font-size:14px}
+        #confirm input{font:inherit;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
         """;
 }

@@ -8,6 +8,8 @@ app:
     scheduler-enabled: false
   gtn:
     sweep-enabled: false
+  google:
+    poll-enabled: false
   security:
     allowed-domain: example-gcc.test
     bootstrap-admins: admin@example-gcc.test

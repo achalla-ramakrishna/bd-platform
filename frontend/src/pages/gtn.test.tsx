@@ -11,7 +11,7 @@ const track: GtnTrack = {
   id: 5, connectionId: 9, company: 'Example GCC', ownerId: 1, ownerName: 'Admin Person', stage: 'UNRESPONSIVE',
   stageSince: '2026-11-20T00:00:00Z', daysInStage: 1, whyReason: null, nextAction: 'Diagnose: why no reply?', nextActionOn: '2026-11-21',
   overdue: false, lastOutOn: '2026-11-13', lastChannel: 'LINKEDIN', nudgesSent: 0, beepIntervalDays: 30, version: 3, askNow: false,
-  bestVideoPct: 0, ...person,
+  bestVideoPct: 0, replyCheck: false, ...person,
 };
 
 const page: GtnTrackPage = {
@@ -87,5 +87,63 @@ describe('GTN dashboard (M10)', () => {
     expect(started.parentElement!.textContent).toContain('Response rate50%'); // 2 of 4 responded
     expect(screen.getByText('Inertia to respond')).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Profile page' }).textContent).toContain('Watched 75%+ of the video1');
+  });
+});
+
+describe('GTN with Gmail (ADR-0020)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  function respond(map: Record<string, unknown>) {
+    const fetchMock = vi.fn(async (url: string) => {
+      const key = Object.keys(map).find((k) => url.includes(k)) ?? '';
+      return new Response(JSON.stringify(map[key] ?? {}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  it('sends from Gmail when Google is connected and the channel is email', async () => {
+    const { Composer } = await import('./gtn');
+    respond({
+      '/google/status': { available: true, connected: true, email: 'admin@example-gcc.test', canSend: true, canRead: true, canCalendar: true },
+      '/network/templates': [],
+    });
+    const sent = vi.fn();
+    const plain = vi.fn();
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <Composer person={person} stage="INITIATE" suggestion={{ channel: 'EMAIL', subject: 'Catching up', body: 'Hi Engineer', templateId: 1 }}
+            onSent={plain} onSendEmail={sent} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Send from Gmail (admin@example-gcc.test)' }));
+    expect(sent).toHaveBeenCalledWith({ subject: 'Catching up', body: 'Hi Engineer', templateId: 1 });
+    expect(plain).not.toHaveBeenCalled();
+    // On WhatsApp it is still "I sent it".
+    fireEvent.click(screen.getByRole('button', { name: 'WhatsApp' }));
+    expect(screen.getByRole('button', { name: 'I sent it' })).toBeTruthy();
+  });
+
+  it('asks what a reply found in Gmail meant', async () => {
+    const replied = { ...track, stage: 'RESPONDED' as const, replyCheck: true, lastTopic: 'Replied by email: Next quarter is better' };
+    const fetchMock = respond({ '/actions': { ...page, detail: { ...page.detail, track: { ...replied, replyCheck: false } } } });
+    const done = vi.fn();
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter><StageActions page={{ ...page, detail: { ...page.detail, track: replied } }} onDone={done} /></MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole('status').textContent).toContain('Next quarter is better');
+    fireEvent.click(screen.getByRole('button', { name: 'Not the right time' }));
+    fireEvent.change(screen.getByLabelText('Why not now'), { target: { value: 'Next quarter' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Park in monthly beep' }));
+    await waitFor(() => expect(done).toHaveBeenCalled());
+    const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+    expect(body).toMatchObject({ action: 'CONFIRM_REPLY', outcome: 'NOT_RIGHT_TIME', revisitReason: 'Next quarter', version: 3 });
   });
 });

@@ -49,9 +49,14 @@ class NetworkController {
     private final ConnectionQueries connections;
     private final GtnProperties gtn;
     private final CurrentUserProvider currentUser;
+    private final GmailSender gmail;
+    private final ReplyChecker replies;
 
     NetworkController(NetworkService network, NetworkQueries queries, Suggestions suggestions, TemplateService templates,
-                      ConnectionQueries connections, GtnProperties gtn, CurrentUserProvider currentUser) {
+                      ConnectionQueries connections, GtnProperties gtn, CurrentUserProvider currentUser, GmailSender gmail,
+                      ReplyChecker replies) {
+        this.gmail = gmail;
+        this.replies = replies;
         this.network = network;
         this.queries = queries;
         this.suggestions = suggestions;
@@ -125,6 +130,33 @@ class NetworkController {
         user.require(Role.PIPELINE_EDITORS);
         network.act(id, action, user);
         return page(id, user);
+    }
+
+    /** Send the message from my Gmail, then log it and move the track (ADR-0020). */
+    @PostMapping("/tracks/{id}/email")
+    TrackPage email(@PathVariable long id, @RequestBody GmailSender.Email email) {
+        CurrentUser user = currentUser.get();
+        user.require(Role.PIPELINE_EDITORS);
+        gmail.send(id, email, user);
+        return page(id, user);
+    }
+
+    /** Start someone with a first message sent from my Gmail. */
+    @PostMapping("/tracks/email")
+    @ResponseStatus(HttpStatus.CREATED)
+    TrackPage startByEmail(@RequestBody GmailSender.FirstEmail email) {
+        CurrentUser user = currentUser.get();
+        user.require(Role.PIPELINE_EDITORS);
+        return page(gmail.start(email, user), user);
+    }
+
+    record Checked(int found) {}
+
+    /** Look for replies in my Gmail now, rather than waiting for the next check. */
+    @PostMapping("/replies/check")
+    Checked checkReplies() {
+        CurrentUser user = currentUser.get();
+        return new Checked(replies.poll(user.id()));
     }
 
     @PatchMapping("/tracks/{id}")
@@ -219,6 +251,6 @@ class NetworkController {
         return new NetworkQueries.Track(0, c.id(), c.fullName(), c.currentCompany(), c.currentRole(), c.linkedinUrl(),
             c.email(), c.whatsapp(), c.sourceTag(), c.photoVersion(), user.id(), user.name(), "INITIATE",
             java.time.Instant.now(), 0, null, "", LocalDate.now(), false, null, null, null, 0, null, 30, null, how, null, 0,
-            false, null, 0, null);
+            false, null, 0, null, false, null);
     }
 }

@@ -5,14 +5,15 @@ import {
   type GtnDashboard, type ProfilePage, type ProfileStats,
 } from '../lib/api';
 import { formatDate } from '../lib/format';
-import { ErrorNote } from './gtn';
+import { ErrorNote, useGoogleStatus } from './gtn';
 import { today } from './ConversationsPage';
 
 /** My GTN profile page (ADR-0019): the page outreach links open. Video first, brief, one clear ask. */
 export function ProfileTab({ editable }: { editable: boolean }) {
   const queryClient = useQueryClient();
   const page = useQuery({ queryKey: ['gtn-profile'], queryFn: () => api.get<ProfilePage>('/network/profile') });
-  const [form, setForm] = useState({ headline: '', intro: '', proof1: '', proof2: '', proof3: '', bookingUrl: '', whatsapp: '', interestedEnabled: true });
+  const [form, setForm] = useState({ headline: '', intro: '', proof1: '', proof2: '', proof3: '', bookingUrl: '', whatsapp: '', interestedEnabled: true,
+    bookingMode: 'LINK', slotMinutes: '20', dayStart: '10:00', dayEnd: '18:00' });
   const [saved, setSaved] = useState(false);
   const videoInput = useRef<HTMLInputElement>(null);
   const captionsInput = useRef<HTMLInputElement>(null);
@@ -22,13 +23,15 @@ export function ProfileTab({ editable }: { editable: boolean }) {
     setForm({
       headline: p.headline, intro: p.intro ?? '', proof1: p.proofPoints[0] ?? '', proof2: p.proofPoints[1] ?? '', proof3: p.proofPoints[2] ?? '',
       bookingUrl: p.bookingUrl ?? '', whatsapp: p.whatsapp ? `+${p.whatsapp}` : '', interestedEnabled: p.interestedEnabled,
+      bookingMode: p.bookingMode, slotMinutes: String(p.slotMinutes), dayStart: p.dayStart, dayEnd: p.dayEnd,
     });
   }, [page.data]);
   const done = (p: ProfilePage) => queryClient.setQueryData(['gtn-profile'], p);
   const save = useMutation({
     mutationFn: () => api.put<ProfilePage>('/network/profile', {
       headline: form.headline, intro: form.intro, proofPoints: [form.proof1, form.proof2, form.proof3], bookingUrl: form.bookingUrl,
-      whatsapp: form.whatsapp, interestedEnabled: form.interestedEnabled, version: page.data?.version,
+      whatsapp: form.whatsapp, interestedEnabled: form.interestedEnabled, version: page.data?.version, bookingMode: form.bookingMode,
+      slotMinutes: Number(form.slotMinutes), dayStart: form.dayStart, dayEnd: form.dayEnd,
     }),
     onSuccess: (p) => { done(p); setSaved(true); },
   });
@@ -43,6 +46,7 @@ export function ProfileTab({ editable }: { editable: boolean }) {
   const p = page.data;
   return (
     <>
+      <GooglePanel editable={editable} />
       <p className="muted small">
         The page your outreach links open: put <code>{'{profile_link}'}</code> in a message and each person gets their own link. A visit, the
         video watched and every click show on their timeline; a visit from someone who hasn't replied puts "ask now" at the top of Today and
@@ -103,6 +107,25 @@ export function ProfileTab({ editable }: { editable: boolean }) {
             <input aria-label="Your WhatsApp" value={form.whatsapp} maxLength={20} onChange={set('whatsapp')} disabled={!editable} placeholder="+91 98xxx xxxxx" />
           </label>
         </div>
+        <div className="grid">
+          <label>People book a call
+            <select aria-label="People book a call" value={form.bookingMode} disabled={!editable} onChange={set('bookingMode')}>
+              <option value="LINK">With my booking link</option>
+              <option value="CALENDAR">From my free times (Google Calendar)</option>
+            </select>
+          </label>
+          {form.bookingMode === 'CALENDAR' && <>
+            <label>Call length
+              <select aria-label="Call length" value={form.slotMinutes} disabled={!editable} onChange={set('slotMinutes')}>
+                {[15, 20, 30, 45, 60].map((m) => <option key={m} value={m}>{m} minutes</option>)}
+              </select>
+            </label>
+            <label>From<input type="time" aria-label="Bookable from" value={form.dayStart} disabled={!editable} onChange={set('dayStart')} /></label>
+            <label>Until<input type="time" aria-label="Bookable until" value={form.dayEnd} disabled={!editable} onChange={set('dayEnd')} /></label>
+          </>}
+        </div>
+        {form.bookingMode === 'CALENDAR' && <p className="muted small">Weekdays, the next 10 working days, at least two hours ahead. The call goes on your
+          calendar with a Google Meet link and they get an invitation.</p>}
         <label className="inline-check"><input type="checkbox" checked={form.interestedEnabled} disabled={!editable}
           onChange={(e) => { setSaved(false); setForm({ ...form, interestedEnabled: e.target.checked }); }} /> Show "Interested, tell me more"</label>
         <ErrorNote error={save.error} />
@@ -110,6 +133,56 @@ export function ProfileTab({ editable }: { editable: boolean }) {
           {saved && <span className="muted small" role="status">Saved.</span>}</div>}
       </form>
     </>
+  );
+}
+
+/** My Google connection: send from Gmail, find replies, book on my calendar (ADR-0020). */
+function GooglePanel({ editable }: { editable: boolean }) {
+  const queryClient = useQueryClient();
+  const status = useGoogleStatus();
+  const [outcome] = useState(() => new URLSearchParams(window.location.search).get('google'));
+  const disconnect = useMutation({
+    mutationFn: () => api.del<void>('/google'),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['google-status'] }),
+  });
+  const check = useMutation({
+    mutationFn: () => api.post<{ found: number }>('/network/replies/check', {}),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gtn'] }),
+  });
+  const s = status.data;
+  if (!s) return null;
+  return (
+    <section className="form" aria-label="Gmail and Calendar">
+      <h2>Gmail and Calendar</h2>
+      {outcome && (outcome === 'connected'
+        ? <div className="notice good" role="status">Google connected.</div>
+        : <div className="notice bad" role="alert">{outcome}</div>)}
+      {!s.available ? (
+        <p className="muted small">Not set up for this app yet: an admin adds GOOGLE_TOKEN_KEY and the redirect address (see the deployment
+          guide). Until then, use "Open in Gmail" and your booking link.</p>
+      ) : s.connected ? (
+        <>
+          <p>Connected as <strong>{s.email}</strong> since {formatDate(s.connectedAt)}. GTN sends your emails from Gmail, spots replies in those
+            threads (headers and preview only) and books calls on your calendar.</p>
+          <div className="toolbar">
+            <button type="button" className="secondary" disabled={check.isPending} onClick={() => check.mutate()}>
+              {check.isPending ? 'Checking…' : 'Check for replies now'}</button>
+            {check.data && <span className="muted small" role="status">{check.data.found ? `${check.data.found} new repl${check.data.found === 1 ? 'y' : 'ies'}: see Today.` : 'No new replies.'}</span>}
+            {editable && <button type="button" className="link-plain" disabled={disconnect.isPending}
+              onClick={() => window.confirm('Disconnect Google? GTN stops sending from Gmail, finding replies and booking on your calendar.') && disconnect.mutate()}>
+              Disconnect</button>}
+          </div>
+          <ErrorNote error={check.error ?? disconnect.error} />
+        </>
+      ) : (
+        <>
+          {s.problem && <div className="notice warn">{s.problem}</div>}
+          <p className="muted small">Connect your own Google account to send GTN emails from your Gmail, have replies found for you, and let people
+            book your free times. GTN asks Google to send email, read the headers of the threads it started, and see free/busy and add events.</p>
+          {editable && <a className="button" href="/api/v1/google/connect">Connect Google</a>}
+        </>
+      )}
+    </section>
   );
 }
 

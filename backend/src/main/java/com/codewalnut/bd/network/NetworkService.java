@@ -48,7 +48,7 @@ public class NetworkService {
     public record Change(String nextAction, LocalDate nextActionOn, Integer beepIntervalDays, Long ownerId, Integer version) {}
 
     private record State(long id, String stage, String whyReason, int nudgesSent, int beepIntervalDays, LocalDate callOn,
-                         String lastChannel, int version) {}
+                         String lastChannel, int version, boolean replyCheck) {}
 
     private final JdbcClient jdbc;
     private final GtnProperties gtn;
@@ -132,7 +132,7 @@ public class NetworkService {
                     problems.add("The call date is in the past. Use \"Call held\" if it already happened.");
                 }
                 done(problems);
-                jdbc.sql("UPDATE network_track SET call_on = :on WHERE id = :id").param("on", in.callOn()).param("id", id).update();
+                jdbc.sql("UPDATE network_track SET call_on = :on, call_at = NULL WHERE id = :id").param("on", in.callOn()).param("id", id).update();
                 if ("CALL_SCHEDULED".equals(s.stage())) {
                     next(id, "Hold the call", in.callOn());
                     change(id, s.stage(), s.stage(), user.id(), note(in, "Call rescheduled to " + in.callOn()));
@@ -165,6 +165,25 @@ public class NetworkService {
                 commit(id, kind, what, user.id());
                 move(s, "WARM_COMMITMENT", "First monthly beep", today.plusDays(s.beepIntervalDays()), user.id(),
                     note(in, "Committed: " + what));
+            }
+            case "CONFIRM_REPLY" -> {
+                if (!s.replyCheck()) {
+                    problems.add("There is no reply waiting to be confirmed.");
+                }
+                String outcome = upper(in.outcome()) == null ? "POSITIVE" : upper(in.outcome());
+                if (!Set.of("POSITIVE", "NOT_RIGHT_TIME").contains(outcome)) {
+                    problems.add("Say whether the reply was positive or \"not the right time\".");
+                }
+                if ("NOT_RIGHT_TIME".equals(outcome)) {
+                    revisit(in, today, problems);
+                }
+                done(problems);
+                jdbc.sql("UPDATE network_track SET reply_check = FALSE WHERE id = :id").param("id", id).update();
+                if ("NOT_RIGHT_TIME".equals(outcome)) {
+                    park(s, in, today, user.id(), "Replied by email: not the right time");
+                } else {
+                    change(id, s.stage(), s.stage(), user.id(), note(in, "Reply confirmed as positive"));
+                }
             }
             case "MOVED" -> {
                 String stage = upper(in.stage());
@@ -239,7 +258,7 @@ public class NetworkService {
         }
         done(problems);
         touch(s.id(), user.id(), channel, "IN", "REPLY", null, summary, today);
-        jdbc.sql("UPDATE network_track SET last_in_on = :today, nudges_sent = 0, ask_now = FALSE WHERE id = :id")
+        jdbc.sql("UPDATE network_track SET last_in_on = :today, nudges_sent = 0, ask_now = FALSE, reply_check = FALSE WHERE id = :id")
             .param("today", today).param("id", s.id()).update();
         if ("NOT_RIGHT_TIME".equals(outcome)) {
             park(s, in, today, user.id(), "Replied: not the right time");
@@ -345,6 +364,73 @@ public class NetworkService {
         return moved;
     }
 
+    // ---- Gmail and calendar (ADR-0020) ----
+
+    /** The message just logged went out through Gmail: remember its thread so replies can be found. */
+    @Transactional
+    public void sentThroughGmail(long trackId, String threadId, String messageId, String rfcMessageId) {
+        jdbc.sql("""
+                UPDATE network_touch SET gmail_thread_id = :t, gmail_message_id = :m, rfc_message_id = :r
+                WHERE id = (SELECT id FROM (SELECT MAX(id) AS id FROM network_touch WHERE track_id = :track AND direction = 'OUT') x)
+                """).param("t", threadId).param("m", messageId).param("r", rfcMessageId).param("track", trackId).update();
+    }
+
+    /**
+     * A reply found in Gmail: logged with its preview, flagged for the owner to confirm what it meant, and for someone
+     * at Initiate or Unresponsive moved to Responded (any reply does, PRD rule 1). False when already logged.
+     */
+    @Transactional
+    public boolean emailReply(long trackId, String gmailMessageId, String threadId, String preview, LocalDate on) {
+        if (jdbc.sql("SELECT COUNT(*) FROM network_touch WHERE gmail_message_id = :m").param("m", gmailMessageId)
+                .query(Integer.class).single() > 0) {
+            return false;
+        }
+        State s = lock(trackId, null);
+        long owner = jdbc.sql("SELECT owner_user_id FROM network_track WHERE id = :id").param("id", trackId).query(Long.class).single();
+        String text = preview == null || preview.isBlank() ? "(no preview)" : preview.strip();
+        jdbc.sql("""
+                INSERT INTO network_touch (track_id, user_id, channel, direction, kind, summary, occurred_on, gmail_thread_id,
+                    gmail_message_id)
+                VALUES (:t, :u, 'EMAIL', 'IN', 'REPLY', :s, :on, :thread, :m)
+                """).param("t", trackId).param("u", owner)
+            .param("s", "Replied by email: " + (text.length() > 400 ? text.substring(0, 400) + "…" : text))
+            .param("on", on).param("thread", threadId).param("m", gmailMessageId).update();
+        jdbc.sql("""
+                UPDATE network_track SET last_in_on = GREATEST(COALESCE(last_in_on, :on), :on), nudges_sent = 0, ask_now = FALSE,
+                    reply_check = TRUE, version = version + 1
+                WHERE id = :id
+                """).param("on", on).param("id", trackId).update();
+        if ("INITIATE".equals(s.stage()) || "UNRESPONSIVE".equals(s.stage())) {
+            move(s, "RESPONDED", "Make the intro", today().plusDays(2), null, "Reply found in Gmail");
+        }
+        // The owner confirms what the reply meant today, whatever the stage.
+        jdbc.sql("UPDATE network_track SET next_action_on = LEAST(next_action_on, :today) WHERE id = :id")
+            .param("today", today()).param("id", trackId).update();
+        return true;
+    }
+
+    /** A call booked on the profile page (ADR-0020): Call scheduled at that time, from any stage. */
+    @Transactional
+    public void booked(long trackId, java.time.Instant at, String eventId, String touchSummary) {
+        State s = lock(trackId, null);
+        long owner = jdbc.sql("SELECT owner_user_id FROM network_track WHERE id = :id").param("id", trackId).query(Long.class).single();
+        LocalDate day = at.atZone(ZoneId.of(gtn.zone())).toLocalDate();
+        jdbc.sql("""
+                UPDATE network_track SET call_on = :day, call_at = :at, calendar_event_id = :e, ask_now = FALSE, version = version + 1
+                WHERE id = :id
+                """).param("day", day).param("at", java.sql.Timestamp.from(at)).param("e", eventId).param("id", trackId).update();
+        jdbc.sql("""
+                INSERT INTO network_touch (track_id, user_id, channel, direction, kind, summary, occurred_on)
+                VALUES (:t, :u, 'OTHER', 'IN', 'VISIT', :s, :on)
+                """).param("t", trackId).param("u", owner).param("s", touchSummary).param("on", today()).update();
+        if ("CALL_SCHEDULED".equals(s.stage())) {
+            next(trackId, "Hold the call", day);
+            change(trackId, s.stage(), s.stage(), null, "Call booked on the profile page");
+        } else {
+            move(s, "CALL_SCHEDULED", "Hold the call", day, null, "Call booked on the profile page");
+        }
+    }
+
     // ---- helpers ----
 
     private record Next(String what, LocalDate on) {}
@@ -405,7 +491,7 @@ public class NetworkService {
 
     private State lock(long id, Integer version) {
         State s = jdbc.sql("""
-                SELECT id, stage, why_reason, nudges_sent, beep_interval_days, call_on, last_channel, version
+                SELECT id, stage, why_reason, nudges_sent, beep_interval_days, call_on, last_channel, version, reply_check
                 FROM network_track WHERE id = :id FOR UPDATE
                 """).param("id", id).query((rs, n) -> state(rs)).optional()
             .orElseThrow(() -> new NotFoundException("Network track", id));
@@ -417,13 +503,13 @@ public class NetworkService {
 
     private List<State> states(String where, Map<String, ?> params) {
         return jdbc.sql("""
-                SELECT id, stage, why_reason, nudges_sent, beep_interval_days, call_on, last_channel, version
+                SELECT id, stage, why_reason, nudges_sent, beep_interval_days, call_on, last_channel, version, reply_check
                 FROM network_track WHERE\s""" + where + " FOR UPDATE").params(params).query((rs, n) -> state(rs)).list();
     }
 
     private static State state(java.sql.ResultSet rs) throws java.sql.SQLException {
         return new State(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getInt(4), rs.getInt(5),
-            rs.getObject(6, LocalDate.class), rs.getString(7), rs.getInt(8));
+            rs.getObject(6, LocalDate.class), rs.getString(7), rs.getInt(8), rs.getBoolean(9));
     }
 
     private void template(Long templateId, List<String> problems) {

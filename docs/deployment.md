@@ -192,3 +192,19 @@ address (for example `https://bd.example-gcc.test`) so links in messages and ale
 without it, links use the address of the page that prepared the message. Intro videos are stored in MySQL
 (up to 40 MB each, in 1 MB chunks), so no volume is needed; MySQL's default `max_allowed_packet` (64 MB) is
 enough. "Ask now" emails use the same `MAIL_API_KEY` and `MAIL_FROM` as Walnut.
+
+## GTN Gmail and Calendar (ADR-0020)
+
+Off until these are done; GTN then keeps "Open in Gmail" and the booking link.
+
+1. In the Google Cloud project of the sign-in OAuth client: **APIs & Services → Library**, enable the
+   **Gmail API** and the **Google Calendar API**.
+2. **APIs & Services → OAuth consent screen**: keep the app **Internal** (Workspace users only), and add the
+   scopes `gmail.send`, `gmail.metadata`, `calendar.events` and `calendar.freebusy`.
+3. **Credentials → the OAuth client → Authorised redirect URIs**: add
+   `https://<your app address>/api/v1/google/callback` (the same address as `APP_BASE_URL`).
+4. In Railway, set `GOOGLE_TOKEN_KEY` to 32 random bytes, base64 (for example the output of
+   `openssl rand -base64 32`). It encrypts the stored Google tokens; changing it means everyone connects again.
+5. Each person then opens **GTN → My profile page → Connect Google**.
+
+Optional: `GTN_REPLY_POLL_MINUTES` (default 10) sets how often replies are looked for.

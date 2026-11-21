@@ -38,6 +38,7 @@ explains them.
 | strategy | V9 | `strategy_version` (every save kept; the newest is current) |
 | contacts, network | V18 | GTN (ADR-0017, ADR-0018): `connection` gains `whatsapp` (digits with country code) and `source_tag`; `network_track` (one per person: stage, Why? reason, next action and date, nudges sent, revisit date and reason, beep interval, call date, owner), `network_stage_change` (every move; no user for the daily sweep), `network_touch` (channel, direction, kind, template, summary), `network_commitment`, `message_template` (seeded with starter templates) |
 | network | V19 | GTN profile pages (ADR-0019): `profile_page` (one per team member), `profile_video_chunk` (the intro video in 1 MB pieces), `profile_link` (one unguessable token per person), `profile_event` (visit, video play and progress, clicks); `network_track` gains `visited_at`, `best_video_pct`, `interested_at`, `ask_now`; touches gain the kind `VISIT` |
+| google, network | V20 | GTN phase 3 (ADR-0020): `google_account` (each person's own connection; tokens encrypted with AES-GCM), `network_touch` gains `gmail_thread_id`, `gmail_message_id` (unique), `rfc_message_id`; `network_track` gains `reply_check`, `call_at`, `calendar_event_id`; `profile_page` gains `booking_mode` (LINK or CALENDAR), `slot_minutes`, `day_start`, `day_end`; page events gain `BOOKED` |
 
 ## Keys that carry business rules
 

@@ -32,9 +32,11 @@ class ProfileController {
     private final NetworkService network;
     private final PublicUrl publicUrl;
     private final CurrentUserProvider currentUser;
+    private final BookingService booking;
 
     ProfileController(ProfileService profiles, NetworkQueries queries, NetworkService network, PublicUrl publicUrl,
-                      CurrentUserProvider currentUser) {
+                      CurrentUserProvider currentUser, BookingService booking) {
+        this.booking = booking;
         this.profiles = profiles;
         this.queries = queries;
         this.network = network;
@@ -110,7 +112,7 @@ class ProfileController {
         res.setContentType("text/html;charset=UTF-8");
         res.getWriter().write(ProfileHtml.page(new ProfileService.View(0, 0, "there", page), "/api/v1/network/profile",
             page.videoBytes() == null ? null : "/api/v1/network/profile/video",
-            page.hasCaptions() ? "/api/v1/network/profile/captions.vtt" : null, true, nonce));
+            page.hasCaptions() ? "/api/v1/network/profile/captions.vtt" : null, true, nonce, booking.calendarBooking(page)));
     }
 
     /** The person's link (made now if needed) and what their page reported. */

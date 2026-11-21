@@ -499,6 +499,10 @@ export interface GtnTrack {
   visitedAt?: string | null;
   bestVideoPct: number;
   interestedAt?: string | null;
+  /** A reply found in Gmail waits for the owner to say what it meant (ADR-0020). */
+  replyCheck: boolean;
+  /** The booked call's time, when booked on the calendar. */
+  callAt?: string | null;
 }
 
 export interface GtnSuggestion {
@@ -509,7 +513,7 @@ export interface GtnSuggestion {
   body: string;
 }
 
-export type GtnTask = 'ASK_NOW' | 'CHECK' | 'DIAGNOSE' | 'NUDGE' | 'INTRO' | 'BOOK_CALL' | 'CALL_REMINDER' | 'CALL_OUTCOME' | 'BEEP';
+export type GtnTask = 'REPLY_CHECK' | 'ASK_NOW' | 'CHECK' | 'DIAGNOSE' | 'NUDGE' | 'INTRO' | 'BOOK_CALL' | 'CALL_REMINDER' | 'CALL_OUTCOME' | 'BEEP';
 
 export interface GtnNext {
   track: GtnTrack;
@@ -608,6 +612,22 @@ export interface ProfilePage {
   videoUpdatedAt?: string | null;
   hasCaptions: boolean;
   version: number;
+  bookingMode: 'LINK' | 'CALENDAR';
+  slotMinutes: number;
+  dayStart: string;
+  dayEnd: string;
+}
+
+/** My Google connection for GTN (ADR-0020). */
+export interface GoogleStatus {
+  available: boolean;
+  connected: boolean;
+  email?: string | null;
+  canSend: boolean;
+  canRead: boolean;
+  canCalendar: boolean;
+  connectedAt?: string | null;
+  problem?: string | null;
 }
 
 export interface ProfileStats {

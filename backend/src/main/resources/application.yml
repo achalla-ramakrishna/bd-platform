@@ -65,6 +65,14 @@ app:
     sweep-cron: ${GTN_SWEEP_CRON:0 0 7 * * *}
     zone: ${GTN_ZONE:Asia/Kolkata}
     sweep-enabled: ${GTN_SWEEP:true}
+  # GTN phase 3 (ADR-0020): team members connect their own Gmail and Calendar. Off unless GOOGLE_TOKEN_KEY
+  # (32 random bytes, base64) is set; uses the sign-in OAuth client.
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:not-configured}
+    client-secret: ${GOOGLE_CLIENT_SECRET:not-configured}
+    token-key: ${GOOGLE_TOKEN_KEY:}
+    poll-minutes: ${GTN_REPLY_POLL_MINUTES:10}
+    poll-enabled: ${GTN_REPLY_POLL:true}
   # Email for Walnut's morning plan, through Resend's API. Off unless both are set.
   mail:
     api-key: ${MAIL_API_KEY:}

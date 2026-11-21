@@ -57,10 +57,16 @@ public class ProfileService {
     /** A team member's page; {@code id} 0 means they haven't saved one yet and the defaults are shown. */
     public record Page(long id, long ownerId, String ownerName, String headline, String intro, List<String> proofPoints,
                        String bookingUrl, String whatsapp, boolean interestedEnabled, String videoType, Long videoBytes,
-                       Instant videoUpdatedAt, boolean hasCaptions, int version) {}
+                       Instant videoUpdatedAt, boolean hasCaptions, int version, String bookingMode, int slotMinutes,
+                       String dayStart, String dayEnd) {}
 
+    /** {@code bookingMode}: LINK (their own booking link) or CALENDAR (free slots from their connected calendar). */
     public record Input(String headline, String intro, List<String> proofPoints, String bookingUrl, String whatsapp,
-                        Boolean interestedEnabled, Integer version) {}
+                        Boolean interestedEnabled, Integer version, String bookingMode, Integer slotMinutes, String dayStart,
+                        String dayEnd) {}
+
+    static final Set<Integer> SLOTS = Set.of(15, 20, 30, 45, 60);
+    private static final Pattern TIME = Pattern.compile("^([01]\\d|2[0-3]):[0-5]\\d$");
 
     /** What /p/{token} shows: the owner's page, greeting the person by first name. */
     public record View(long linkId, long connectionId, String firstName, Page page) {}
@@ -78,8 +84,11 @@ public class ProfileService {
     private final Mailer mailer;
     private final WalnutProperties walnut;
     private final AuditLog audit;
+    private final com.codewalnut.bd.google.GoogleAccounts google;
 
-    ProfileService(JdbcClient jdbc, GtnProperties gtn, Mailer mailer, WalnutProperties walnut, AuditLog audit) {
+    ProfileService(JdbcClient jdbc, GtnProperties gtn, Mailer mailer, WalnutProperties walnut, AuditLog audit,
+                   com.codewalnut.bd.google.GoogleAccounts google) {
+        this.google = google;
         this.jdbc = jdbc;
         this.gtn = gtn;
         this.mailer = mailer;
@@ -94,15 +103,17 @@ public class ProfileService {
             .optional().orElseThrow(() -> new NotFoundException("User", ownerId));
         return jdbc.sql("""
                 SELECT id, headline, intro, proof_points, booking_url, whatsapp, interested_enabled, video_type, video_bytes,
-                    video_updated_at, captions IS NOT NULL, version
+                    video_updated_at, captions IS NOT NULL, version, booking_mode, slot_minutes,
+                    TIME_FORMAT(day_start, '%H:%i'), TIME_FORMAT(day_end, '%H:%i')
                 FROM profile_page WHERE owner_user_id = :o
                 """).param("o", ownerId)
             .query((rs, n) -> new Page(rs.getLong(1), ownerId, name, rs.getString(2), rs.getString(3), lines(rs.getString(4)),
                 rs.getString(5), rs.getString(6), rs.getBoolean(7), rs.getString(8), rs.getObject(9, Long.class),
-                rs.getTimestamp(10) == null ? null : rs.getTimestamp(10).toInstant(), rs.getBoolean(11), rs.getInt(12)))
+                rs.getTimestamp(10) == null ? null : rs.getTimestamp(10).toInstant(), rs.getBoolean(11), rs.getInt(12),
+                rs.getString(13), rs.getInt(14), rs.getString(15), rs.getString(16)))
             .optional()
             .orElse(new Page(0, ownerId, name, DEFAULT_HEADLINE, DEFAULT_INTRO, DEFAULT_PROOF, null, null, true, null, null, null,
-                false, 0));
+                false, 0, "LINK", 20, "10:00", "18:00"));
     }
 
     @Transactional
@@ -129,6 +140,22 @@ public class ProfileService {
         if (trim(in.whatsapp()) != null && whatsapp == null) {
             problems.add("The WhatsApp number should have 10 to 15 digits, with the country code.");
         }
+        String mode = in.bookingMode() == null || in.bookingMode().isBlank() ? "LINK" : in.bookingMode().trim().toUpperCase(Locale.ROOT);
+        int slot = in.slotMinutes() == null ? 20 : in.slotMinutes();
+        String from = in.dayStart() == null || in.dayStart().isBlank() ? "10:00" : in.dayStart().trim();
+        String to = in.dayEnd() == null || in.dayEnd().isBlank() ? "18:00" : in.dayEnd().trim();
+        if (!Set.of("LINK", "CALENDAR").contains(mode)) {
+            problems.add("Choose how people book: your booking link, or your calendar.");
+        }
+        if ("CALENDAR".equals(mode) && !google.status(user.id()).canCalendar()) {
+            problems.add("Connect your Google Calendar first to offer your free slots.");
+        }
+        if (!SLOTS.contains(slot)) {
+            problems.add("Calls can be 15, 20, 30, 45 or 60 minutes.");
+        }
+        if (!TIME.matcher(from).matches() || !TIME.matcher(to).matches() || from.compareTo(to) >= 0) {
+            problems.add("Give the hours people can book as times like 10:00 and 18:00, the first before the second.");
+        }
         if (!problems.isEmpty()) {
             throw new RuleViolationException(problems);
         }
@@ -144,15 +171,21 @@ public class ProfileService {
         p.put("b", booking);
         p.put("w", whatsapp);
         p.put("x", in.interestedEnabled() == null || in.interestedEnabled());
+        p.put("m", mode);
+        p.put("sl", slot);
+        p.put("ds", from + ":00");
+        p.put("de", to + ":00");
         if (current.id() == 0) {
             jdbc.sql("""
-                    INSERT INTO profile_page (owner_user_id, headline, intro, proof_points, booking_url, whatsapp, interested_enabled)
-                    VALUES (:o, :h, :i, :p, :b, :w, :x)
+                    INSERT INTO profile_page (owner_user_id, headline, intro, proof_points, booking_url, whatsapp, interested_enabled,
+                        booking_mode, slot_minutes, day_start, day_end)
+                    VALUES (:o, :h, :i, :p, :b, :w, :x, :m, :sl, :ds, :de)
                     """).params(p).update();
         } else {
             jdbc.sql("""
                     UPDATE profile_page SET headline = :h, intro = :i, proof_points = :p, booking_url = :b, whatsapp = :w,
-                        interested_enabled = :x, version = version + 1
+                        interested_enabled = :x, booking_mode = :m, slot_minutes = :sl, day_start = :ds, day_end = :de,
+                        version = version + 1
                     WHERE owner_user_id = :o
                     """).params(p).update();
         }
@@ -417,6 +450,20 @@ public class ProfileService {
                 ? name(view) + " clicked \"Interested, tell me more\" on your page"
                 : name(view) + " " + ask.replaceFirst("^they ", ""));
         }
+    }
+
+    /** Tells the owner by email (when email is set up) that something happened on their page. */
+    void alert(long ownerId, long trackId, View view, String subject) {
+        email(ownerId, trackId, view, subject);
+    }
+
+    /** Records a booking made on the page. */
+    void recordBooked(long linkId) {
+        jdbc.sql("INSERT INTO profile_event (link_id, kind) VALUES (:l, 'BOOKED')").param("l", linkId).update();
+    }
+
+    String personName(View view) {
+        return name(view);
     }
 
     private void email(long ownerId, long trackId, View view, String subject) {

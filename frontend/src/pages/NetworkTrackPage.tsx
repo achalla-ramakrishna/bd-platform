@@ -73,7 +73,9 @@ export function NetworkTrackPage({ me }: { me: Me }) {
         {t.whyReason && <div className="card wide-card"><div className="label">Why?</div><div className="value value-text">{WHY_LABELS[t.whyReason]}
           <div className="muted small">{WHY_HINTS[t.whyReason]}</div></div></div>}
         {t.revisitReason && <div className="card wide-card"><div className="label">They said</div><div className="value value-text">{t.revisitReason}</div></div>}
-        {t.callOn && t.stage === 'CALL_SCHEDULED' && <div className="card"><div className="label">Call</div><div className="value value-text">{formatDate(t.callOn)}</div></div>}
+        {t.callOn && t.stage === 'CALL_SCHEDULED' && <div className="card"><div className="label">Call</div><div className="value value-text">
+          {t.callAt ? new Date(t.callAt).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+            : formatDate(t.callOn)}</div></div>}
         <ProfileCard trackId={t.id} editable={editable} />
         {(t.stage === 'WARM_COMMITMENT' || t.stage === 'MONTHLY_BEEP') && (
           <div className="card"><div className="label">Beep every</div><div className="value">{t.beepIntervalDays} d</div></div>

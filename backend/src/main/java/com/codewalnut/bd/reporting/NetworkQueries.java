@@ -28,7 +28,7 @@ public class NetworkQueries {
                         LocalDate nextActionOn, boolean overdue, LocalDate lastOutOn, LocalDate lastInOn,
                         String lastChannel, int nudgesSent, String revisitReason, int beepIntervalDays, LocalDate callOn,
                         String howWeKnow, String lastTopic, int version, boolean askNow, Instant visitedAt,
-                        int bestVideoPct, Instant interestedAt) {}
+                        int bestVideoPct, Instant interestedAt, boolean replyCheck, Instant callAt) {}
 
     public record Touch(long id, String channel, String direction, String kind, String summary, LocalDate occurredOn,
                         String userName, Long templateId, Instant createdAt) {}
@@ -48,7 +48,7 @@ public class NetworkQueries {
             t.next_action_on, t.last_out_on, t.last_in_on, t.last_channel, t.nudges_sent, t.revisit_reason,
             t.beep_interval_days, t.call_on, k.how_known,
             (SELECT x.summary FROM network_touch x WHERE x.track_id = t.id ORDER BY x.occurred_on DESC, x.id DESC LIMIT 1),
-            t.version, t.ask_now, t.visited_at, t.best_video_pct, t.interested_at
+            t.version, t.ask_now, t.visited_at, t.best_video_pct, t.interested_at, t.reply_check, t.call_at
         FROM network_track t
         JOIN connection n ON n.id = t.connection_id
         JOIN app_user u ON u.id = t.owner_user_id
@@ -261,6 +261,7 @@ public class NetworkQueries {
             rs.getObject(19, LocalDate.class), rs.getString(20), rs.getInt(21), rs.getString(22), rs.getInt(23),
             rs.getObject(24, LocalDate.class), rs.getString(25), rs.getString(26), rs.getInt(27), rs.getBoolean(28),
             rs.getTimestamp(29) == null ? null : rs.getTimestamp(29).toInstant(), rs.getInt(30),
-            rs.getTimestamp(31) == null ? null : rs.getTimestamp(31).toInstant());
+            rs.getTimestamp(31) == null ? null : rs.getTimestamp(31).toInstant(), rs.getBoolean(32),
+            rs.getTimestamp(33) == null ? null : rs.getTimestamp(33).toInstant());
     }
 }

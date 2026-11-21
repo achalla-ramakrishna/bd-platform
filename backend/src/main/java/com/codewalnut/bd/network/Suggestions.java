@@ -36,7 +36,7 @@ public class Suggestions {
                            boolean active, int version) {}
 
     private static final Pattern FIELD = Pattern.compile("\\{([a-z_]+)}");
-    private static final List<String> ORDER = List.of("ASK_NOW", "CALL_OUTCOME", "DIAGNOSE", "NUDGE", "INTRO", "BOOK_CALL",
+    private static final List<String> ORDER = List.of("REPLY_CHECK", "ASK_NOW", "CALL_OUTCOME", "DIAGNOSE", "NUDGE", "INTRO", "BOOK_CALL",
         "CALL_REMINDER", "BEEP", "CHECK");
 
     private final JdbcClient jdbc;
@@ -64,7 +64,8 @@ public class Suggestions {
     public List<Next> today(List<Track> due, LocalDate today, CurrentUser user) {
         List<Template> templates = templates(true);
         return due.stream().map(t -> next(t, today, user, templates))
-            .sorted(Comparator.comparing((Next n) -> n.overdueDays() > 0 ? 0 : "ASK_NOW".equals(n.task()) ? 1 : 2)
+            .sorted(Comparator.comparing((Next n) -> "REPLY_CHECK".equals(n.task()) ? 0 : n.overdueDays() > 0 ? 1
+                : "ASK_NOW".equals(n.task()) ? 2 : 3)
                 .thenComparing(Next::overdueDays, Comparator.reverseOrder())
                 .thenComparing(n -> ORDER.indexOf(n.task()))
                 .thenComparing(n -> n.track().fullName(), String.CASE_INSENSITIVE_ORDER))
@@ -82,7 +83,7 @@ public class Suggestions {
         boolean ask = "ASK_NOW".equals(task);
         String stage = ask ? "UNRESPONSIVE" : "BEEP".equals(task) ? "MONTHLY_BEEP" : t.stage();
         String reason = ask ? "INERTIA" : "UNRESPONSIVE".equals(t.stage()) ? t.whyReason() : null;
-        Suggestion suggestion = "DIAGNOSE".equals(task) || "CALL_OUTCOME".equals(task) || "CHECK".equals(task) ? null
+        Suggestion suggestion = "REPLY_CHECK".equals(task) || "DIAGNOSE".equals(task) || "CALL_OUTCOME".equals(task) || "CHECK".equals(task) ? null
             : pick(templates, stage, reason, channel).map(tpl -> render(tpl, channel, t, user)).orElse(null);
         return new Next(t, task, label(task, t), overdue, "DIAGNOSE".equals(task) ? suggestedReason(t) : null, suggestion);
     }
@@ -117,8 +118,14 @@ public class Suggestions {
     }
 
     static String task(Track t, LocalDate today) {
+        if (t.replyCheck()) {
+            return "REPLY_CHECK";
+        }
         if (t.askNow()) {
             return "ASK_NOW";
+        }
+        if ("CALL_SCHEDULED".equals(t.stage()) && t.callAt() != null) {
+            return t.callAt().isAfter(java.time.Instant.now()) ? "CALL_REMINDER" : "CALL_OUTCOME";
         }
         return switch (t.stage()) {
             case "INITIATE" -> "CHECK";
@@ -133,6 +140,7 @@ public class Suggestions {
     private static String label(String task, Track t) {
         return switch (task) {
             case "ASK_NOW" -> t.nextAction();
+            case "REPLY_CHECK" -> "They replied by email: what did they say?";
             case "CHECK" -> "No reply yet: check, or mark them replied";
             case "DIAGNOSE" -> "No reply: why?";
             case "NUDGE" -> "Nudge (" + NetworkService.label(t.whyReason()) + ")";

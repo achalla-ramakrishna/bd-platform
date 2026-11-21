@@ -1,6 +1,6 @@
 # GTN (Go To Network): gap analysis and plan
 
-- Status: **Phases 1 and 2 built** (2026-11-21; ADR-0017 to ADR-0019). Phases 3–4 proposed.
+- Status: **Phases 1 to 3 built** (2026-11-21; ADR-0017 to ADR-0020). Phase 4 proposed.
 - Date: 2026-11-21
 - Source: the team's *GTN (Go To Network) — Product Requirements Document* (2026-11-20). Requirement IDs
   below are that document's (FR-1.1 … FR-10.4), prefixed `GTN-` to keep them apart from the BRD's IDs.
