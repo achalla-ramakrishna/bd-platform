@@ -12,6 +12,8 @@ import { InterviewPage, InterviewsPage } from './pages/InterviewsPage';
 import { AssistantPage } from './pages/AssistantPage';
 import { WalnutPage } from './pages/WalnutPage';
 import { OpportunitiesPage } from './pages/OpportunitiesPage';
+import { NetworkPage } from './pages/NetworkPage';
+import { NetworkTrackPage } from './pages/NetworkTrackPage';
 import { NavLink, Navigate, Route, Routes } from 'react-router';
 import { ApiError, api, type Me, type SignInInfo } from './lib/api';
 import { AccountsPage } from './pages/AccountsPage';
@@ -52,6 +54,7 @@ export function App() {
           <NavLink to="/heatmap">Heatmap</NavLink>
         </NavGroup>
         <NavGroup label="Network">
+          <NavLink to="/network">GTN</NavLink>
           <NavLink to="/assistant">Log with AI</NavLink>
           <NavLink to="/connections">Connections</NavLink>
           <NavLink to="/conversations">Conversations</NavLink>
@@ -108,6 +111,8 @@ export function App() {
           <Route path="/improvements/:id" element={<ImprovementPage />} />
           <Route path="/walnut" element={<WalnutPage />} />
           <Route path="/assistant" element={<AssistantPage me={user} />} />
+          <Route path="/network" element={<NetworkPage me={user} />} />
+          <Route path="/network/:id" element={<NetworkTrackPage me={user} />} />
           <Route path="/connections" element={<ConnectionsPage me={user} />} />
           <Route path="/connections/:id" element={<ConnectionPage me={user} />} />
           <Route path="/conversations" element={<ConversationsPage me={user} />} />

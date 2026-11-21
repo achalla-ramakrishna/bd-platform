@@ -24,5 +24,7 @@ Status values: **Proposed** (under review), **Accepted**, **Superseded by ADR-nn
 | [0014](0014-connection-photos.md) | Connection photos, cropped from the team member's own screenshots | Proposed |
 | [0015](0015-walnut-bd-agent.md) | Walnut, a BD agent that plans, asks and drafts; people decide | Proposed |
 | [0016](0016-requirements-and-fulfilment.md) | Requirements come in on opportunities; candidates are tracked to a start | Proposed |
+| [0017](0017-gtn-network-tracks.md) | GTN runs on Connections, one track per person, rules in one place | Accepted |
+| [0018](0018-gtn-touches-and-templates.md) | GTN touches are logged on the track; templates suggest every message | Accepted |
 
 Template: Context → Decision → Alternatives considered → Consequences.

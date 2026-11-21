@@ -208,13 +208,20 @@ Realising the business, not only winning it (ADR-0016):
   Started, or Rejected or Withdrawn; consent before a profile is shared.
 - Walnut's morning plan (and email) reminds about each step.
 
-## 12. GTN, Go To Network (Proposed)
+## 12. GTN, Go To Network (Phase 1 built)
 
 Work our existing network through a fixed pipeline (Initiate → Responded →
 Intro made → Call scheduled → Warm commitment → Monthly beep), with a Why?
 diagnosis and capped nudges for people who go quiet, and a tracked profile
 page with video. Gap analysis, design decisions and the phased plan are in
-[gtn-plan.md](gtn-plan.md); nothing is built until that is agreed.
+[gtn-plan.md](gtn-plan.md). Phase 1 (ADR-0017, ADR-0018) is built: WhatsApp
+number and source tag on connections; CSV import (our template or LinkedIn's
+own export) with de-duplication; one track per person with the stage rules,
+history, Why? diagnosis, spaced and capped nudges, monthly beeps and a daily
+sweep; templates with merge fields; Today with the suggested message and
+one-click WhatsApp / LinkedIn / Gmail; the board and list; GTN in Walnut's
+brief and the heatmap. Phases 2–4 (profile page, Gmail and calendar, team
+dashboard) are next.
 
 ## Outside the platform
 

@@ -6,6 +6,8 @@ spring:
 app:
   walnut:
     scheduler-enabled: false
+  gtn:
+    sweep-enabled: false
   security:
     allowed-domain: example-gcc.test
     bootstrap-admins: admin@example-gcc.test

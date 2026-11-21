@@ -5,6 +5,7 @@ import { ACCOUNT_LINK_LABELS, ApiError, api, canEditPipeline, type Connection, t
 import { formatDate } from '../lib/format';
 import { useReference } from './PipelinePage';
 import { KnowingFields, LinkFields, PersonFields, StrengthPill } from './ConnectionsPage';
+import { GtnCard } from './gtn';
 import { NewConversation, today } from './ConversationsPage';
 import { PersonPhoto } from './PersonPhoto';
 import { centreSquare, cropToBlob, loadImage, photoForm } from '../lib/photo';
@@ -43,7 +44,10 @@ export function ConnectionPage({ me }: { me: Me }) {
         {[c.currentRole, c.currentCompany, c.city].filter(Boolean).join(' · ') || 'No role or company yet'}
         {c.linkedinUrl && <> · <a href={c.linkedinUrl} target="_blank" rel="noreferrer">LinkedIn profile</a></>}
         {c.email && <> · {c.email}</>}
+        {c.whatsapp && <> · WhatsApp +{c.whatsapp}</>}
+        {c.sourceTag && <> · <span className="pill">{c.sourceTag}</span></>}
       </p>
+      <GtnCard c={c} me={me} />
 
       <div className="cards">
         <div className="card wide-card">
@@ -87,7 +91,7 @@ export function ConnectionPage({ me }: { me: Me }) {
 function EditConnection({ c, onDone }: { c: Connection; onDone: (c?: Connection) => void }) {
   const [form, setForm] = useState({
     fullName: c.fullName, currentCompany: c.currentCompany ?? '', currentRole: c.currentRole ?? '', city: c.city ?? '',
-    linkedinUrl: c.linkedinUrl ?? '', email: c.email ?? '', notes: c.notes ?? '',
+    linkedinUrl: c.linkedinUrl ?? '', email: c.email ?? '', notes: c.notes ?? '', whatsapp: c.whatsapp ?? '', sourceTag: c.sourceTag ?? '',
   });
   const [account, setAccount] = useState<{ id: number | null; name: string | null; link: string }>({
     id: c.accountId ?? null, name: c.accountName ?? null, link: c.accountLink ?? 'WORKS_THERE',

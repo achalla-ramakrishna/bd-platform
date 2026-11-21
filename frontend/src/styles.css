@@ -503,3 +503,32 @@ button.voice.listening { background: var(--bad); border-color: var(--bad); color
 .voice-live .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); animation: voice-pulse 1.2s ease-in-out infinite; flex: none; }
 @keyframes voice-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 @media (prefers-reduced-motion: reduce) { .voice-live .dot { animation: none; } }
+
+/* GTN, Go To Network (ADR-0017) */
+.gtn-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: start; }
+.gtn-board .board-column.drop { border-color: var(--accent); background: var(--accent-soft); }
+.gtn-board .board-card { cursor: grab; }
+.board-card.overdue, tr.overdue td:first-child { border-left: 3px solid var(--bad); }
+.bad-text { color: var(--bad); }
+.today-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.today-item { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.today-item.overdue { border-left: 4px solid var(--bad); }
+.today-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center; }
+.today-head .board-title { display: inline; margin-right: 8px; }
+.today-task { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.today-preview { margin: 6px 0 0; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.today-body { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.composer { display: grid; gap: 8px; margin-bottom: 8px; }
+.composer textarea { width: 100%; }
+.field { display: grid; gap: 4px; }
+.field-label { font-size: 13px; color: var(--muted); }
+.inline-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+.inline-form input:not([type="date"]):not([type="number"]) { flex: 1 1 220px; }
+.pick-list { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 4px; }
+.gtn-card { margin: 8px 0 12px; }
+.gtn-next h2 { margin-top: 0; }
+@media (max-width: 640px) {
+  .today-head { flex-direction: column; align-items: flex-start; }
+}
+.composer .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 12px; align-items: end; }
+.composer label { display: grid; gap: 4px; }

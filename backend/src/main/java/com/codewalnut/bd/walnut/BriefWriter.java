@@ -49,6 +49,23 @@ final class BriefWriter {
             }
         }
 
+        if (!s.network().isEmpty()) {
+            b.append("## Your network (GTN)\n");
+            for (var t : s.network()) {
+                boolean late = t.nextActionOn().isBefore(s.today());
+                b.append("- [").append(t.fullName()).append("](/network/").append(t.id()).append(")")
+                    .append(t.company() == null ? "" : " (" + t.company() + ")").append(": ").append(t.nextAction())
+                    .append(late ? " (overdue since " + t.nextActionOn().format(DAY) + ")" : "").append('\n');
+            }
+            long more = s.networkCounts().due() - s.network().size();
+            if (more > 0) {
+                b.append("- and ").append(more).append(" more on [Today](/network)\n");
+            }
+            b.append('\n');
+            s.network().stream().filter(t -> "UNRESPONSIVE".equals(t.stage()) && t.whyReason() == null).limit(2)
+                .forEach(t -> questions.add(t.fullName() + " hasn't replied. Not seen on LinkedIn, inertia, or not the right time?"));
+        }
+
         if (!s.deals().isEmpty()) {
             b.append("## Deals to push\n");
             for (BdSnapshot.Deal d : s.deals()) {

@@ -48,7 +48,8 @@ public class BdSnapshot {
                            List<EventItem> events, List<InterviewItem> interviews, List<TeamWeek> teamWeek,
                            String strategyExcerpt, List<Step> lifecycle,
                            List<FulfilmentQueries.RequirementStatus> requirements,
-                           List<FulfilmentQueries.Candidate> candidates) {}
+                           List<FulfilmentQueries.Candidate> candidates, List<NetworkQueries.Track> network,
+                           NetworkQueries.Counts networkCounts) {}
 
     static final int QUIET_DAYS = 14;
     static final int TARGETS = 5;
@@ -56,8 +57,10 @@ public class BdSnapshot {
     private final JdbcClient jdbc;
     private final FitScorer fit;
     private final FulfilmentQueries fulfilment;
+    private final NetworkQueries network;
 
-    BdSnapshot(JdbcClient jdbc, FitScorer fit, FulfilmentQueries fulfilment) {
+    BdSnapshot(JdbcClient jdbc, FitScorer fit, FulfilmentQueries fulfilment, NetworkQueries network) {
+        this.network = network;
         this.jdbc = jdbc;
         this.fit = fit;
         this.fulfilment = fulfilment;
@@ -82,7 +85,8 @@ public class BdSnapshot {
             followUps(me.id(), "v.next_step_due IS NULL AND v.last_touch_on < :quiet", "v.last_touch_on", today, 5),
             deals(me.id(), today), targets(me, team), events(me.id(), today), interviews(me.id()),
             teamWeek(team, today), strategy(), lifecycle(me.id()),
-            fulfilment.requirements(me.id(), null, false), fulfilment.activeFor(me.id()));
+            fulfilment.requirements(me.id(), null, false), fulfilment.activeFor(me.id()),
+            network.due(me.id(), today).stream().limit(12).toList(), network.counts(me.id(), today));
     }
 
     static final java.util.Set<String> MESSAGE_CHANNELS = java.util.Set.of("LINKEDIN_MESSAGE", "INMAIL", "EMAIL", "CALL", "MEETING");

@@ -25,7 +25,7 @@ public class ConnectionQueries {
                              String linkedinUrl, String email, Long accountId, String accountName, String accountLink,
                              Long contactId, String notes, List<Knower> knownBy, LocalDate firstConnectedOn,
                              Instant createdAt, int version, Long metAtEventId, String metAtEventName,
-                             Long photoVersion) {}
+                             Long photoVersion, String whatsapp, String sourceTag) {}
 
     /** Connections first made in one week (Monday start), for the growth line. */
     public record Week(LocalDate weekStart, long added) {}
@@ -37,7 +37,7 @@ public class ConnectionQueries {
     private static final String SELECT = """
         SELECT n.id, n.full_name, n.current_company, n.current_role, n.city, n.linkedin_url, n.email, n.account_id,
             a.name, n.account_link, n.contact_id, n.notes, n.created_at, n.version, n.met_at_event_id, ev.name,
-            ph.updated_at
+            ph.updated_at, n.whatsapp, n.source_tag
         FROM connection n
         LEFT JOIN connection_photo ph ON ph.connection_id = n.id
         LEFT JOIN account a ON a.id = n.account_id
@@ -68,10 +68,25 @@ public class ConnectionQueries {
      * target account, false for the rest. {@code strength}: only connections someone knows this well.
      */
     public Page list(String q, Long knownBy, Long accountId, Boolean linked, String strength, long me) {
+        return list(q, knownBy, accountId, linked, strength, null, null, me);
+    }
+
+    /** {@code source}: only this source tag. {@code tracked}: true for people on a GTN track, false for the rest. */
+    public Page list(String q, Long knownBy, Long accountId, Boolean linked, String strength, String source, Boolean tracked,
+                     long me) {
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
         Map<String, Object> params = new LinkedHashMap<>();
+        if (source != null && !source.isBlank()) {
+            where.append(" AND n.source_tag = :source");
+            params.put("source", source.trim());
+        }
+        if (tracked != null) {
+            where.append(tracked ? " AND EXISTS (SELECT 1 FROM network_track t WHERE t.connection_id = n.id)"
+                : " AND NOT EXISTS (SELECT 1 FROM network_track t WHERE t.connection_id = n.id)");
+        }
         if (q != null && !q.isBlank()) {
-            where.append(" AND (n.full_name LIKE :q OR n.current_company LIKE :q OR n.current_role LIKE :q OR a.name LIKE :q)");
+            where.append(" AND (n.full_name LIKE :q OR n.current_company LIKE :q OR n.current_role LIKE :q OR a.name LIKE :q"
+                + " OR n.source_tag LIKE :q)");
             params.put("q", "%" + q.trim() + "%");
         }
         if (knownBy != null) {
@@ -90,6 +105,12 @@ public class ConnectionQueries {
             params.put("strength", strength.trim().toUpperCase(java.util.Locale.ROOT));
         }
         return new Page(load(SELECT + where + " ORDER BY n.full_name LIMIT 2000", params), summary(me));
+    }
+
+    /** Every source tag in use, for the filter. */
+    public List<String> sources() {
+        return jdbc.sql("SELECT DISTINCT source_tag FROM connection WHERE source_tag IS NOT NULL ORDER BY source_tag")
+            .query(String.class).list();
     }
 
     private Summary summary(long me) {
@@ -124,13 +145,13 @@ public class ConnectionQueries {
     private List<Connection> load(String sql, Map<String, ?> params) {
         record Base(long id, String name, String company, String role, String city, String linkedin, String email,
                     Long account, String accountName, String link, Long contact, String notes, Instant created, int version,
-                    Long event, String eventName, Long photo) {}
+                    Long event, String eventName, Long photo, String whatsapp, String source) {}
         List<Base> rows = jdbc.sql(sql).params(params)
             .query((rs, n) -> new Base(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5),
                 rs.getString(6), rs.getString(7), rs.getObject(8, Long.class), rs.getString(9), rs.getString(10),
                 rs.getObject(11, Long.class), rs.getString(12), rs.getTimestamp(13).toInstant(), rs.getInt(14),
                 rs.getObject(15, Long.class), rs.getString(16),
-                rs.getTimestamp(17) == null ? null : rs.getTimestamp(17).getTime()))
+                rs.getTimestamp(17) == null ? null : rs.getTimestamp(17).getTime(), rs.getString(18), rs.getString(19)))
             .list();
         if (rows.isEmpty()) {
             return List.of();
@@ -150,7 +171,7 @@ public class ConnectionQueries {
             LocalDate first = k.stream().map(Knower::connectedOn).min(LocalDate::compareTo).orElse(null);
             return new Connection(b.id(), b.name(), b.company(), b.role(), b.city(), b.linkedin(), b.email(), b.account(),
                 b.accountName(), b.link(), b.contact(), b.notes(), k, first, b.created(), b.version(), b.event(), b.eventName(),
-                b.photo());
+                b.photo(), b.whatsapp(), b.source());
         }).toList();
     }
 }

@@ -36,9 +36,11 @@ class ConnectionController {
     private final ConnectionPhotos photos;
     private final ConnectionQueries queries;
     private final CurrentUserProvider currentUser;
+    private final ConnectionImport imports;
 
     ConnectionController(ConnectionService connections, ConnectionPhotos photos, ConnectionQueries queries,
-                         CurrentUserProvider currentUser) {
+                         CurrentUserProvider currentUser, ConnectionImport imports) {
+        this.imports = imports;
         this.connections = connections;
         this.photos = photos;
         this.queries = queries;
@@ -50,9 +52,30 @@ class ConnectionController {
                                 @RequestParam(required = false) Boolean mine,
                                 @RequestParam(required = false) Long accountId,
                                 @RequestParam(required = false) Boolean linked,
-                                @RequestParam(required = false) String strength) {
+                                @RequestParam(required = false) String strength,
+                                @RequestParam(required = false) String source,
+                                @RequestParam(required = false) Boolean tracked) {
         CurrentUser user = currentUser.get();
-        return queries.list(q, Boolean.TRUE.equals(mine) ? user.id() : null, accountId, linked, strength, user.id());
+        return queries.list(q, Boolean.TRUE.equals(mine) ? user.id() : null, accountId, linked, strength, source, tracked,
+            user.id());
+    }
+
+    @GetMapping("/sources")
+    List<String> sources() {
+        currentUser.get();
+        return queries.sources();
+    }
+
+    /**
+     * Import people from a CSV (our template or LinkedIn's own Connections export), de-duplicated on LinkedIn
+     * address, email, WhatsApp number or name and company (GTN FR-1.1, FR-1.3, ADR-0017). {@code dryRun} only
+     * checks.
+     */
+    @PostMapping("/import")
+    ConnectionImport.Result importCsv(@RequestBody ConnectionImport.Request request) {
+        CurrentUser user = currentUser.get();
+        user.require(Role.PIPELINE_EDITORS);
+        return imports.run(request, user);
     }
 
     @GetMapping("/{id}")

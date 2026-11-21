@@ -1,6 +1,6 @@
 # GTN (Go To Network): gap analysis and plan
 
-- Status: **Proposed** (for the team to agree before any code, per CLAUDE.md)
+- Status: **Phase 1 agreed and built** (2026-11-21). Phases 2–4 proposed.
 - Date: 2026-11-21
 - Source: the team's *GTN (Go To Network) — Product Requirements Document* (2026-11-20). Requirement IDs
   below are that document's (FR-1.1 … FR-10.4), prefixed `GTN-` to keep them apart from the BRD's IDs.
@@ -123,6 +123,10 @@ include tests, docs and a browser check.
 (minus automatic email and booking) after Phase 1.
 
 ## 5. Open questions for the team
+
+Phase 1 went ahead on the proposals below (ADR-0017, ADR-0018); the team can still change 3–7 before phase 2.
+Where phase 1 differs from §3 above: GTN touches have their own log (`network_touch`, ADR-0018) instead of making
+`activity.account_id` optional, so account rules and fit scores are untouched; the heatmap counts both.
 
 1. Is a GTN contact always a Connection (someone a team member knows), or can it be anyone, e.g. an event
    attendee nobody has met? (Proposal: a Connection; importing creates them.)

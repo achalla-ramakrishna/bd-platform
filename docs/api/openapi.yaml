@@ -506,6 +506,118 @@ paths:
       responses:
         '200': { description: '[my message, Walnut reply]' }
         '422': { description: Empty or too long, or chat is not set up }
+  /connections/import:
+    post:
+      tags: [connections]
+      operationId: importConnections
+      summary: Import people from a CSV (our template or LinkedIn's own Connections export), de-duplicated (GTN, ADR-0017)
+      description: Body { csv, sourceTag, strength, howKnown, dryRun }. Matches on LinkedIn address, email, WhatsApp number or name and company; a match adds the importer as someone who knows them.
+      responses:
+        '200': { description: '{ rows, added, linked, alreadyKnown, skipped, problems, sample, dryRun }' }
+        '422': { description: No header row, too large, or invalid options }
+  /connections/sources:
+    get:
+      tags: [connections]
+      operationId: connectionSources
+      summary: Source tags in use
+      responses:
+        '200': { description: List of tags }
+  /network/today:
+    get:
+      tags: [network]
+      operationId: networkToday
+      summary: Who to contact today, why, and the suggested message (GTN FR-9.1); runs the daily sweep first
+      parameters:
+        - { name: everyone, in: query, schema: { type: boolean }, description: Everyone's, not only mine }
+      responses:
+        '200': { description: '{ items: [{ track, task, taskLabel, overdueDays, suggestedReason, suggestion }], counts, rules }' }
+  /network/tracks:
+    get:
+      tags: [network]
+      operationId: networkTracks
+      summary: The GTN board and list, filtered by stage, owner (mine), source, Why? reason, search, overdue
+      responses:
+        '200': { description: '{ tracks, counts, rules }' }
+    post:
+      tags: [network]
+      operationId: networkStart
+      summary: Start someone from Connections on GTN after their first message is sent (Initiate)
+      description: Body { connectionId, channel, summary, templateId, sentOn }.
+      responses:
+        '201': { description: '{ detail, next, rules }' }
+        '409': { description: Already on GTN }
+        '422': { description: Rule broken }
+  /network/tracks/{id}:
+    get:
+      tags: [network]
+      operationId: networkTrack
+      summary: A person's track, timeline, stage history, commitments and next step
+      responses:
+        '200': { description: '{ detail: { track, touches, changes, commitments }, next, rules }' }
+    patch:
+      tags: [network]
+      operationId: networkChange
+      summary: Change the next action, beep interval or owner { nextAction, nextActionOn, beepIntervalDays, ownerId, version }
+      responses:
+        '200': { description: The track page }
+        '409': { description: Out-of-date version }
+    delete:
+      tags: [network]
+      operationId: networkStop
+      summary: Stop working someone (the person stays in Connections)
+      responses:
+        '204': { description: Stopped }
+  /network/tracks/for-connection/{connectionId}:
+    get:
+      tags: [network]
+      operationId: networkTrackForConnection
+      summary: The track of someone in Connections
+      responses:
+        '200': { description: The track page }
+        '404': { description: Not on GTN }
+  /network/tracks/{id}/actions:
+    post:
+      tags: [network]
+      operationId: networkAct
+      summary: Something happened (ADR-0017 rules)
+      description: "Body { action: SENT | REPLIED | DIAGNOSED | INTRO_DONE | CALL_BOOKED | CALL_HELD | NO_SHOW | COMMITTED | MOVED, channel, summary, templateId, outcome: POSITIVE | NOT_RIGHT_TIME, reason: NOT_SEEN | INERTIA | NOT_RIGHT_TIME, revisitOn, revisitReason, callOn, commitmentKind, commitment, stage, note, version }."
+      responses:
+        '200': { description: The track page }
+        '409': { description: Out-of-date version }
+        '422': { description: Not allowed from this stage, or details missing }
+  /network/templates:
+    get:
+      tags: [network]
+      operationId: networkTemplates
+      summary: Message templates (active only unless all=true)
+      responses:
+        '200': { description: Templates }
+    post:
+      tags: [network]
+      operationId: networkTemplateCreate
+      summary: Add a template { name, stage, reason, channel, subject, body, active }
+      responses:
+        '201': { description: The template }
+  /network/templates/{id}:
+    put:
+      tags: [network]
+      operationId: networkTemplateUpdate
+      summary: Edit a template
+      responses:
+        '200': { description: The template }
+    delete:
+      tags: [network]
+      operationId: networkTemplateDelete
+      summary: Delete a template
+      responses:
+        '204': { description: Deleted }
+  /network/render:
+    post:
+      tags: [network]
+      operationId: networkRender
+      summary: Fill a template for a track or for someone in Connections { trackId | connectionId, templateId, channel }
+      responses:
+        '200': { description: '{ templateId, templateName, channel, subject, body }' }
   /walnut/brief:
     post:
       tags: [walnut]

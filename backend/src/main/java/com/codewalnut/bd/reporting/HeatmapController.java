@@ -93,6 +93,28 @@ class HeatmapController {
                 return null;
             }).list();
 
+        // GTN touches with the team's network (ADR-0018).
+        jdbc.sql("""
+                SELECT x.occurred_on, x.channel, x.direction, n.full_name, x.track_id
+                FROM network_touch x
+                JOIN network_track t ON t.id = x.track_id
+                JOIN connection n ON n.id = t.connection_id
+                WHERE x.occurred_on BETWEEN :from AND :to AND (:user IS NULL OR x.user_id = :user)
+                ORDER BY x.occurred_on, x.id
+                """).param("from", from).param("to", today).param("user", userId)
+            .query((rs, n) -> {
+                Acc acc = days.get(rs.getObject(1, LocalDate.class));
+                if (acc != null) {
+                    acc.touches++;
+                    if ("MEETING".equals(rs.getString(2))) {
+                        acc.meetings++;
+                    }
+                    acc.add(new Item("NETWORK", ("IN".equals(rs.getString(3)) ? "GTN reply: " : "GTN: ") + rs.getString(4),
+                        "/network/" + rs.getLong(5)));
+                }
+                return null;
+            }).list();
+
         // Conversations started (already counted as touches through their first activity).
         jdbc.sql("""
                 SELECT DATE(created_at) FROM conversation

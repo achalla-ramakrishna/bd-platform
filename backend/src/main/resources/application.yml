@@ -56,6 +56,15 @@ app:
     zone: ${WALNUT_ZONE:Asia/Kolkata}
     scheduler-enabled: ${WALNUT_SCHEDULER:true}
     base-url: ${APP_BASE_URL:}
+  # GTN, Go To Network (ADR-0017): thresholds the team can tune.
+  gtn:
+    unresponsive-days: ${GTN_UNRESPONSIVE_DAYS:7}
+    nudge-spacing-days: ${GTN_NUDGE_SPACING_DAYS:5}
+    nudge-cap: ${GTN_NUDGE_CAP:3}
+    beep-interval-days: ${GTN_BEEP_INTERVAL_DAYS:30}
+    sweep-cron: ${GTN_SWEEP_CRON:0 0 7 * * *}
+    zone: ${GTN_ZONE:Asia/Kolkata}
+    sweep-enabled: ${GTN_SWEEP:true}
   # Email for Walnut's morning plan, through Resend's API. Off unless both are set.
   mail:
     api-key: ${MAIL_API_KEY:}

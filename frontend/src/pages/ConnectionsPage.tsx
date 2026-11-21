@@ -9,6 +9,7 @@ import { formatDate } from '../lib/format';
 import { AccountPicker } from './AccountPicker';
 import { today } from './ConversationsPage';
 import { PersonPhoto } from './PersonPhoto';
+import { ImportConnections } from './gtn';
 
 export function StrengthPill({ strength }: { strength: Strength }) {
   const cls = strength === 'CLOSE' ? 'good' : strength === 'KNOW_WELL' ? 'accent' : '';
@@ -46,25 +47,30 @@ export function ConnectionsPage({ me }: { me: Me }) {
   const [mine, setMine] = useState(false);
   const [linked, setLinked] = useState('');
   const [strength, setStrength] = useState('');
+  const [source, setSource] = useState('');
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const sources = useQuery({ queryKey: ['connection-sources'], queryFn: () => api.get<string[]>('/connections/sources') });
   const params = new URLSearchParams();
   if (q) params.set('q', q);
   if (mine) params.set('mine', 'true');
   if (linked) params.set('linked', linked);
   if (strength) params.set('strength', strength);
+  if (source) params.set('source', source);
   const list = useQuery({ queryKey: ['connections', params.toString()], queryFn: () => api.get<ConnectionPage>(`/connections?${params}`) });
   const s = list.data?.summary;
   const weeks = s?.weekly ?? [];
   const thisWeek = weeks.at(-1)?.added ?? 0;
   const lastWeek = weeks.at(-2)?.added ?? 0;
 
-  const emptyText = q || linked || strength || mine ? 'No connections match.' : 'No connections yet. Add the people you know.';
+  const emptyText = q || linked || strength || mine || source ? 'No connections match.' : 'No connections yet. Add the people you know.';
   return (
     <>
       <div className="title-row">
         <h1>Connections</h1>
         <div className="actions">
           {canEditPipeline(me) && !adding && <button type="button" onClick={() => setAdding(true)}>Add connection</button>}
+          {canEditPipeline(me) && !adding && <button type="button" className="secondary" onClick={() => setImporting(!importing)}>Import CSV</button>}
           {canEditPipeline(me) && !adding && <Link className="button secondary" to="/assistant">Log with AI</Link>}
         </div>
       </div>
@@ -73,6 +79,7 @@ export function ConnectionsPage({ me }: { me: Me }) {
         them to the target accounts they work at or can open a door to.
       </p>
       {adding && <AddConnection onDone={() => setAdding(false)} />}
+      {importing && <ImportConnections onDone={() => setImporting(false)} />}
 
       <div className="cards">
         <div className="card"><div className="label">Connections</div><div className="value">{s?.total ?? '—'}</div></div>
@@ -95,6 +102,12 @@ export function ConnectionsPage({ me }: { me: Me }) {
           <option value="">Any closeness</option>
           {Object.entries(STRENGTH_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
+        {(sources.data?.length ?? 0) > 0 && (
+          <select id="conn-source" aria-label="Source" value={source} onChange={(e) => setSource(e.target.value)}>
+            <option value="">Any source</option>
+            {sources.data!.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        )}
         <label className="inline-check"><input type="checkbox" id="conn-mine" checked={mine} onChange={(e) => setMine(e.target.checked)} /> Known by me</label>
         {list.data && <span className="muted">{list.data.items.length} shown</span>}
         <div className="segmented view-toggle" role="group" aria-label="Show as">
@@ -175,7 +188,7 @@ export function ConnectionTable({ items, loading, empty, hideAccount }: { items:
   );
 }
 
-const blankPerson = { fullName: '', currentCompany: '', currentRole: '', city: '', linkedinUrl: '', email: '', notes: '' };
+const blankPerson = { fullName: '', currentCompany: '', currentRole: '', city: '', linkedinUrl: '', email: '', notes: '', whatsapp: '', sourceTag: '' };
 
 export function PersonFields({ form, setForm }: { form: typeof blankPerson; setForm: (f: typeof blankPerson) => void }) {
   const field = (key: keyof typeof blankPerson, label: string, extra: object = {}) => (
@@ -191,6 +204,8 @@ export function PersonFields({ form, setForm }: { form: typeof blankPerson; setF
       {field('city', 'City', { maxLength: 80 })}
       {field('linkedinUrl', 'LinkedIn profile', { maxLength: 400, placeholder: 'https://www.linkedin.com/in/…' })}
       {field('email', 'Email', { maxLength: 254, type: 'email' })}
+      {field('whatsapp', 'WhatsApp', { maxLength: 20, placeholder: '+91 98xxx xxxxx', inputMode: 'tel' })}
+      {field('sourceTag', 'Source', { maxLength: 100, placeholder: 'e.g. college alumni, past employer' })}
     </div>
   );
 }

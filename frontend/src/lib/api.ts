@@ -426,6 +426,172 @@ export interface Connection {
   metAtEventName?: string | null;
   /** Set when the connection has a photo; changes whenever it does (ADR-0014). */
   photoVersion?: number | null;
+  /** Digits with the country code, for WhatsApp click-to-chat (GTN). */
+  whatsapp?: string | null;
+  /** Where they come from, e.g. "college alumni" (GTN). */
+  sourceTag?: string | null;
+}
+
+// ---- GTN, Go To Network (ADR-0017, ADR-0018) ----
+
+export type GtnStage = 'INITIATE' | 'RESPONDED' | 'UNRESPONSIVE' | 'INTRO_MADE' | 'CALL_SCHEDULED' | 'WARM_COMMITMENT' | 'MONTHLY_BEEP';
+export const GTN_STAGES: GtnStage[] = ['INITIATE', 'RESPONDED', 'UNRESPONSIVE', 'INTRO_MADE', 'CALL_SCHEDULED', 'WARM_COMMITMENT', 'MONTHLY_BEEP'];
+export const GTN_STAGE_LABELS: Record<GtnStage, string> = {
+  INITIATE: 'Initiate', RESPONDED: 'Responded', UNRESPONSIVE: 'Unresponsive', INTRO_MADE: 'Intro made',
+  CALL_SCHEDULED: 'Call scheduled', WARM_COMMITMENT: 'Warm commitment', MONTHLY_BEEP: 'Monthly beep',
+};
+export type WhyReason = 'NOT_SEEN' | 'INERTIA' | 'NOT_RIGHT_TIME';
+export const WHY_LABELS: Record<WhyReason, string> = {
+  NOT_SEEN: 'Not seen on LinkedIn', INERTIA: 'Inertia to respond', NOT_RIGHT_TIME: 'Now is not the right time',
+};
+export const WHY_HINTS: Record<WhyReason, string> = {
+  NOT_SEEN: 'Probably never read it: they are rarely on LinkedIn. Send a friendly no-ask note by email or WhatsApp pointing back to it.',
+  INERTIA: 'Seen, no reply. Make replying easy: a short, direct, specific ask. Be shameless.',
+  NOT_RIGHT_TIME: 'Don\'t push. Park them with a revisit date; the monthly beep picks it up.',
+};
+export type GtnChannel = 'LINKEDIN' | 'EMAIL' | 'WHATSAPP' | 'CALL' | 'MEETING' | 'OTHER';
+export const GTN_CHANNEL_LABELS: Record<GtnChannel, string> = {
+  LINKEDIN: 'LinkedIn', EMAIL: 'Email', WHATSAPP: 'WhatsApp', CALL: 'Call', MEETING: 'Meeting', OTHER: 'Other',
+};
+export type CommitmentKind = 'REFERRAL' | 'INTRO_ONWARD' | 'PILOT_TALK' | 'FOLLOW_UP' | 'KEEP_POSTED';
+export const COMMITMENT_LABELS: Record<CommitmentKind, string> = {
+  REFERRAL: 'A referral', INTRO_ONWARD: 'An intro onward', PILOT_TALK: 'A pilot conversation', FOLLOW_UP: 'A follow-up',
+  KEEP_POSTED: 'Keep me posted',
+};
+
+export interface GtnTrack {
+  id: number;
+  connectionId: number;
+  fullName: string;
+  company?: string | null;
+  role?: string | null;
+  linkedinUrl?: string | null;
+  email?: string | null;
+  whatsapp?: string | null;
+  sourceTag?: string | null;
+  photoVersion?: number | null;
+  ownerId: number;
+  ownerName: string;
+  stage: GtnStage;
+  stageSince: string;
+  daysInStage: number;
+  whyReason?: WhyReason | null;
+  nextAction: string;
+  nextActionOn: string;
+  overdue: boolean;
+  lastOutOn?: string | null;
+  lastInOn?: string | null;
+  lastChannel?: GtnChannel | null;
+  nudgesSent: number;
+  revisitReason?: string | null;
+  beepIntervalDays: number;
+  callOn?: string | null;
+  howWeKnow?: string | null;
+  lastTopic?: string | null;
+  version: number;
+}
+
+export interface GtnSuggestion {
+  templateId?: number | null;
+  templateName?: string | null;
+  channel: 'LINKEDIN' | 'EMAIL' | 'WHATSAPP';
+  subject?: string | null;
+  body: string;
+}
+
+export type GtnTask = 'CHECK' | 'DIAGNOSE' | 'NUDGE' | 'INTRO' | 'BOOK_CALL' | 'CALL_REMINDER' | 'CALL_OUTCOME' | 'BEEP';
+
+export interface GtnNext {
+  track: GtnTrack;
+  task: GtnTask;
+  taskLabel: string;
+  overdueDays: number;
+  suggestedReason?: WhyReason | null;
+  suggestion?: GtnSuggestion | null;
+}
+
+export interface GtnCounts {
+  byStage: Record<GtnStage, number>;
+  total: number;
+  due: number;
+  overdue: number;
+}
+
+export interface GtnRules {
+  unresponsiveDays: number;
+  nudgeSpacingDays: number;
+  nudgeCap: number;
+  beepIntervalDays: number;
+}
+
+export interface GtnTouch {
+  id: number;
+  channel: GtnChannel;
+  direction: 'OUT' | 'IN';
+  kind: string;
+  summary: string;
+  occurredOn: string;
+  userName: string;
+  templateId?: number | null;
+  createdAt: string;
+}
+
+export interface GtnStageChange {
+  id: number;
+  fromStage?: GtnStage | null;
+  toStage: GtnStage;
+  changedBy: string;
+  changedAt: string;
+  note?: string | null;
+}
+
+export interface GtnCommitment {
+  id: number;
+  kind: CommitmentKind;
+  description: string;
+  recordedBy: string;
+  recordedAt: string;
+}
+
+export interface GtnTrackPage {
+  detail: { track: GtnTrack; touches: GtnTouch[]; changes: GtnStageChange[]; commitments: GtnCommitment[] };
+  next: GtnNext;
+  rules: GtnRules;
+}
+
+export interface GtnToday {
+  items: GtnNext[];
+  counts: GtnCounts;
+  rules: GtnRules;
+}
+
+export interface GtnBoard {
+  tracks: GtnTrack[];
+  counts: GtnCounts;
+  rules: GtnRules;
+}
+
+export interface GtnTemplate {
+  id: number;
+  name: string;
+  stage: GtnStage;
+  reason?: WhyReason | null;
+  channel: 'ANY' | 'LINKEDIN' | 'EMAIL' | 'WHATSAPP';
+  subject?: string | null;
+  body: string;
+  active: boolean;
+  version: number;
+}
+
+export interface ImportResult {
+  rows: number;
+  added: number;
+  linked: number;
+  alreadyKnown: number;
+  skipped: number;
+  problems: { row: number; message: string }[];
+  sample: string[];
+  dryRun: boolean;
 }
 
 export type EventKind = 'CONFERENCE' | 'MEETUP' | 'WEBINAR' | 'ROUNDTABLE' | 'OTHER';

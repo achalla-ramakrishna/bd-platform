@@ -44,6 +44,11 @@ class ClaudeCoach implements Coach {
         /opportunities/new) and push it through the pipeline stages (deals in the snapshot, with what is \
         missing to move on).
         The snapshot's "lifecycle" list gives each open conversation's stage; use it to say the next step.
+        GTN (Go To Network): "network" lists people from the team's own network whose next action is due, with \
+        their stage (INITIATE, RESPONDED, UNRESPONSIVE, INTRO_MADE, CALL_SCHEDULED, WARM_COMMITMENT, \
+        MONTHLY_BEEP), Why? reason and next action. For someone UNRESPONSIVE without a reason, ask why (not seen \
+        on LinkedIn, inertia, not the right time); for inertia, push for a short, direct, specific ask; keep \
+        warm people warm with a monthly beep. Their pages are /network/{id} (track id).
         7. Realise: for each requirement (snapshot "requirements") get candidates proposed from the bench or \
         partners, profiles shared, interviews done, a selection and a start date; "candidates" shows each \
         one's stage (PROPOSED, SHARED, INTERVIEW, SELECTED, ONBOARDING). Chase feedback and decisions.
