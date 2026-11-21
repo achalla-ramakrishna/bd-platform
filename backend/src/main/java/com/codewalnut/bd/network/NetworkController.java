@@ -71,6 +71,21 @@ class NetworkController {
         return new Today(suggestions.today(queries.due(owner, today), today, user), queries.counts(owner, today), rules());
     }
 
+    /** GTN dashboard (M10): funnel, conversion, Why? outcomes, overdue and missed beeps, profile page; last 30 days by default. */
+    @GetMapping("/dashboard")
+    NetworkQueries.Dashboard dashboard(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                       @RequestParam(required = false) Boolean mine, @RequestParam(required = false) Long ownerId,
+                                       @RequestParam(required = false) String source) {
+        CurrentUser user = currentUser.get();
+        LocalDate today = network.today();
+        LocalDate end = to == null ? today : to;
+        LocalDate start = from == null ? end.minusDays(29) : from;
+        if (start.isAfter(end) || start.isBefore(end.minusYears(3))) {
+            throw new RuleViolationException(List.of("Choose a period that starts before it ends, within three years."));
+        }
+        return queries.dashboard(start, end, Boolean.TRUE.equals(mine) ? Long.valueOf(user.id()) : ownerId, source, today);
+    }
+
     @GetMapping("/tracks")
     Board tracks(@RequestParam(required = false) String stage, @RequestParam(required = false) Boolean mine,
                  @RequestParam(required = false) Long ownerId, @RequestParam(required = false) String source,
@@ -203,6 +218,7 @@ class NetworkController {
                 .findFirst().orElse(null));
         return new NetworkQueries.Track(0, c.id(), c.fullName(), c.currentCompany(), c.currentRole(), c.linkedinUrl(),
             c.email(), c.whatsapp(), c.sourceTag(), c.photoVersion(), user.id(), user.name(), "INITIATE",
-            java.time.Instant.now(), 0, null, "", LocalDate.now(), false, null, null, null, 0, null, 30, null, how, null, 0);
+            java.time.Instant.now(), 0, null, "", LocalDate.now(), false, null, null, null, 0, null, 30, null, how, null, 0,
+            false, null, 0, null);
     }
 }

@@ -184,3 +184,11 @@ Delete the variable to switch it off; change it if it may have leaked.
 Railway has no India region; use its nearest region (Southeast Asia,
 Singapore) for both services. ADR-0007 records why this is acceptable for now
 and when to revisit it.
+
+## GTN profile pages (ADR-0019)
+
+Profile links (`/p/{token}`) are public pages served by the app. Set `APP_BASE_URL` to the app's public
+address (for example `https://bd.example-gcc.test`) so links in messages and alert emails point to it;
+without it, links use the address of the page that prepared the message. Intro videos are stored in MySQL
+(up to 40 MB each, in 1 MB chunks), so no volume is needed; MySQL's default `max_allowed_packet` (64 MB) is
+enough. "Ask now" emails use the same `MAIL_API_KEY` and `MAIL_FROM` as Walnut.

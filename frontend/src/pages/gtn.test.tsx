@@ -10,7 +10,8 @@ const person = { fullName: 'Engineer A', linkedinUrl: 'https://www.linkedin.com/
 const track: GtnTrack = {
   id: 5, connectionId: 9, company: 'Example GCC', ownerId: 1, ownerName: 'Admin Person', stage: 'UNRESPONSIVE',
   stageSince: '2026-11-20T00:00:00Z', daysInStage: 1, whyReason: null, nextAction: 'Diagnose: why no reply?', nextActionOn: '2026-11-21',
-  overdue: false, lastOutOn: '2026-11-13', lastChannel: 'LINKEDIN', nudgesSent: 0, beepIntervalDays: 30, version: 3, ...person,
+  overdue: false, lastOutOn: '2026-11-13', lastChannel: 'LINKEDIN', nudgesSent: 0, beepIntervalDays: 30, version: 3, askNow: false,
+  bestVideoPct: 0, ...person,
 };
 
 const page: GtnTrackPage = {
@@ -60,5 +61,31 @@ describe('GTN stage actions (ADR-0017)', () => {
     expect(second.action).toBe('DIAGNOSED');
     expect(second.reason).toBe('NOT_RIGHT_TIME');
     expect(second.revisitReason).toBe('Busy quarter');
+  });
+});
+
+describe('GTN dashboard (M10)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('shows the response rate, the funnel and the profile page numbers', async () => {
+    const { DashboardTab } = await import('./GtnProfileAndDashboard');
+    const body = {
+      from: '2026-10-23', to: '2026-11-21', total: 4,
+      byStage: { INITIATE: 1, RESPONDED: 1, UNRESPONSIVE: 1, INTRO_MADE: 0, CALL_SCHEDULED: 0, WARM_COMMITMENT: 1, MONTHLY_BEEP: 0 },
+      cohort: { started: 4, responded: 2, intro: 1, call: 1, warm: 1 }, commitments: 1,
+      reasons: [{ reason: 'INERTIA', total: 2, replied: 1, parked: 0, stillQuiet: 1 }],
+      nudges: 3, nudgedThenReplied: 1, beepsSent: 0, overdue: 2, missedBeeps: 0,
+      profile: { links: 3, visitors: 2, watched75: 1, ctaClicks: 1, interested: 1 }, sources: [{ source: 'Alumni', started: 4, responded: 2, warm: 1 }],
+    };
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => new Response(JSON.stringify(url.includes('sources') ? ['Alumni'] : body),
+      { status: 200, headers: { 'Content-Type': 'application/json' } })));
+    render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><DashboardTab /></MemoryRouter></QueryClientProvider>);
+    const started = await screen.findByText('2 of 4 started');
+    expect(started.parentElement!.textContent).toContain('Response rate50%'); // 2 of 4 responded
+    expect(screen.getByText('Inertia to respond')).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Profile page' }).textContent).toContain('Watched 75%+ of the video1');
   });
 });

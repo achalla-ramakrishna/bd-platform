@@ -8,6 +8,7 @@ import {
 import { formatDate } from '../lib/format';
 import { PersonPhoto } from './PersonPhoto';
 import { ErrorNote, SendStep, StageActions, StagePill } from './gtn';
+import { ProfileCard } from './GtnProfileAndDashboard';
 
 /** One person on GTN: where they are, what to do next with the message ready, and everything that happened. */
 export function NetworkTrackPage({ me }: { me: Me }) {
@@ -41,7 +42,8 @@ export function NetworkTrackPage({ me }: { me: Me }) {
   const n = page.data.next;
   const timeline = [
     ...touches.map((x) => ({ key: `t${x.id}`, at: x.occurredOn, sort: x.createdAt, text: x.summary,
-      head: `${x.direction === 'IN' ? '← ' : '→ '}${GTN_CHANNEL_LABELS[x.channel]} · ${x.kind.toLowerCase()} · ${x.userName}` })),
+      head: x.kind === 'VISIT' ? '← Profile page'
+        : `${x.direction === 'IN' ? '← ' : '→ '}${GTN_CHANNEL_LABELS[x.channel]} · ${x.kind.toLowerCase()} · ${x.userName}` })),
     ...changes.map((c) => ({ key: `c${c.id}`, at: c.changedAt.slice(0, 10), sort: c.changedAt, text: c.note ?? '',
       head: `${c.fromStage && c.fromStage !== c.toStage ? `${GTN_STAGE_LABELS[c.fromStage]} → ` : ''}${GTN_STAGE_LABELS[c.toStage]} · ${c.changedBy}` })),
   ].sort((a, b) => b.sort.localeCompare(a.sort));
@@ -72,6 +74,7 @@ export function NetworkTrackPage({ me }: { me: Me }) {
           <div className="muted small">{WHY_HINTS[t.whyReason]}</div></div></div>}
         {t.revisitReason && <div className="card wide-card"><div className="label">They said</div><div className="value value-text">{t.revisitReason}</div></div>}
         {t.callOn && t.stage === 'CALL_SCHEDULED' && <div className="card"><div className="label">Call</div><div className="value value-text">{formatDate(t.callOn)}</div></div>}
+        <ProfileCard trackId={t.id} editable={editable} />
         {(t.stage === 'WARM_COMMITMENT' || t.stage === 'MONTHLY_BEEP') && (
           <div className="card"><div className="label">Beep every</div><div className="value">{t.beepIntervalDays} d</div></div>
         )}

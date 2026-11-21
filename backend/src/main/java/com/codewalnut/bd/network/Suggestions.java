@@ -36,13 +36,17 @@ public class Suggestions {
                            boolean active, int version) {}
 
     private static final Pattern FIELD = Pattern.compile("\\{([a-z_]+)}");
-    private static final List<String> ORDER = List.of("CALL_OUTCOME", "DIAGNOSE", "NUDGE", "INTRO", "BOOK_CALL",
+    private static final List<String> ORDER = List.of("ASK_NOW", "CALL_OUTCOME", "DIAGNOSE", "NUDGE", "INTRO", "BOOK_CALL",
         "CALL_REMINDER", "BEEP", "CHECK");
 
     private final JdbcClient jdbc;
+    private final ProfileService profiles;
+    private final PublicUrl publicUrl;
 
-    Suggestions(JdbcClient jdbc) {
+    Suggestions(JdbcClient jdbc, ProfileService profiles, PublicUrl publicUrl) {
         this.jdbc = jdbc;
+        this.profiles = profiles;
+        this.publicUrl = publicUrl;
     }
 
     public List<Template> templates(boolean activeOnly) {
@@ -60,7 +64,7 @@ public class Suggestions {
     public List<Next> today(List<Track> due, LocalDate today, CurrentUser user) {
         List<Template> templates = templates(true);
         return due.stream().map(t -> next(t, today, user, templates))
-            .sorted(Comparator.comparing((Next n) -> n.overdueDays() > 0 ? 0 : 1)
+            .sorted(Comparator.comparing((Next n) -> n.overdueDays() > 0 ? 0 : "ASK_NOW".equals(n.task()) ? 1 : 2)
                 .thenComparing(Next::overdueDays, Comparator.reverseOrder())
                 .thenComparing(n -> ORDER.indexOf(n.task()))
                 .thenComparing(n -> n.track().fullName(), String.CASE_INSENSITIVE_ORDER))
@@ -75,8 +79,9 @@ public class Suggestions {
         String task = task(t, today);
         long overdue = Math.max(0, ChronoUnit.DAYS.between(t.nextActionOn(), today));
         String channel = channel(t, task);
-        String stage = "BEEP".equals(task) ? "MONTHLY_BEEP" : t.stage();
-        String reason = "UNRESPONSIVE".equals(t.stage()) ? t.whyReason() : null;
+        boolean ask = "ASK_NOW".equals(task);
+        String stage = ask ? "UNRESPONSIVE" : "BEEP".equals(task) ? "MONTHLY_BEEP" : t.stage();
+        String reason = ask ? "INERTIA" : "UNRESPONSIVE".equals(t.stage()) ? t.whyReason() : null;
         Suggestion suggestion = "DIAGNOSE".equals(task) || "CALL_OUTCOME".equals(task) || "CHECK".equals(task) ? null
             : pick(templates, stage, reason, channel).map(tpl -> render(tpl, channel, t, user)).orElse(null);
         return new Next(t, task, label(task, t), overdue, "DIAGNOSE".equals(task) ? suggestedReason(t) : null, suggestion);
@@ -84,7 +89,10 @@ public class Suggestions {
 
     /** A chosen template filled in for this person (for the start dialog, or to switch template). */
     public Suggestion render(Template tpl, String channel, Track t, CurrentUser user) {
+        String profileLink = tpl.body().contains("{profile_link}") || (tpl.subject() != null && tpl.subject().contains("{profile_link}"))
+            ? publicUrl.base() + "/p/" + profiles.token(t.connectionId(), t.ownerId()) : "";
         Map<String, String> values = Map.of(
+            "profile_link", profileLink,
             "first_name", firstName(t.fullName()),
             "full_name", t.fullName(),
             "company", t.company() == null || t.company().isBlank() ? "your team" : t.company(),
@@ -109,6 +117,9 @@ public class Suggestions {
     }
 
     static String task(Track t, LocalDate today) {
+        if (t.askNow()) {
+            return "ASK_NOW";
+        }
         return switch (t.stage()) {
             case "INITIATE" -> "CHECK";
             case "UNRESPONSIVE" -> t.whyReason() == null ? "DIAGNOSE" : "NUDGE";
@@ -121,6 +132,7 @@ public class Suggestions {
 
     private static String label(String task, Track t) {
         return switch (task) {
+            case "ASK_NOW" -> t.nextAction();
             case "CHECK" -> "No reply yet: check, or mark them replied";
             case "DIAGNOSE" -> "No reply: why?";
             case "NUDGE" -> "Nudge (" + NetworkService.label(t.whyReason()) + ")";
@@ -137,6 +149,9 @@ public class Suggestions {
         String direct = t.whatsapp() != null ? "WHATSAPP" : t.email() != null ? "EMAIL" : t.linkedinUrl() != null ? "LINKEDIN" : null;
         String last = t.lastChannel() != null && List.of("LINKEDIN", "EMAIL", "WHATSAPP").contains(t.lastChannel())
             ? t.lastChannel() : null;
+        if ("ASK_NOW".equals(task)) {
+            return direct != null ? direct : last != null ? last : "LINKEDIN";
+        }
         if ("NUDGE".equals(task)) {
             if ("NOT_SEEN".equals(t.whyReason())) {
                 return direct != null && !"LINKEDIN".equals(direct) ? direct : last != null ? last : "LINKEDIN";

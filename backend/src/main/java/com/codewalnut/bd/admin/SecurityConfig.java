@@ -40,7 +40,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/public/**").permitAll()
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll())
-            .csrf(csrf -> csrf.spa().ignoringRequestMatchers(UploadTokenFilter.BEARER_UPLOAD))
+            .csrf(csrf -> csrf.spa().ignoringRequestMatchers(UploadTokenFilter.BEARER_UPLOAD,
+                // GTN profile pages are public and cookie-free; their script reports events (ADR-0019).
+                PathPatternRequestMatcher.withDefaults().matcher(org.springframework.http.HttpMethod.POST, "/p/*/events")))
             .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
                 new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
                 PathPatternRequestMatcher.withDefaults().matcher("/api/**")))

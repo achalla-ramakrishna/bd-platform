@@ -40,6 +40,9 @@ async function request<T>(method: string, path: string, body?: BodyInit | object
   let payload: BodyInit | undefined;
   if (body instanceof FormData) {
     payload = body;
+  } else if (body instanceof Blob) {
+    headers['Content-Type'] = body.type || 'application/octet-stream';
+    payload = body;
   } else if (body !== undefined) {
     headers['Content-Type'] = 'application/json';
     payload = JSON.stringify(body);
@@ -73,6 +76,8 @@ export const api = {
   del: <T>(path: string) => request<T>('DELETE', path),
   postForm: <T>(path: string, form: FormData) => request<T>('POST', path, form),
   putForm: <T>(path: string, form: FormData) => request<T>('PUT', path, form),
+  /** A file as the raw body (e.g. a video), with its own content type. */
+  putRaw: <T>(path: string, file: Blob) => request<T>('PUT', path, file),
   /** Uploads return their validation report with HTTP 422 when rows fail. */
   upload: <T>(path: string, file: File) => {
     const form = new FormData();
@@ -489,6 +494,11 @@ export interface GtnTrack {
   howWeKnow?: string | null;
   lastTopic?: string | null;
   version: number;
+  /** Their profile page was opened and the direct ask is due (ADR-0019). */
+  askNow: boolean;
+  visitedAt?: string | null;
+  bestVideoPct: number;
+  interestedAt?: string | null;
 }
 
 export interface GtnSuggestion {
@@ -499,7 +509,7 @@ export interface GtnSuggestion {
   body: string;
 }
 
-export type GtnTask = 'CHECK' | 'DIAGNOSE' | 'NUDGE' | 'INTRO' | 'BOOK_CALL' | 'CALL_REMINDER' | 'CALL_OUTCOME' | 'BEEP';
+export type GtnTask = 'ASK_NOW' | 'CHECK' | 'DIAGNOSE' | 'NUDGE' | 'INTRO' | 'BOOK_CALL' | 'CALL_REMINDER' | 'CALL_OUTCOME' | 'BEEP';
 
 export interface GtnNext {
   track: GtnTrack;
@@ -581,6 +591,50 @@ export interface GtnTemplate {
   body: string;
   active: boolean;
   version: number;
+}
+
+export interface ProfilePage {
+  id: number;
+  ownerId: number;
+  ownerName: string;
+  headline: string;
+  intro?: string | null;
+  proofPoints: string[];
+  bookingUrl?: string | null;
+  whatsapp?: string | null;
+  interestedEnabled: boolean;
+  videoType?: string | null;
+  videoBytes?: number | null;
+  videoUpdatedAt?: string | null;
+  hasCaptions: boolean;
+  version: number;
+}
+
+export interface ProfileStats {
+  url?: string | null;
+  visits: number;
+  lastVisitAt?: string | null;
+  bestVideoPct: number;
+  ctaClicks: number;
+  interestedAt?: string | null;
+  events: { kind: string; value?: string | null; occurredAt: string }[];
+}
+
+export interface GtnDashboard {
+  from: string;
+  to: string;
+  byStage: Record<GtnStage, number>;
+  total: number;
+  cohort: { started: number; responded: number; intro: number; call: number; warm: number };
+  commitments: number;
+  reasons: { reason: WhyReason; total: number; replied: number; parked: number; stillQuiet: number }[];
+  nudges: number;
+  nudgedThenReplied: number;
+  beepsSent: number;
+  overdue: number;
+  missedBeeps: number;
+  profile: { links: number; visitors: number; watched75: number; ctaClicks: number; interested: number };
+  sources: { source: string; started: number; responded: number; warm: number }[];
 }
 
 export interface ImportResult {

@@ -37,6 +37,7 @@ explains them.
 | engagement | V14 | `interview` (leader interviews and their stage dates) |
 | strategy | V9 | `strategy_version` (every save kept; the newest is current) |
 | contacts, network | V18 | GTN (ADR-0017, ADR-0018): `connection` gains `whatsapp` (digits with country code) and `source_tag`; `network_track` (one per person: stage, Why? reason, next action and date, nudges sent, revisit date and reason, beep interval, call date, owner), `network_stage_change` (every move; no user for the daily sweep), `network_touch` (channel, direction, kind, template, summary), `network_commitment`, `message_template` (seeded with starter templates) |
+| network | V19 | GTN profile pages (ADR-0019): `profile_page` (one per team member), `profile_video_chunk` (the intro video in 1 MB pieces), `profile_link` (one unguessable token per person), `profile_event` (visit, video play and progress, clicks); `network_track` gains `visited_at`, `best_video_pct`, `interested_at`, `ask_now`; touches gain the kind `VISIT` |
 
 ## Keys that carry business rules
 

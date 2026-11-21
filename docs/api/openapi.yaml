@@ -618,6 +618,66 @@ paths:
       summary: Fill a template for a track or for someone in Connections { trackId | connectionId, templateId, channel }
       responses:
         '200': { description: '{ templateId, templateName, channel, subject, body }' }
+  /network/dashboard:
+    get:
+      tags: [network]
+      operationId: networkDashboard
+      summary: GTN dashboard for a period (default last 30 days), mine or everyone's, by source (ADR-0019)
+      responses:
+        '200': { description: '{ byStage, cohort, commitments, reasons, nudges, nudgedThenReplied, beepsSent, overdue, missedBeeps, profile, sources }' }
+  /network/profile:
+    get:
+      tags: [network]
+      operationId: profileMine
+      summary: My profile page (defaults until saved)
+      responses:
+        '200': { description: The page }
+    put:
+      tags: [network]
+      operationId: profileSave
+      summary: Save my page { headline, intro, proofPoints, bookingUrl, whatsapp, interestedEnabled, version }
+      responses:
+        '200': { description: The page }
+  /network/profile/video:
+    put:
+      tags: [network]
+      operationId: profileVideo
+      summary: Replace my intro video; the raw MP4 or WebM file is the body (up to 40 MB)
+      responses:
+        '200': { description: The page }
+    delete:
+      tags: [network]
+      operationId: profileVideoDelete
+      summary: Remove my video and captions
+      responses:
+        '200': { description: The page }
+  /network/profile/captions:
+    put:
+      tags: [network]
+      operationId: profileCaptions
+      summary: WebVTT captions as the body (empty removes them)
+      responses:
+        '200': { description: The page }
+  /network/profile/preview:
+    get:
+      tags: [network]
+      operationId: profilePreview
+      summary: My page as people see it (HTML); nothing is recorded
+      responses:
+        '200': { description: HTML }
+  /network/tracks/{id}/profile:
+    get:
+      tags: [network]
+      operationId: profileStats
+      summary: The person's link and what their page reported
+      responses:
+        '200': { description: '{ url, visits, lastVisitAt, bestVideoPct, ctaClicks, interestedAt, events }' }
+    post:
+      tags: [network]
+      operationId: profileLink
+      summary: Make the person's link now
+      responses:
+        '200': { description: The stats with the url }
   /walnut/brief:
     post:
       tags: [walnut]
@@ -1533,3 +1593,6 @@ components:
         teamShape: { type: string }
         timeline: { type: string }
         version: { type: integer, description: Required on update; a stale version returns 409 }
+# Public, outside /api/v1 (ADR-0019): GET /p/{token} (HTML page), GET /p/{token}/video (byte ranges),
+# GET /p/{token}/captions.vtt, POST /p/{token}/events { kind: VISIT | VIDEO_PLAY | VIDEO_PROGRESS | CTA_CLICK |
+# INTERESTED, value } (always 204).

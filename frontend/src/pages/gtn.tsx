@@ -260,14 +260,16 @@ export function SendStep({ page, onDone }: { page: GtnTrackPage; onDone: (p: Gtn
     },
   });
   // Waiting for a first reply or a call outcome: nothing to send; the stage actions say what happened.
-  if (!n.suggestion && !['BEEP', 'NUDGE', 'INTRO', 'BOOK_CALL', 'CALL_REMINDER'].includes(n.task)) return null;
+  if (!n.suggestion && !['ASK_NOW', 'BEEP', 'NUDGE', 'INTRO', 'BOOK_CALL', 'CALL_REMINDER'].includes(n.task)) return null;
   if (n.task === 'CHECK') return null;
   if (t.stage === 'UNRESPONSIVE' && !t.whyReason) return null;
+  const ask = n.task === 'ASK_NOW';
   return (
     <>
       <Composer key={`${t.id}-${t.version}`} person={t} suggestion={n.suggestion} trackId={t.id}
-        stage={n.task === 'BEEP' ? 'MONTHLY_BEEP' : t.stage} reason={t.whyReason}
-        confirmLabel={n.task === 'INTRO' ? 'I sent the intro' : n.task === 'NUDGE' ? 'I sent the nudge' : n.task === 'BEEP' ? 'I sent the beep' : 'I sent it'}
+        stage={ask ? 'UNRESPONSIVE' : n.task === 'BEEP' ? 'MONTHLY_BEEP' : t.stage} reason={ask ? 'INERTIA' : t.whyReason}
+        confirmLabel={ask ? 'I sent the ask' : n.task === 'INTRO' ? 'I sent the intro' : n.task === 'NUDGE' ? 'I sent the nudge'
+          : n.task === 'BEEP' ? 'I sent the beep' : 'I sent it'}
         busy={send.isPending} onSent={(m) => send.mutate(m)} />
       <ErrorNote error={send.error} />
     </>
@@ -417,6 +419,7 @@ export function TodayItem({ item }: { item: GtnNext }) {
         </div>
         <div className="today-task">
           <StagePill stage={t.stage} /> <strong>{item.taskLabel}</strong>
+          {t.askNow && <span className="pill accent">Visited your page{t.bestVideoPct ? ` · watched ${t.bestVideoPct}%` : ''}</span>}
           {item.overdueDays > 0 && <span className="pill bad">{item.overdueDays} day{item.overdueDays === 1 ? '' : 's'} overdue</span>}
           <button type="button" className={open ? 'secondary' : ''} onClick={() => setOpen(!open)} aria-expanded={open}>{open ? 'Close' : 'Do it'}</button>
         </div>

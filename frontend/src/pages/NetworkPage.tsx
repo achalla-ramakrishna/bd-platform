@@ -8,8 +8,9 @@ import {
 } from '../lib/api';
 import { formatDate } from '../lib/format';
 import { ErrorNote, ImportConnections, StagePill, StartGtn, TodayItem } from './gtn';
+import { DashboardTab, ProfileTab } from './GtnProfileAndDashboard';
 
-type Tab = 'today' | 'board' | 'list' | 'templates';
+type Tab = 'today' | 'board' | 'list' | 'dashboard' | 'profile' | 'templates';
 
 /**
  * GTN, Go To Network (ADR-0017): work the people who already know us from a first message to a warm commitment,
@@ -40,7 +41,8 @@ export function NetworkPage({ me }: { me: Me }) {
       {starting && <PickPerson onClose={() => setStarting(false)} />}
       {importing && <ImportConnections onDone={() => setImporting(false)} />}
       <div className="tabs" role="tablist">
-        {([['today', 'Today'], ['board', 'Board'], ['list', 'List'], ['templates', 'Templates']] as [Tab, string][]).map(([k, label]) => (
+        {([['today', 'Today'], ['board', 'Board'], ['list', 'List'], ['dashboard', 'Dashboard'], ['profile', 'My profile page'],
+          ['templates', 'Templates']] as [Tab, string][]).map(([k, label]) => (
           <button key={k} type="button" role="tab" aria-selected={tab === k} className={`tab${tab === k ? ' active' : ''}`} onClick={() => setTab(k)}>
             {label}
           </button>
@@ -49,6 +51,8 @@ export function NetworkPage({ me }: { me: Me }) {
       {tab === 'today' && <TodayTab />}
       {tab === 'board' && <BoardTab editable={editable} />}
       {tab === 'list' && <ListTab />}
+      {tab === 'dashboard' && <DashboardTab />}
+      {tab === 'profile' && <ProfileTab editable={editable} />}
       {tab === 'templates' && <TemplatesTab editable={editable} />}
     </>
   );
@@ -237,7 +241,8 @@ function TemplatesTab({ editable }: { editable: boolean }) {
   };
   return (
     <>
-      <p className="muted small">Merge fields: {'{first_name}'} {'{full_name}'} {'{company}'} {'{how_we_know}'} {'{last_topic}'} {'{revisit_note}'} {'{my_name}'}.
+      <p className="muted small">Merge fields: {'{first_name}'} {'{full_name}'} {'{company}'} {'{how_we_know}'} {'{last_topic}'} {'{revisit_note}'} {'{my_name}'}
+        {' '}{'{profile_link}'} (their own link to your profile page).
         Nudges have one template per Why? reason. You always see and can edit the message before sending.</p>
       {editable && !editing && <button type="button" onClick={() => open('new')}>New template</button>}
       {editing && (

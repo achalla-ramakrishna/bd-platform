@@ -200,7 +200,7 @@ public class NetworkService {
         }
         done(problems);
         touch(s.id(), user.id(), channel, "OUT", kind, in.templateId(), summary, today);
-        jdbc.sql("UPDATE network_track SET last_out_on = :today, last_channel = :ch WHERE id = :id")
+        jdbc.sql("UPDATE network_track SET last_out_on = :today, last_channel = :ch, ask_now = FALSE WHERE id = :id")
             .param("today", today).param("ch", channel).param("id", s.id()).update();
         switch (s.stage()) {
             case "INITIATE" -> next(s.id(), "Check for a reply", today.plusDays(gtn.unresponsiveDays()));
@@ -239,7 +239,7 @@ public class NetworkService {
         }
         done(problems);
         touch(s.id(), user.id(), channel, "IN", "REPLY", null, summary, today);
-        jdbc.sql("UPDATE network_track SET last_in_on = :today, nudges_sent = 0 WHERE id = :id")
+        jdbc.sql("UPDATE network_track SET last_in_on = :today, nudges_sent = 0, ask_now = FALSE WHERE id = :id")
             .param("today", today).param("id", s.id()).update();
         if ("NOT_RIGHT_TIME".equals(outcome)) {
             park(s, in, today, user.id(), "Replied: not the right time");
@@ -366,7 +366,7 @@ public class NetworkService {
     private void move(State s, String to, String nextAction, LocalDate nextOn, Long userId, String note) {
         jdbc.sql("""
                 UPDATE network_track SET stage = :to, stage_since = CURRENT_TIMESTAMP(3), next_action = :what,
-                    next_action_on = :on
+                    next_action_on = :on, ask_now = FALSE
                 WHERE id = :id
                 """).param("to", to).param("what", nextAction).param("on", nextOn).param("id", s.id()).update();
         if ("UNRESPONSIVE".equals(to) && !"UNRESPONSIVE".equals(s.stage())) {

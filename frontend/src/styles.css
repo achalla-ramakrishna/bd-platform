@@ -532,3 +532,17 @@ button.voice.listening { background: var(--bad); border-color: var(--bad); color
 }
 .composer .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 12px; align-items: end; }
 .composer label { display: grid; gap: 4px; }
+/* GTN phase 2 (ADR-0019) */
+.profile-video { width: 100%; max-width: 560px; border-radius: 10px; background: #000; display: block; margin: 6px 0; }
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-top: 8px; }
+.dash-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.dash-panel h2 { font-size: 15px; margin: 0 0 8px; }
+.dash-panel .table { width: 100%; }
+.dash-panel th[scope="row"] { text-align: left; font-weight: 500; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.bar-cell { width: 40%; }
+.bar { display: block; height: 8px; border-radius: 4px; background: var(--accent); min-width: 2px; }
+.dash-panel { overflow-x: auto; }
+.dash-panel .table { font-size: 14px; }
+.dash-panel th[scope="row"] { text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--fg); }
+.profile-link-url { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
