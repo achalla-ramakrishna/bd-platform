@@ -239,6 +239,13 @@ numbers, beeps sent on time and nudges per Why? reason; Walnut's brief names
 teammates with overdue GTN actions. Not built: a WhatsApp digest (needs the
 WhatsApp Business API).
 
+## 13. What's new (Built)
+
+A menu item (Platform → What's new) listing every change people will notice,
+newest first, with how to try it and a link. The menu shows how many entries
+this browser hasn't seen; opening the page marks them seen. Entries live in
+`frontend/src/whatsNew.ts` and are added with each change (CLAUDE.md).
+
 ## Outside the platform
 
 - Vendor kit: one-page company write-up, 3 to 5 case studies, engagement

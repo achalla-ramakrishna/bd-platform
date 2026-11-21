@@ -23,3 +23,7 @@ Guidance for Claude Code sessions in this repository.
   (BR-BD-03, ADR-0005).
 - Treat behaviour that varies by client or team as configuration, not as
   code branches.
+- **What's new**: any change people will notice adds an entry at the top of
+  `frontend/src/whatsNew.ts` in the same commit: a plain-words title, a
+  one-line summary, the steps to try it and a link. Never reuse or change an
+  entry's `id` (it is how "seen" is remembered).

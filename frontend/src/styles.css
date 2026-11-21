@@ -550,3 +550,11 @@ button.voice.listening { background: var(--bad); border-color: var(--bad); color
 .table-scroll { overflow-x: auto; }
 .dash-panel.wide-panel { grid-column: 1 / -1; }
 .card .value .link-plain { font-size: 14px; font-weight: 500; }
+/* What's new */
+.nav-badge { display: inline-block; min-width: 18px; margin-left: 6px; padding: 0 6px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.whats-new { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; max-width: 860px; }
+.whats-new .card.new { border-color: var(--accent); }
+.whats-new-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.whats-new-head h2 { font-size: 17px; margin: 0; }
+.whats-new p { margin: 6px 0 10px; }
+.whats-new .steps { margin: 4px 0 10px; padding-left: 20px; }

@@ -13,6 +13,7 @@ import { AssistantPage } from './pages/AssistantPage';
 import { WalnutPage } from './pages/WalnutPage';
 import { OpportunitiesPage } from './pages/OpportunitiesPage';
 import { NetworkPage } from './pages/NetworkPage';
+import { WhatsNewPage, useUnseenCount } from './pages/WhatsNewPage';
 import { NetworkTrackPage } from './pages/NetworkTrackPage';
 import { NavLink, Navigate, Route, Routes } from 'react-router';
 import { ApiError, api, type Me, type SignInInfo } from './lib/api';
@@ -72,6 +73,7 @@ export function App() {
           <NavLink to="/engineers">Engineers</NavLink>
         </NavGroup>
         <NavGroup label="Platform">
+          <WhatsNewLink />
           <NavLink to="/improvements">Improvement areas</NavLink>
           {user.canImport && <NavLink to="/uploads">Uploads</NavLink>}
           {user.roles.includes('ADMIN') && <NavLink to="/users">Users</NavLink>}
@@ -111,6 +113,7 @@ export function App() {
           <Route path="/improvements/:id" element={<ImprovementPage />} />
           <Route path="/walnut" element={<WalnutPage />} />
           <Route path="/assistant" element={<AssistantPage me={user} />} />
+          <Route path="/whats-new" element={<WhatsNewPage />} />
           <Route path="/network" element={<NetworkPage me={user} />} />
           <Route path="/network/:id" element={<NetworkTrackPage me={user} />} />
           <Route path="/connections" element={<ConnectionsPage me={user} />} />
@@ -177,6 +180,16 @@ function NoRole({ user }: { user: Me }) {
 }
 
 /** A labelled group of menu links. */
+/** The What's new menu item, with how many entries this browser hasn't seen. */
+function WhatsNewLink() {
+  const unseen = useUnseenCount();
+  return (
+    <NavLink to="/whats-new">
+      What's new{unseen > 0 && <span className="nav-badge" aria-label={`${unseen} new`}>{unseen}</span>}
+    </NavLink>
+  );
+}
+
 function NavGroup({ label, children }: { label: string; children: ReactNode }) {
   const id = `nav-${label.toLowerCase()}`;
   return (
