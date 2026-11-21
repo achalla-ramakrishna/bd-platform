@@ -15,6 +15,18 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: '2026-11-21-bd-agent-queue',
+    date: '2026-11-21',
+    title: 'Prospecting: who to approach today, note already drafted',
+    summary: 'Each weekday morning the BD agent queues the best-scored people you can approach (your accounts\' contacts and your connections) with a draft note. You send on LinkedIn; marking it sent starts the conversation or GTN track.',
+    steps: [
+      'Network → Prospecting.',
+      'Edit the note, click "Copy note and open LinkedIn", send it there, then "I sent it".',
+      'Or Skip with a reason, so the agent learns. "Find more people" researches a few more.',
+    ],
+    link: { to: '/prospecting', label: 'Open Prospecting' },
+  },
+  {
     id: '2026-11-21-bd-agent-research',
     date: '2026-11-21',
     title: 'BD agent: research a person before you reach out',

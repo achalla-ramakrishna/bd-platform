@@ -4,6 +4,8 @@ spring:
     username: ${TEST_DATABASE_USERNAME:bd}
     password: ${TEST_DATABASE_PASSWORD:bd}
 app:
+  agent:
+    queue-enabled: false
   walnut:
     scheduler-enabled: false
   gtn:

@@ -13,10 +13,11 @@ import { AssistantPage } from './pages/AssistantPage';
 import { WalnutPage } from './pages/WalnutPage';
 import { OpportunitiesPage } from './pages/OpportunitiesPage';
 import { NetworkPage } from './pages/NetworkPage';
+import { ProspectingPage } from './pages/ProspectingPage';
 import { WhatsNewPage, useUnseenCount } from './pages/WhatsNewPage';
 import { NetworkTrackPage } from './pages/NetworkTrackPage';
 import { NavLink, Navigate, Route, Routes } from 'react-router';
-import { ApiError, api, type Me, type SignInInfo } from './lib/api';
+import { ApiError, api, canEditPipeline, type Me, type SignInInfo } from './lib/api';
 import { AccountsPage } from './pages/AccountsPage';
 import { AccountDetailPage } from './pages/AccountDetailPage';
 import { EngineersPage } from './pages/EngineersPage';
@@ -56,6 +57,7 @@ export function App() {
         </NavGroup>
         <NavGroup label="Network">
           <NavLink to="/network">GTN</NavLink>
+          {canEditPipeline(user) && <NavLink to="/prospecting">Prospecting</NavLink>}
           <NavLink to="/assistant">Log with AI</NavLink>
           <NavLink to="/connections">Connections</NavLink>
           <NavLink to="/conversations">Conversations</NavLink>
@@ -114,6 +116,7 @@ export function App() {
           <Route path="/walnut" element={<WalnutPage />} />
           <Route path="/assistant" element={<AssistantPage me={user} />} />
           <Route path="/whats-new" element={<WhatsNewPage />} />
+          <Route path="/prospecting" element={<ProspectingPage me={user} />} />
           <Route path="/network" element={<NetworkPage me={user} />} />
           <Route path="/network/:id" element={<NetworkTrackPage me={user} />} />
           <Route path="/connections" element={<ConnectionsPage me={user} />} />

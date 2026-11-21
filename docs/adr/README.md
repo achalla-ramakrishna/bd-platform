@@ -30,5 +30,6 @@ Status values: **Proposed** (under review), **Accepted**, **Superseded by ADR-nn
 | [0020](0020-gtn-gmail-and-calendar.md) | GTN sends from each person's Gmail, spots replies, and books calls on their calendar | Accepted |
 | [0021](0021-gtn-team-use.md) | GTN for the whole team: owners act, managers oversee, contacts change hands | Accepted |
 | [0022](0022-bd-agent.md) | The BD agent: small agents prepare, people send; LinkedIn stays manual | Accepted |
+| [0023](0023-prospecting-queue.md) | The daily prospecting queue: the agent picks and drafts, a person sends | Accepted |
 
 Template: Context → Decision → Alternatives considered → Consequences.

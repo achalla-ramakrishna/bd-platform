@@ -582,6 +582,57 @@ paths:
       responses:
         '202': { description: '{ started, skipped, remainingToday }' }
         '422': { description: Nobody left to research, or agent off }
+  /prospecting/queue:
+    get:
+      tags: [prospecting]
+      operationId: prospectingQueue
+      summary: My queue for today, topped up from new briefs first (ADR-0023; pipeline roles)
+      responses:
+        '200': { description: '{ day, size, items: [{ id, personType, personId, name, title, company, linkedinUrl, accountId, accountName, score, headline, whyNow, draftNote, sentNote, status, skipReason, skipNote, conversationId, trackId, queuedOn }], last30Days: { sent, skipped, expired, edited, skipReasons }, researchEnabled, researchLeftToday }' }
+        '403': { description: Not a pipeline role }
+  /prospecting/research:
+    post:
+      tags: [prospecting]
+      operationId: prospectingResearch
+      summary: Start research on up to 5 more people I could approach, within the daily cap
+      responses:
+        '202': { description: '{ started, message }' }
+  /prospecting/queue/{id}/sent:
+    post:
+      tags: [prospecting]
+      operationId: prospectingSent
+      summary: I sent the note on LinkedIn; starts a conversation (contact) or a GTN track (connection)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { note: { type: string, maxLength: 1000, description: 'The note sent; the draft if empty' } } }
+      responses:
+        '200': { description: The item, now SENT }
+        '403': { description: Someone else's queue }
+        '409': { description: Already acted on }
+  /prospecting/queue/{id}/skip:
+    post:
+      tags: [prospecting]
+      operationId: prospectingSkip
+      summary: Skip with a reason; not queued again for 90 days
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, enum: [WRONG_PERSON, NOT_NOW, IN_TOUCH, OTHER] }
+                note: { type: string, maxLength: 500 }
+      responses:
+        '200': { description: The item, now SKIPPED }
+        '409': { description: Already acted on }
+        '422': { description: No valid reason }
   /network/tracks:
     get:
       tags: [network]

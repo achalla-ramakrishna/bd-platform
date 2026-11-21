@@ -59,6 +59,11 @@ app:
   # The BD agent (ADR-0022): research runs a day for the whole team (each is two Claude calls with web search).
   agent:
     research-per-day: ${AGENT_RESEARCH_PER_DAY:60}
+    # The daily prospecting queue (ADR-0023).
+    queue-enabled: ${AGENT_QUEUE:true}
+    queue-size: ${AGENT_QUEUE_SIZE:20}
+    queue-min-score: ${AGENT_QUEUE_MIN_SCORE:50}
+    queue-research-per-person: ${AGENT_QUEUE_RESEARCH_PER_PERSON:5}
   # GTN, Go To Network (ADR-0017): thresholds the team can tune.
   gtn:
     unresponsive-days: ${GTN_UNRESPONSIVE_DAYS:7}

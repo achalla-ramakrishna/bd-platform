@@ -1,7 +1,7 @@
 # The BD agent: plan
 
-- Status: **Agreed** (2026-11-21). Step 1 built; steps 2–6 proposed.
-- Decisions: [ADR-0022](adr/0022-bd-agent.md). Builds on Walnut (ADR-0015), GTN (ADR-0017 to ADR-0021) and the
+- Status: **Agreed** (2026-11-21). Steps 1 and 2 built; steps 3–6 proposed.
+- Decisions: [ADR-0022](adr/0022-bd-agent.md), [ADR-0023](adr/0023-prospecting-queue.md). Builds on Walnut (ADR-0015), GTN (ADR-0017 to ADR-0021) and the
   no-LinkedIn-automation rule (ADR-0005).
 
 ## 1. What we want
@@ -25,8 +25,8 @@ it can be sent automatically from our own mailboxes, within caps and consent rul
 | --- | --- | --- |
 | Ideal customer profile and target accounts | Person sets it; agent refines from wins and losses | Strategy, account fit scores, Find GCCs; learning from outcomes: step 6 |
 | Research the person: role, what they own, recent public activity, why now | **Agent** | **Step 1 (built)** |
-| Score and prioritise | **Agent** (the app computes the score from the agent's ratings) | **Step 1 (built)**; daily ranking: step 2 |
-| Draft the connection note and follow-ups | Agent drafts, person approves | Step 1 drafts the note; the queue and sequences: step 2 |
+| Score and prioritise | **Agent** (the app computes the score from the agent's ratings) | **Steps 1 and 2 (built)** |
+| Draft the connection note and follow-ups | Agent drafts, person approves | **Built**: the note in the daily queue (step 2); follow-up sequences: step 4 |
 | Send on LinkedIn | **Person**, one click per prospect | Built (GTN) |
 | Email touches | Person today ("Send from Gmail"); agent within caps: step 4 | Step 4 |
 | Classify replies, draft answers | Agent classifies and drafts; person approves | Replies found in Gmail (built); classification and drafts: step 3 |
@@ -61,7 +61,7 @@ it can be sent automatically from our own mailboxes, within caps and consent rul
    only. "Research this person" on a contact, a connection or a GTN track; "Research contacts" on an account
    (up to 10 at a time); a daily cap. Public web only for now: a licensed data source (Apollo, ZoomInfo or
    similar) can be added behind the same adapter if the team buys one.
-2. **Daily prospecting queue.** Each morning the agent picks the best people at well-fitting accounts (score,
+2. **Daily prospecting queue (built, ADR-0023).** Each morning the agent picks the best people at well-fitting accounts (score,
    no conversation yet, not on do-not-contact), drafts their notes from the briefs and queues 20 per person.
    The person edits and sends (copy + open LinkedIn), which starts a conversation or a GTN track. Edits and
    skips are stored.

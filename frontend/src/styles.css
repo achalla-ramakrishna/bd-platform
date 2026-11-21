@@ -566,3 +566,11 @@ button.voice.listening { background: var(--bad); border-color: var(--bad); color
 .draft-note { border: 1px solid var(--border, #ddd); border-radius: 8px; padding: 10px 12px; margin: 4px 0 12px; }
 .draft-note p { margin: 0 0 8px; white-space: pre-wrap; }
 .title-row .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+
+/* Prospecting queue (ADR-0023) */
+.queue { display: grid; gap: 12px; margin: 12px 0 24px; }
+.queue-card { border: 1px solid var(--border, #ddd); border-radius: 10px; padding: 12px 16px; }
+.queue-card h3 { margin: 0 0 2px; }
+.queue-card p { margin: 6px 0; }
+.queue-card textarea { width: 100%; margin: 4px 0 8px; font: inherit; }
+.queue-card .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }

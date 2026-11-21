@@ -213,3 +213,7 @@ Optional: `GTN_REPLY_POLL_MINUTES` (default 10) sets how often replies are looke
 
 Uses `ANTHROPIC_API_KEY` (above). Optional: `AGENT_RESEARCH_PER_DAY` (default 60) caps research runs a day
 across the team, which bounds the spend.
+
+The daily prospecting queue (ADR-0023) fills at 06:45 IST on weekdays. Optional: `AGENT_QUEUE_SIZE` (default 20
+a person a day), `AGENT_QUEUE_MIN_SCORE` (default 50), `AGENT_QUEUE_RESEARCH_PER_PERSON` (default 5 research runs
+a person each morning, within the daily cap), `AGENT_QUEUE=false` turns the morning run off.

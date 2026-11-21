@@ -246,14 +246,16 @@ newest first, with how to try it and a link. The menu shows how many entries
 this browser hasn't seen; opening the page marks them seen. Entries live in
 `frontend/src/whatsNew.ts` and are added with each change (CLAUDE.md).
 
-## 14. BD agent (Step 1 built; steps 2 to 6 proposed)
+## 14. BD agent (Steps 1 and 2 built; steps 3 to 6 proposed)
 
 A workflow of small agents that do the thinking a BD person does, while people
 send every message (ADR-0022, `docs/bd-agent-plan.md`). Step 1, the research
 agent, is built: a brief on a contact or connection from the public web (never
 LinkedIn) and our records, with why now, the angle, a draft connection note and
-a 0 to 100 score. Next: the daily prospecting queue, then drafts in an approval
-queue, reply handling, meeting prep, and evals.
+a 0 to 100 score. Step 2, the daily prospecting queue (ADR-0023), is built:
+each weekday morning the best-scored people each BD person can approach, with
+the note drafted; sending starts a conversation or a GTN track. Next: reply
+handling, email sequences, meeting prep, and evals.
 
 ## Outside the platform
 
