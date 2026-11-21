@@ -19,7 +19,7 @@ public class ProspectContextQueries {
 
     public static final List<String> TYPES = List.of("CONTACT", "CONNECTION");
 
-    /** {@code optedOut}: a contact who asked not to be contacted; never researched or approached. */
+    /** {@code optedOut}: someone who asked not to be contacted (ADR-0024); never researched or approached. */
     public record Person(String type, long id, String name, String title, String company, String city, String linkedinUrl,
                          Long accountId, String accountName, String relationship, boolean optedOut) {}
 
@@ -48,11 +48,11 @@ public class ProspectContextQueries {
                     rs.getString(4), rs.getString(5), rs.getString(6), rs.getLong(7), rs.getString(8), rs.getString(9),
                     rs.getBoolean(10))).optional();
             case "CONNECTION" -> jdbc.sql("""
-                    SELECT n.id, n.full_name, n.current_role, n.current_company, n.city, n.linkedin_url, a.id, a.name, a.relationship
+                    SELECT n.id, n.full_name, n.current_role, n.current_company, n.city, n.linkedin_url, a.id, a.name, a.relationship, n.opted_out
                     FROM connection n LEFT JOIN account a ON a.id = n.account_id WHERE n.id = :id
                     """).param("id", id).query((rs, n) -> new Person("CONNECTION", rs.getLong(1), rs.getString(2), rs.getString(3),
                     rs.getString(4), rs.getString(5), rs.getString(6), rs.getObject(7, Long.class), rs.getString(8), rs.getString(9),
-                    false)).optional();
+                    rs.getBoolean(10))).optional();
             default -> Optional.empty();
         };
         return p.orElseThrow(() -> new NotFoundException(t.isEmpty() ? "Person" : t.charAt(0) + t.substring(1).toLowerCase(Locale.ROOT), id));

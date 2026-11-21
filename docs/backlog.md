@@ -246,7 +246,7 @@ newest first, with how to try it and a link. The menu shows how many entries
 this browser hasn't seen; opening the page marks them seen. Entries live in
 `frontend/src/whatsNew.ts` and are added with each change (CLAUDE.md).
 
-## 14. BD agent (Steps 1 and 2 built; steps 3 to 6 proposed)
+## 14. BD agent (Steps 1 to 3 built; steps 4 to 6 proposed)
 
 A workflow of small agents that do the thinking a BD person does, while people
 send every message (ADR-0022, `docs/bd-agent-plan.md`). Step 1, the research
@@ -254,8 +254,11 @@ agent, is built: a brief on a contact or connection from the public web (never
 LinkedIn) and our records, with why now, the angle, a draft connection note and
 a 0 to 100 score. Step 2, the daily prospecting queue (ADR-0023), is built:
 each weekday morning the best-scored people each BD person can approach, with
-the note drafted; sending starts a conversation or a GTN track. Next: reply
-handling, email sequences, meeting prep, and evals.
+the note drafted; sending starts a conversation or a GTN track. Step 3, the
+reply agent (ADR-0024), is built: Gmail replies on GTN and pasted replies are
+sorted with a draft answer; the owner confirms on the Replies page; "stop
+contacting me" opts the person out at once. Next: email sequences, meeting
+prep, and evals.
 
 ## Outside the platform
 

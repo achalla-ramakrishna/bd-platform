@@ -633,6 +633,87 @@ paths:
         '200': { description: The item, now SKIPPED }
         '409': { description: Already acted on }
         '422': { description: No valid reason }
+  /replies:
+    get:
+      tags: [replies]
+      operationId: replyInbox
+      summary: My replies waiting (being read, ready, could not be read) and handled in the last 7 days, with 30-day numbers (ADR-0024)
+      responses:
+        '200': { description: '{ waiting: [Reply], recent: [Reply], last30Days: { read, confirmed, changed, optedOut, kinds }, enabled }' }
+    post:
+      tags: [replies]
+      operationId: pasteReply
+      summary: Paste a reply on a conversation (LinkedIn or email) or a GTN track (LinkedIn, email, WhatsApp, other); read in the background
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                conversationId: { type: integer, format: int64 }
+                trackId: { type: integer, format: int64 }
+                text: { type: string, maxLength: 4000 }
+                channel: { type: string, enum: [LINKEDIN, EMAIL, WHATSAPP, OTHER] }
+                receivedOn: { type: string, format: date }
+      responses:
+        '202': { description: 'The Reply: { id, personType, personId, personName, conversationId, trackId, source, channel, replyText, receivedOn, status, kind, confidence, summary, revisitOn, referralName, referralRole, nextStep, draftAnswer, finalKind, sentAnswer, optedOut, error, version }' }
+        '422': { description: Agent off, no text, wrong channel, or neither/both targets }
+  /replies/conversation/{id}:
+    get:
+      tags: [replies]
+      operationId: conversationReplies
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Replies on the conversation, newest first } }
+  /replies/track/{id}:
+    get:
+      tags: [replies]
+      operationId: trackReplies
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Replies on the GTN track, newest first } }
+  /replies/{id}/done:
+    post:
+      tags: [replies]
+      operationId: replyDone
+      summary: Confirm the kind (and the answer sent); applied to the conversation or the GTN track
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                kind: { type: string, enum: [INTERESTED, QUESTION, NOT_NOW, REFERRAL, OBJECTION, NOT_INTERESTED, UNSUBSCRIBE, OUT_OF_OFFICE, OTHER] }
+                answer: { type: string, maxLength: 2000 }
+                answerSent: { type: boolean }
+                revisitOn: { type: string, format: date }
+                nextStep: { type: string }
+                nextStepDue: { type: string, format: date }
+                version: { type: integer }
+      responses:
+        '200': { description: The Reply, now DONE }
+        '409': { description: Already handled, or changed }
+  /replies/{id}/dismiss:
+    post:
+      tags: [replies]
+      operationId: replyDismiss
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: The Reply, now DISMISSED; nothing else changes } }
+  /replies/{id}/again:
+    post:
+      tags: [replies]
+      operationId: replyAgain
+      summary: Read a reply again after it could not be read
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '202': { description: The Reply, READING } }
+  /replies/{id}/undo-opt-out:
+    post:
+      tags: [replies]
+      operationId: replyUndoOptOut
+      summary: Undo an opt-out the agent made
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: The Reply, no longer opted out } }
   /network/tracks:
     get:
       tags: [network]

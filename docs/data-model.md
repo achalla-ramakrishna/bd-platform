@@ -42,6 +42,7 @@ explains them.
 | network | V21 | GTN team use (ADR-0021): `network_touch.due_on`, when a nudge or beep was due, so "sent on time" can be measured |
 | assist | V22 | BD agent research (ADR-0022): `prospect_brief`, one row per research run on a contact or connection: status, the brief and sources (JSON), role fit, timing, access, score, who asked |
 | prospecting | V23 | The daily prospecting queue (ADR-0023): `prospect_queue_item`, one row per person queued for one BD person on one day: the brief it came from, score, the agent's draft and the note actually sent, status (QUEUED, SENT, SKIPPED, EXPIRED), skip reason, and the conversation or GTN track it started |
+| prospecting, contacts | V24 | The reply agent (ADR-0024): `prospect_reply`, one row per reply read (from Gmail on a GTN track, or pasted on a conversation or GTN contact): the text, the agent's kind, confidence, summary, revisit date, referral, next step and draft answer, the kind the owner confirmed and the answer they sent, whether the person was opted out; `connection` gains `opted_out`, `opted_out_at` |
 
 ## Keys that carry business rules
 

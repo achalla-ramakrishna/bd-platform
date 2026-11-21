@@ -22,4 +22,14 @@ public class Conversations {
             "LINKEDIN_CONNECTION", today, "Connection request sent: " + note, "NO_REPLY", "Check for a reply",
             today.plusDays(7), null), user);
     }
+
+    /**
+     * Logs a touch in a conversation (ADR-0024): {@code outcome} REPLIED, NOT_INTERESTED (closes it) or NO_REPLY (our own
+     * message; the status stays); {@code channel} one of the activity channels.
+     */
+    public void logTouch(long conversationId, String channel, LocalDate on, String summary, String outcome, String nextStep,
+                         LocalDate nextStepDue, CurrentUser user) {
+        service.update(conversationId, new ConversationService.Update(channel, on, summary, outcome, null, nextStep, nextStepDue,
+            null), user);
+    }
 }

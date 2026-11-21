@@ -31,5 +31,6 @@ Status values: **Proposed** (under review), **Accepted**, **Superseded by ADR-nn
 | [0021](0021-gtn-team-use.md) | GTN for the whole team: owners act, managers oversee, contacts change hands | Accepted |
 | [0022](0022-bd-agent.md) | The BD agent: small agents prepare, people send; LinkedIn stays manual | Accepted |
 | [0023](0023-prospecting-queue.md) | The daily prospecting queue: the agent picks and drafts, a person sends | Accepted |
+| [0024](0024-reply-agent.md) | The reply agent: reads replies, sorts them, drafts the answer; a person confirms | Accepted |
 
 Template: Context → Decision → Alternatives considered → Consequences.

@@ -64,6 +64,8 @@ app:
     queue-size: ${AGENT_QUEUE_SIZE:20}
     queue-min-score: ${AGENT_QUEUE_MIN_SCORE:50}
     queue-research-per-person: ${AGENT_QUEUE_RESEARCH_PER_PERSON:5}
+    # The reply agent (ADR-0024).
+    replies-per-day: ${AGENT_REPLIES_PER_DAY:200}
   # GTN, Go To Network (ADR-0017): thresholds the team can tune.
   gtn:
     unresponsive-days: ${GTN_UNRESPONSIVE_DAYS:7}

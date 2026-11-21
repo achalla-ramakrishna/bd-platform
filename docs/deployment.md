@@ -217,3 +217,5 @@ across the team, which bounds the spend.
 The daily prospecting queue (ADR-0023) fills at 06:45 IST on weekdays. Optional: `AGENT_QUEUE_SIZE` (default 20
 a person a day), `AGENT_QUEUE_MIN_SCORE` (default 50), `AGENT_QUEUE_RESEARCH_PER_PERSON` (default 5 research runs
 a person each morning, within the daily cap), `AGENT_QUEUE=false` turns the morning run off.
+
+The reply agent (ADR-0024) uses the same key. Optional: `AGENT_REPLIES_PER_DAY` (default 200) caps replies read a day.

@@ -10,6 +10,7 @@ import { PersonPhoto } from './PersonPhoto';
 import { ErrorNote, HandOverForm, SendStep, StageActions, StagePill } from './gtn';
 import { ProfileCard } from './GtnProfileAndDashboard';
 import { ProspectBriefPanel } from './ProspectBrief';
+import { PasteReply } from './RepliesPage';
 
 /** One person on GTN: where they are, what to do next with the message ready, and everything that happened. */
 export function NetworkTrackPage({ me }: { me: Me }) {
@@ -89,6 +90,7 @@ export function NetworkTrackPage({ me }: { me: Me }) {
       </div>
 
       <ProspectBriefPanel type="CONNECTION" id={t.connectionId} editable={canEditPipeline(me)} />
+      {editable && <PasteReply trackId={t.id} />}
 
       {editable && (
         <section className="form gtn-next" aria-label="Next step">

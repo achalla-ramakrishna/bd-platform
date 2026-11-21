@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Service;
@@ -54,10 +55,13 @@ public class NetworkService {
     private final GtnProperties gtn;
     private final AuditLog audit;
 
-    NetworkService(JdbcClient jdbc, GtnProperties gtn, AuditLog audit) {
+    private final ApplicationEventPublisher events;
+
+    NetworkService(JdbcClient jdbc, GtnProperties gtn, AuditLog audit, ApplicationEventPublisher events) {
         this.jdbc = jdbc;
         this.gtn = gtn;
         this.audit = audit;
+        this.events = events;
     }
 
     public LocalDate today() {
@@ -465,6 +469,8 @@ public class NetworkService {
         // The owner confirms what the reply meant today, whatever the stage.
         jdbc.sql("UPDATE network_track SET next_action_on = LEAST(next_action_on, :today) WHERE id = :id")
             .param("today", today()).param("id", trackId).update();
+        long connection = jdbc.sql("SELECT connection_id FROM network_track WHERE id = :id").param("id", trackId).query(Long.class).single();
+        events.publishEvent(new EmailReplyFound(trackId, owner, connection, gmailMessageId, preview, on));
         return true;
     }
 

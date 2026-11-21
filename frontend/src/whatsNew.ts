@@ -15,6 +15,18 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: '2026-11-21-bd-agent-replies',
+    date: '2026-11-21',
+    title: 'Replies: the agent reads each reply and drafts your answer',
+    summary: 'Gmail replies to GTN emails are read on their own; paste LinkedIn or other replies. The agent says what kind it is (interested, not now, referral…) and drafts an answer; you confirm and the conversation or GTN contact is updated. "Stop contacting me" opts them out at once.',
+    steps: [
+      'A conversation or a GTN contact → Paste their reply → Read it.',
+      'Network → Replies: check the kind, edit and send the answer yourself, tick "I sent this answer", click Done.',
+      'If the agent wrongly opted someone out, click Undo.',
+    ],
+    link: { to: '/replies', label: 'Open Replies' },
+  },
+  {
     id: '2026-11-21-bd-agent-queue',
     date: '2026-11-21',
     title: 'Prospecting: who to approach today, note already drafted',

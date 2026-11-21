@@ -161,7 +161,7 @@ public class QueueService {
                  WHERE c.id = %2$s AND a.owner_user_id = :u AND NOT c.opted_out)
                AND NOT EXISTS (SELECT 1 FROM conversation v WHERE v.contact_id = %2$s)
                AND NOT EXISTS (SELECT 1 FROM connection n JOIN network_track t ON t.connection_id = n.id WHERE n.contact_id = %2$s))
-            OR (%1$s = 'CONNECTION' AND EXISTS (SELECT 1 FROM connection n WHERE n.id = %2$s AND (n.created_by = :u
+            OR (%1$s = 'CONNECTION' AND EXISTS (SELECT 1 FROM connection n WHERE n.id = %2$s AND NOT n.opted_out AND (n.created_by = :u
                  OR EXISTS (SELECT 1 FROM connection_knower k WHERE k.connection_id = n.id AND k.user_id = :u))
                  AND (n.contact_id IS NULL OR NOT EXISTS (SELECT 1 FROM contact c WHERE c.id = n.contact_id AND c.opted_out))
                  AND (n.contact_id IS NULL OR NOT EXISTS (SELECT 1 FROM conversation v WHERE v.contact_id = n.contact_id)))

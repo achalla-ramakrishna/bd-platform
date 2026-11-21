@@ -32,6 +32,15 @@ class AssistConfig {
     }
 
     @Bean
+    ReplyReader replyReader(@Value("${app.ai.anthropic-api-key:}") String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return new DisabledReplyReader();
+        }
+        LOG.info("BD agent replies: ENABLED ({}, no tools).", ClaudeReplyReader.MODEL);
+        return new ClaudeReplyReader(client(apiKey));
+    }
+
+    @Bean
     ProspectResearcher prospectResearcher(@Value("${app.ai.anthropic-api-key:}") String apiKey) {
         if (apiKey == null || apiKey.isBlank()) {
             return new DisabledProspectResearcher();

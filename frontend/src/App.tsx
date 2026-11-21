@@ -14,6 +14,7 @@ import { WalnutPage } from './pages/WalnutPage';
 import { OpportunitiesPage } from './pages/OpportunitiesPage';
 import { NetworkPage } from './pages/NetworkPage';
 import { ProspectingPage } from './pages/ProspectingPage';
+import { RepliesPage, useReplyInbox } from './pages/RepliesPage';
 import { WhatsNewPage, useUnseenCount } from './pages/WhatsNewPage';
 import { NetworkTrackPage } from './pages/NetworkTrackPage';
 import { NavLink, Navigate, Route, Routes } from 'react-router';
@@ -58,6 +59,7 @@ export function App() {
         <NavGroup label="Network">
           <NavLink to="/network">GTN</NavLink>
           {canEditPipeline(user) && <NavLink to="/prospecting">Prospecting</NavLink>}
+          {canEditPipeline(user) && <RepliesLink />}
           <NavLink to="/assistant">Log with AI</NavLink>
           <NavLink to="/connections">Connections</NavLink>
           <NavLink to="/conversations">Conversations</NavLink>
@@ -117,6 +119,7 @@ export function App() {
           <Route path="/assistant" element={<AssistantPage me={user} />} />
           <Route path="/whats-new" element={<WhatsNewPage />} />
           <Route path="/prospecting" element={<ProspectingPage me={user} />} />
+          <Route path="/replies" element={<RepliesPage me={user} />} />
           <Route path="/network" element={<NetworkPage me={user} />} />
           <Route path="/network/:id" element={<NetworkTrackPage me={user} />} />
           <Route path="/connections" element={<ConnectionsPage me={user} />} />
@@ -182,7 +185,17 @@ function NoRole({ user }: { user: Me }) {
   );
 }
 
-/** A labelled group of menu links. */
+/** The Replies menu item, with how many replies wait for me (ADR-0024). */
+function RepliesLink() {
+  const inbox = useReplyInbox(true);
+  const n = inbox.data?.waiting.length ?? 0;
+  return (
+    <NavLink to="/replies">
+      Replies{n > 0 && <span className="nav-badge" aria-label={`${n} waiting`}>{n}</span>}
+    </NavLink>
+  );
+}
+
 /** The What's new menu item, with how many entries this browser hasn't seen. */
 function WhatsNewLink() {
   const unseen = useUnseenCount();

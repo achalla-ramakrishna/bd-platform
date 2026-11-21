@@ -6,6 +6,7 @@ import {
   type ConversationDetail, type Me, type Opportunity,
 } from '../lib/api';
 import { formatDate } from '../lib/format';
+import { PasteReply } from './RepliesPage';
 import { NextStep, StatusPill, today } from './ConversationsPage';
 
 /** One conversation: its updates, the next step, and quick changes (backlog item 3). */
@@ -133,6 +134,8 @@ export function ConversationPage({ me }: { me: Me }) {
           <div className="actions"><button type="submit" disabled={update.isPending}>{update.isPending ? 'Saving…' : 'Save update'}</button></div>
         </form>
       )}
+
+      {editable && c.contactId != null && <PasteReply conversationId={c.id} />}
 
       <h2>Updates</h2>
       <ol className="timeline">
