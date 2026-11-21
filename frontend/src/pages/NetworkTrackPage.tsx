@@ -9,6 +9,7 @@ import { formatDate } from '../lib/format';
 import { PersonPhoto } from './PersonPhoto';
 import { ErrorNote, HandOverForm, SendStep, StageActions, StagePill } from './gtn';
 import { ProfileCard } from './GtnProfileAndDashboard';
+import { ProspectBriefPanel } from './ProspectBrief';
 
 /** One person on GTN: where they are, what to do next with the message ready, and everything that happened. */
 export function NetworkTrackPage({ me }: { me: Me }) {
@@ -86,6 +87,8 @@ export function NetworkTrackPage({ me }: { me: Me }) {
           <div className="card"><div className="label">Beep every</div><div className="value">{t.beepIntervalDays} d</div></div>
         )}
       </div>
+
+      <ProspectBriefPanel type="CONNECTION" id={t.connectionId} editable={canEditPipeline(me)} />
 
       {editable && (
         <section className="form gtn-next" aria-label="Next step">

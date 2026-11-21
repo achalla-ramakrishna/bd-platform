@@ -558,3 +558,11 @@ button.voice.listening { background: var(--bad); border-color: var(--bad); color
 .whats-new-head h2 { font-size: 17px; margin: 0; }
 .whats-new p { margin: 6px 0 10px; }
 .whats-new .steps { margin: 4px 0 10px; padding-left: 20px; }
+
+/* BD agent research brief (ADR-0022) */
+.prospect-brief { margin-top: 8px; }
+.prospect-brief .lead { color: inherit; font-weight: 500; }
+.prospect-brief ul { margin: 4px 0 12px; padding-left: 20px; }
+.draft-note { border: 1px solid var(--border, #ddd); border-radius: 8px; padding: 10px 12px; margin: 4px 0 12px; }
+.draft-note p { margin: 0 0 8px; white-space: pre-wrap; }
+.title-row .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }

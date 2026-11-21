@@ -10,6 +10,7 @@ import { AddFromLinkedIn } from './AddFromLinkedIn';
 import { AccountResearch } from './AccountResearch';
 import { useState } from 'react';
 import { CompanyLogo } from './CompanyLogo';
+import { ProspectBriefPanel, ResearchContactsButton, ScorePill, useAccountBriefs } from './ProspectBrief';
 import { AccountProfile } from './AccountProfile';
 import { ConversationTable, NewConversation } from './ConversationsPage';
 import { ConnectionTable } from './ConnectionsPage';
@@ -21,6 +22,8 @@ export function AccountDetailPage({ me }: { me: Me }) {
   const detail = useQuery({ queryKey: ['account', id], queryFn: () => api.get<AccountDetail>(`/accounts/${id}`) });
   const [adding, setAdding] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [openBrief, setOpenBrief] = useState<number | null>(null);
+  const briefs = useAccountBriefs(Number(id));
   const warmPaths = useQuery({
     queryKey: ['connections', 'account', id],
     queryFn: () => api.get<Connection[]>(`/connections/for-account/${id}`),
@@ -150,25 +153,37 @@ export function AccountDetailPage({ me }: { me: Me }) {
 
       <div className="title-row">
         <h2>Contacts</h2>
-        {canEditPipeline(me) && !adding && (
-          <button type="button" className="secondary" style={{ marginTop: 22 }} onClick={() => setAdding(true)}>Add from LinkedIn</button>
-        )}
+        <div className="actions">
+          {canEditPipeline(me) && !adding && (
+            <button type="button" className="secondary" style={{ marginTop: 22 }} onClick={() => setAdding(true)}>Add from LinkedIn</button>
+          )}
+          {canEditPipeline(me) && <ResearchContactsButton accountId={a.id} />}
+        </div>
       </div>
       {adding && <AddFromLinkedIn account={a} onDone={() => setAdding(false)} />}
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Name</th><th>Persona</th><th>Email</th><th>LinkedIn</th><th>Source</th></tr></thead>
+          <thead><tr><th>Name</th><th>Score</th><th>Persona</th><th>Email</th><th>LinkedIn</th><th>Source</th><th /></tr></thead>
           <tbody>
-            {contacts.length === 0 && <tr><td colSpan={5} className="muted">No contacts.</td></tr>}
-            {contacts.map((c) => (
-              <tr key={c.id}>
-                <td>{c.fullName}<span className="sub">{c.title}</span></td>
-                <td>{humanise(c.persona)}</td>
-                <td>{c.email ?? '—'}</td>
-                <td>{c.linkedinUrl ? <a href={c.linkedinUrl} target="_blank" rel="noreferrer">Profile</a> : '—'}</td>
-                <td>{c.source}</td>
-              </tr>
-            ))}
+            {contacts.length === 0 && <tr><td colSpan={7} className="muted">No contacts.</td></tr>}
+            {contacts.map((c) => {
+              const v = briefs.data?.find((b) => b.personType === 'CONTACT' && b.personId === c.id);
+              return [
+                <tr key={c.id}>
+                  <td>{c.fullName}<span className="sub">{v?.brief?.headline ?? c.title}</span></td>
+                  <td>{v?.status === 'RUNNING' ? <span className="muted small">researching…</span> : <ScorePill score={v?.score} />}</td>
+                  <td>{humanise(c.persona)}</td>
+                  <td>{c.email ?? '—'}</td>
+                  <td>{c.linkedinUrl ? <a href={c.linkedinUrl} target="_blank" rel="noreferrer">Profile</a> : '—'}</td>
+                  <td>{c.source}</td>
+                  <td><button type="button" className="link-plain" aria-expanded={openBrief === c.id}
+                    onClick={() => setOpenBrief(openBrief === c.id ? null : c.id)}>{openBrief === c.id ? 'Hide brief' : 'Brief'}</button></td>
+                </tr>,
+                openBrief === c.id && (
+                  <tr key={`${c.id}-brief`}><td colSpan={7}><ProspectBriefPanel type="CONTACT" id={c.id} editable={canEditPipeline(me)} /></td></tr>
+                ),
+              ];
+            })}
           </tbody>
         </table>
       </div>

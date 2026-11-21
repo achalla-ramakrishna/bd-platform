@@ -29,5 +29,6 @@ Status values: **Proposed** (under review), **Accepted**, **Superseded by ADR-nn
 | [0019](0019-gtn-profile-page.md) | GTN profile pages: public, per person, tracked by the page itself | Accepted |
 | [0020](0020-gtn-gmail-and-calendar.md) | GTN sends from each person's Gmail, spots replies, and books calls on their calendar | Accepted |
 | [0021](0021-gtn-team-use.md) | GTN for the whole team: owners act, managers oversee, contacts change hands | Accepted |
+| [0022](0022-bd-agent.md) | The BD agent: small agents prepare, people send; LinkedIn stays manual | Accepted |
 
 Template: Context → Decision → Alternatives considered → Consequences.

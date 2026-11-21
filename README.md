@@ -15,6 +15,7 @@ outsourced projects, and matching engineers to client demand.
 |---|---|
 | [docs/context.md](docs/context.md) | Business background and the business requirements this repo implements |
 | [docs/scope.md](docs/scope.md) | What release 1 delivers, and what comes in later releases |
+| [docs/bd-agent-plan.md](docs/bd-agent-plan.md) | The BD agent: small agents prepare, people send; the six-step build plan |
 | [docs/gtn-plan.md](docs/gtn-plan.md) | GTN (Go To Network): what exists, what's missing, and the plan (proposed) |
 | [docs/architecture/overview.md](docs/architecture/overview.md) | Architecture, technology stack, modules and deployment |
 | [docs/domain-model.md](docs/domain-model.md) | Entities, relationships, lifecycles and invariants |

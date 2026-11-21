@@ -15,6 +15,18 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: '2026-11-21-bd-agent-research',
+    date: '2026-11-21',
+    title: 'BD agent: research a person before you reach out',
+    summary: 'The agent reads the public web (never LinkedIn) and our records, then writes who they are, why now, the best angle and a draft connection note, with a 0–100 score. You still send everything yourself.',
+    steps: [
+      'An account → Contacts → Research contacts (up to 10 at a time), or Brief on one person.',
+      'A connection or a GTN contact → Research this person.',
+      'Read the sources and cautions, copy the note, edit it and send it yourself on LinkedIn.',
+    ],
+    link: { to: '/accounts', label: 'Open accounts' },
+  },
+  {
     id: '2026-11-21-whats-new',
     date: '2026-11-21',
     title: "What's new",

@@ -208,3 +208,8 @@ Off until these are done; GTN then keeps "Open in Gmail" and the booking link.
 5. Each person then opens **GTN → My profile page → Connect Google**.
 
 Optional: `GTN_REPLY_POLL_MINUTES` (default 10) sets how often replies are looked for.
+
+### BD agent research (ADR-0022)
+
+Uses `ANTHROPIC_API_KEY` (above). Optional: `AGENT_RESEARCH_PER_DAY` (default 60) caps research runs a day
+across the team, which bounds the spend.

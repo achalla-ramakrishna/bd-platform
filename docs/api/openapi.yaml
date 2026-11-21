@@ -531,6 +531,57 @@ paths:
         - { name: everyone, in: query, schema: { type: boolean }, description: Everyone's, not only mine }
       responses:
         '200': { description: '{ items: [{ track, task, taskLabel, overdueDays, suggestedReason, suggestion }], counts, rules }' }
+  /prospects/status:
+    get:
+      tags: [prospects]
+      operationId: prospectStatus
+      summary: Whether the research agent is on, and research runs left today (ADR-0022)
+      responses:
+        '200': { description: '{ enabled, remainingToday }' }
+  /prospects/{type}/{id}:
+    get:
+      tags: [prospects]
+      operationId: prospectBrief
+      summary: The newest research run on a contact or connection
+      parameters:
+        - { name: type, in: path, required: true, schema: { type: string, enum: [contact, connection] } }
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: '{ id, personType, personId, personName, accountId, accountName, status, brief, sources, roleFit, timing, access, accessReason, score, error, model, requestedBy, requestedAt, finishedAt }' }
+        '204': { description: Not researched yet }
+        '404': { description: Unknown person or type }
+  /prospects/{type}/{id}/research:
+    post:
+      tags: [prospects]
+      operationId: researchProspect
+      summary: Start research (pipeline editors). Reuses a brief from the last 7 days unless again=true; refuses opted-out people and when today's cap is used
+      parameters:
+        - { name: type, in: path, required: true, schema: { type: string, enum: [contact, connection] } }
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: again, in: query, schema: { type: boolean } }
+      responses:
+        '202': { description: The run (RUNNING, or the reused DONE run) }
+        '403': { description: Not a pipeline editor }
+        '422': { description: Opted out, agent off, or cap used }
+  /prospects/for-account/{accountId}:
+    get:
+      tags: [prospects]
+      operationId: accountProspects
+      summary: The newest run per person at an account, best score first
+      parameters:
+        - { name: accountId, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: 'A list of runs, as for one person' }
+  /prospects/for-account/{accountId}/research:
+    post:
+      tags: [prospects]
+      operationId: researchAccountContacts
+      summary: Research up to 10 contacts at an account with no brief from the last 7 days (pipeline editors)
+      parameters:
+        - { name: accountId, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '202': { description: '{ started, skipped, remainingToday }' }
+        '422': { description: Nobody left to research, or agent off }
   /network/tracks:
     get:
       tags: [network]

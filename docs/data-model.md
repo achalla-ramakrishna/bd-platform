@@ -40,6 +40,7 @@ explains them.
 | network | V19 | GTN profile pages (ADR-0019): `profile_page` (one per team member), `profile_video_chunk` (the intro video in 1 MB pieces), `profile_link` (one unguessable token per person), `profile_event` (visit, video play and progress, clicks); `network_track` gains `visited_at`, `best_video_pct`, `interested_at`, `ask_now`; touches gain the kind `VISIT` |
 | google, network | V20 | GTN phase 3 (ADR-0020): `google_account` (each person's own connection; tokens encrypted with AES-GCM), `network_touch` gains `gmail_thread_id`, `gmail_message_id` (unique), `rfc_message_id`; `network_track` gains `reply_check`, `call_at`, `calendar_event_id`; `profile_page` gains `booking_mode` (LINK or CALENDAR), `slot_minutes`, `day_start`, `day_end`; page events gain `BOOKED` |
 | network | V21 | GTN team use (ADR-0021): `network_touch.due_on`, when a nudge or beep was due, so "sent on time" can be measured |
+| assist | V22 | BD agent research (ADR-0022): `prospect_brief`, one row per research run on a contact or connection: status, the brief and sources (JSON), role fit, timing, access, score, who asked |
 
 ## Keys that carry business rules
 

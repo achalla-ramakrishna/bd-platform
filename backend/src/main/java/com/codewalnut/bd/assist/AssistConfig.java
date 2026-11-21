@@ -32,6 +32,15 @@ class AssistConfig {
     }
 
     @Bean
+    ProspectResearcher prospectResearcher(@Value("${app.ai.anthropic-api-key:}") String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return new DisabledProspectResearcher();
+        }
+        LOG.info("BD agent research: ENABLED ({} with web search, LinkedIn excluded).", ClaudeProspectResearcher.MODEL);
+        return new ClaudeProspectResearcher(client(apiKey));
+    }
+
+    @Bean
     GccFinder gccFinder(@Value("${app.ai.anthropic-api-key:}") String apiKey) {
         if (apiKey == null || apiKey.isBlank()) {
             return new DisabledGccFinder();

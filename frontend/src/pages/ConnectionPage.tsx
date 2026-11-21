@@ -6,6 +6,7 @@ import { formatDate } from '../lib/format';
 import { useReference } from './PipelinePage';
 import { KnowingFields, LinkFields, PersonFields, StrengthPill } from './ConnectionsPage';
 import { GtnCard } from './gtn';
+import { ProspectBriefPanel } from './ProspectBrief';
 import { NewConversation, today } from './ConversationsPage';
 import { PersonPhoto } from './PersonPhoto';
 import { centreSquare, cropToBlob, loadImage, photoForm } from '../lib/photo';
@@ -48,6 +49,7 @@ export function ConnectionPage({ me }: { me: Me }) {
         {c.sourceTag && <> · <span className="pill">{c.sourceTag}</span></>}
       </p>
       <GtnCard c={c} me={me} />
+      <ProspectBriefPanel type="CONNECTION" id={c.id} editable={canEditPipeline(me)} />
 
       <div className="cards">
         <div className="card wide-card">

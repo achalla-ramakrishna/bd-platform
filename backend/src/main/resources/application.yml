@@ -56,6 +56,9 @@ app:
     zone: ${WALNUT_ZONE:Asia/Kolkata}
     scheduler-enabled: ${WALNUT_SCHEDULER:true}
     base-url: ${APP_BASE_URL:}
+  # The BD agent (ADR-0022): research runs a day for the whole team (each is two Claude calls with web search).
+  agent:
+    research-per-day: ${AGENT_RESEARCH_PER_DAY:60}
   # GTN, Go To Network (ADR-0017): thresholds the team can tune.
   gtn:
     unresponsive-days: ${GTN_UNRESPONSIVE_DAYS:7}
