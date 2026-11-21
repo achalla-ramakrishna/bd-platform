@@ -111,6 +111,26 @@ public class ReplyService {
         }
     }
 
+    /** A reply found in Gmail on a sequence thread (ADR-0025): read like any other, on the contact's conversation. */
+    @Transactional
+    public void fromSequence(long ownerId, long contactId, Long conversationId, String gmailMessageId, String preview, LocalDate on) {
+        if (!reader.enabled()) {
+            return;
+        }
+        String text = preview == null || preview.isBlank() ? "(no preview)" : preview.strip();
+        var key = new GeneratedKeyHolder();
+        int added = jdbc.sql("""
+                INSERT IGNORE INTO prospect_reply (owner_user_id, person_type, person_id, conversation_id, source, channel, reply_text,
+                    received_on, gmail_message_id)
+                VALUES (:o, 'CONTACT', :p, :c, 'GMAIL', 'EMAIL', :text, :on, :m)
+                """).param("o", ownerId).param("p", contactId).param("c", conversationId).param("text", cut(text, TEXT_MAX))
+            .param("on", on).param("m", gmailMessageId).update(key);
+        if (added > 0) {
+            long id = key.getKey().longValue();
+            afterCommit(() -> read(id));
+        }
+    }
+
     /** A reply someone copied from LinkedIn, WhatsApp or a longer email. */
     @Transactional
     public Reply paste(Paste in, CurrentUser user) {
@@ -173,6 +193,11 @@ public class ReplyService {
         audit.record("prospect_reply", id, AuditLog.Action.CREATE, Map.of("source", "PASTED"), user.id());
         afterCommit(() -> read(id));
         return get(id);
+    }
+
+    /** Runs a task in the background once the current transaction commits (or now, without one). */
+    void afterCommitRun(Runnable task) {
+        afterCommit(task);
     }
 
     private void afterCommit(Runnable task) {

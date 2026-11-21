@@ -32,7 +32,9 @@ describe('Prospecting queue (ADR-0023)', () => {
   });
 
   it('shows today\'s people with their draft, and sends the edited note', async () => {
-    const fetchMock = vi.fn(async (url: string) => new Response(JSON.stringify(url.endsWith('/queue') ? queue : queue.items[0]), { status: 200 }));
+    const overview = { sending: false, writerEnabled: true, window: '09:00–18:00 IST', perSenderPerDay: 25, mine: [], templates: [] };
+    const fetchMock = vi.fn(async (url: string) => new Response(JSON.stringify(url.endsWith('/queue') ? queue
+      : url.includes('/sequences/contact/') ? [] : url.endsWith('/sequences') ? overview : queue.items[0]), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<QueryClientProvider client={client}><MemoryRouter><ProspectingPage me={me} /></MemoryRouter></QueryClientProvider>);

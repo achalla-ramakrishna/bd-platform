@@ -219,3 +219,12 @@ a person a day), `AGENT_QUEUE_MIN_SCORE` (default 50), `AGENT_QUEUE_RESEARCH_PER
 a person each morning, within the daily cap), `AGENT_QUEUE=false` turns the morning run off.
 
 The reply agent (ADR-0024) uses the same key. Optional: `AGENT_REPLIES_PER_DAY` (default 200) caps replies read a day.
+
+### Email sequences (ADR-0025)
+
+Built with sending **off**. Turn it on with `AGENT_EMAIL_SENDING=true` only after the legal review described in
+ADR-0025 ("Before switching on"). It also needs `APP_BASE_URL` (for the unsubscribe link) and each sender's Google
+connection (GTN → My profile page → Connect Google). Optional: `AGENT_EMAIL_PER_SENDER_PER_DAY` (default 25),
+`AGENT_EMAIL_WINDOW_START` and `AGENT_EMAIL_WINDOW_END` (hours, IST; default 9 and 18), `AGENT_EMAIL_DAYS` (default
+Monday to Friday), `AGENT_EMAIL_CONSENT_BASES` (default `EXISTING_RELATIONSHIP,CONSENTED,BUSINESS_CONTACT`; set
+what the legal review allows), `AGENT_EMAIL_RUN_MINUTES` (default 15).

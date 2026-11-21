@@ -575,3 +575,6 @@ button.voice.listening { background: var(--bad); border-color: var(--bad); color
 .queue-card textarea { width: 100%; margin: 4px 0 8px; font: inherit; }
 .queue-card .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
 .reply-text { margin: 8px 0; padding: 8px 12px; border-left: 3px solid var(--border, #ddd); white-space: pre-wrap; }
+.sequence-email { border-top: 1px solid var(--border, #ddd); padding: 8px 0; }
+.sequence-email summary { cursor: pointer; }
+.sequence-email input, .sequence-email textarea, .queue-card input:not([type]), .queue-card > textarea { width: 100%; font: inherit; margin: 4px 0; }

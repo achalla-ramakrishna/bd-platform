@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { api, canEditPipeline, type Me } from '../lib/api';
 import { ErrorNote } from './gtn';
 import { ProspectBriefPanel, ScorePill, type PersonType } from './ProspectBrief';
+import { StartSequence } from './SequencesPage';
 
 /** The daily prospecting queue (ADR-0023): the agent picks and drafts; you send on LinkedIn yourself. */
 export interface QueueItem {
@@ -196,6 +197,7 @@ function QueueCard({ item }: { item: QueueItem }) {
         </div>
       )}
       <ErrorNote error={sent.error ?? skip.error} />
+      {item.personType === 'CONTACT' && <StartSequence contactId={item.personId} />}
       {brief && <ProspectBriefPanel type={item.personType} id={item.personId} editable />}
     </section>
   );

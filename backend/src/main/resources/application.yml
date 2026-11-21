@@ -66,6 +66,16 @@ app:
     queue-research-per-person: ${AGENT_QUEUE_RESEARCH_PER_PERSON:5}
     # The reply agent (ADR-0024).
     replies-per-day: ${AGENT_REPLIES_PER_DAY:200}
+    # Email sequences (ADR-0025). Sending stays off until a legal review; see docs/deployment.md.
+    email:
+      sending: ${AGENT_EMAIL_SENDING:false}
+      runner-enabled: ${AGENT_EMAIL_RUNNER:true}
+      run-minutes: ${AGENT_EMAIL_RUN_MINUTES:15}
+      per-sender-per-day: ${AGENT_EMAIL_PER_SENDER_PER_DAY:25}
+      window-start: ${AGENT_EMAIL_WINDOW_START:9}
+      window-end: ${AGENT_EMAIL_WINDOW_END:18}
+      days: ${AGENT_EMAIL_DAYS:MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY}
+      consent-bases: ${AGENT_EMAIL_CONSENT_BASES:EXISTING_RELATIONSHIP,CONSENTED,BUSINESS_CONTACT}
   # GTN, Go To Network (ADR-0017): thresholds the team can tune.
   gtn:
     unresponsive-days: ${GTN_UNRESPONSIVE_DAYS:7}

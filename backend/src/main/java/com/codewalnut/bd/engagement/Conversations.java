@@ -32,4 +32,12 @@ public class Conversations {
         service.update(conversationId, new ConversationService.Update(channel, on, summary, outcome, null, nextStep, nextStepDue,
             null), user);
     }
+
+    /** Opens a conversation with a contact when the first sequence email went out (ADR-0025). */
+    public long startFromSequenceEmail(long accountId, long contactId, String subject, String summary, LocalDate today,
+                                       LocalDate nextStepDue, CurrentUser user) {
+        String topic = subject.length() > 200 ? subject.substring(0, 200) : subject;
+        return service.start(new ConversationService.Start(accountId, contactId, null, topic, "EMAIL", today, summary, "NO_REPLY",
+            "Check for a reply", nextStepDue, null), user);
+    }
 }

@@ -43,6 +43,7 @@ explains them.
 | assist | V22 | BD agent research (ADR-0022): `prospect_brief`, one row per research run on a contact or connection: status, the brief and sources (JSON), role fit, timing, access, score, who asked |
 | prospecting | V23 | The daily prospecting queue (ADR-0023): `prospect_queue_item`, one row per person queued for one BD person on one day: the brief it came from, score, the agent's draft and the note actually sent, status (QUEUED, SENT, SKIPPED, EXPIRED), skip reason, and the conversation or GTN track it started |
 | prospecting, contacts | V24 | The reply agent (ADR-0024): `prospect_reply`, one row per reply read (from Gmail on a GTN track, or pasted on a conversation or GTN contact): the text, the agent's kind, confidence, summary, revisit date, referral, next step and draft answer, the kind the owner confirmed and the answer they sent, whether the person was opted out; `connection` gains `opted_out`, `opted_out_at` |
+| prospecting | V25 | Email sequences (ADR-0025): `email_sequence` and `email_sequence_step` (the team's templates, up to 4 steps, one generic sequence seeded), `sequence_enrolment` (a contact in a sequence: owner, address, consent basis, status, next step and date, Gmail thread, unsubscribe token, why it waits or ended), `sequence_email` (each email: the agent's text, the approved text, sent or skipped, Gmail ids), `email_suppression` (addresses never emailed again) |
 
 ## Keys that carry business rules
 

@@ -43,7 +43,9 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.spa().ignoringRequestMatchers(UploadTokenFilter.BEARER_UPLOAD,
                 // GTN profile pages are public and cookie-free; their script reports events (ADR-0019).
                 PathPatternRequestMatcher.withDefaults().matcher(org.springframework.http.HttpMethod.POST, "/p/*/events"),
-                PathPatternRequestMatcher.withDefaults().matcher(org.springframework.http.HttpMethod.POST, "/p/*/book")))
+                PathPatternRequestMatcher.withDefaults().matcher(org.springframework.http.HttpMethod.POST, "/p/*/book"),
+                // One-click unsubscribe from a sequence email (ADR-0025): mail clients POST without a token.
+                PathPatternRequestMatcher.withDefaults().matcher(org.springframework.http.HttpMethod.POST, "/u/*")))
             .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
                 new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
                 PathPatternRequestMatcher.withDefaults().matcher("/api/**")))

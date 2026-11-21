@@ -6,6 +6,8 @@ spring:
 app:
   agent:
     queue-enabled: false
+    email:
+      runner-enabled: false
   walnut:
     scheduler-enabled: false
   gtn:

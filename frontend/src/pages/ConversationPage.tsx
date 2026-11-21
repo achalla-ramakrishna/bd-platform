@@ -7,6 +7,7 @@ import {
 } from '../lib/api';
 import { formatDate } from '../lib/format';
 import { PasteReply } from './RepliesPage';
+import { StartSequence } from './SequencesPage';
 import { NextStep, StatusPill, today } from './ConversationsPage';
 
 /** One conversation: its updates, the next step, and quick changes (backlog item 3). */
@@ -135,6 +136,7 @@ export function ConversationPage({ me }: { me: Me }) {
         </form>
       )}
 
+      {editable && c.contactId != null && <StartSequence contactId={c.contactId} />}
       {editable && c.contactId != null && <PasteReply conversationId={c.id} />}
 
       <h2>Updates</h2>

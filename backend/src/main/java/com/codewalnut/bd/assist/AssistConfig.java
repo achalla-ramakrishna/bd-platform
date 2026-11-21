@@ -32,6 +32,14 @@ class AssistConfig {
     }
 
     @Bean
+    SequenceWriter sequenceWriter(@Value("${app.ai.anthropic-api-key:}") String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return new DisabledSequenceWriter();
+        }
+        return new ClaudeSequenceWriter(client(apiKey));
+    }
+
+    @Bean
     ReplyReader replyReader(@Value("${app.ai.anthropic-api-key:}") String apiKey) {
         if (apiKey == null || apiKey.isBlank()) {
             return new DisabledReplyReader();

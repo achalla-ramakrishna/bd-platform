@@ -15,6 +15,18 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: '2026-11-21-bd-agent-sequences',
+    date: '2026-11-21',
+    title: 'Email sequences: the agent writes the follow-ups, you approve once',
+    summary: 'Start a sequence for a contact: the agent writes each email for them, you edit and approve, and the app sends from your Gmail with an unsubscribe link, stopping when they reply. Sending stays off until the legal review is done.',
+    steps: [
+      'A contact\'s conversation (or a Prospecting card) → Email sequence… → Start.',
+      'Network → Email sequences: read and edit each email, then "Approve and schedule".',
+      'BD leads can add or change the team\'s sequences at the bottom of that page.',
+    ],
+    link: { to: '/sequences', label: 'Open Email sequences' },
+  },
+  {
     id: '2026-11-21-bd-agent-replies',
     date: '2026-11-21',
     title: 'Replies: the agent reads each reply and drafts your answer',

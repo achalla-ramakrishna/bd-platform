@@ -1,8 +1,6 @@
 package com.codewalnut.bd.network;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 
@@ -132,25 +130,6 @@ public class GmailSender {
 
     /** A plain-text RFC 2822 message, base64url as the Gmail API wants it. */
     static String mime(String fromName, String from, String toName, String to, String subject, String body, String inReplyTo) {
-        StringBuilder m = new StringBuilder();
-        m.append("From: ").append(word(fromName)).append(" <").append(clean(from)).append(">\r\n");
-        m.append("To: ").append(word(toName)).append(" <").append(clean(to)).append(">\r\n");
-        m.append("Subject: ").append(word(subject)).append("\r\n");
-        if (inReplyTo != null && !inReplyTo.isBlank()) {
-            m.append("In-Reply-To: ").append(clean(inReplyTo)).append("\r\nReferences: ").append(clean(inReplyTo)).append("\r\n");
-        }
-        m.append("MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n");
-        m.append(Base64.getMimeEncoder(76, "\r\n".getBytes(StandardCharsets.US_ASCII))
-            .encodeToString(body.replace("\r\n", "\n").replace("\n", "\r\n").getBytes(StandardCharsets.UTF_8)));
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(m.toString().getBytes(StandardCharsets.UTF_8));
-    }
-
-    /** An RFC 2047 encoded word, so names and subjects in any language survive. */
-    private static String word(String s) {
-        return "=?UTF-8?B?" + Base64.getEncoder().encodeToString(clean(s).getBytes(StandardCharsets.UTF_8)) + "?=";
-    }
-
-    private static String clean(String s) {
-        return s == null ? "" : s.replaceAll("[\\r\\n]+", " ").trim();
+        return com.codewalnut.bd.google.Mime.plainText(fromName, from, toName, to, subject, body, inReplyTo, java.util.Map.of());
     }
 }

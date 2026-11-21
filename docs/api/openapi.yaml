@@ -714,6 +714,85 @@ paths:
       summary: Undo an opt-out the agent made
       parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
       responses: { '200': { description: The Reply, no longer opted out } }
+  /sequences:
+    get:
+      tags: [sequences]
+      operationId: sequenceOverview
+      summary: Whether sending is on, the window and cap, my sequences (running and ended in 30 days), and the templates (ADR-0025)
+      responses:
+        '200': { description: '{ sending, writerEnabled, window, perSenderPerDay, mine: [Enrolment], templates: [Template] }' }
+    post:
+      tags: [sequences]
+      operationId: startSequence
+      summary: Start a sequence for a contact (pipeline roles); the agent writes the emails in the background
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [contactId, sequenceId], properties: { contactId: { type: integer, format: int64 }, sequenceId: { type: integer, format: int64 } } }
+      responses:
+        '202': { description: 'The Enrolment: { id, sequenceId, sequenceName, contactId, contactName, accountName, toEmail, status, nextPosition, nextSendOn, waitingReason, endedReason, error, sent, steps, version, emails: [{ position, waitDays, subject, body, edited, status, sentAt }] }' }
+        '422': { description: 'No email, opted out, suppressed, consent basis not allowed, already talking, or already in a sequence' }
+  /sequences/contact/{id}:
+    get:
+      tags: [sequences]
+      operationId: contactSequences
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: The contact's sequences, newest first } }
+  /sequences/templates:
+    post:
+      tags: [sequences]
+      operationId: createSequenceTemplate
+      summary: Add a sequence (BD leads, Leadership, Admins); 1 to 4 steps, later steps wait 3 to 60 days
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { name: { type: string }, description: { type: string }, active: { type: boolean }, steps: { type: array, items: { type: object, properties: { waitDays: { type: integer }, subject: { type: string }, body: { type: string } } } } } }
+      responses:
+        '201': { description: The template }
+        '403': { description: Not a BD lead, Leadership or Admin }
+  /sequences/templates/{id}:
+    put:
+      tags: [sequences]
+      operationId: updateSequenceTemplate
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: The template }, '409': { description: Changed by someone else, or name taken } }
+  /sequences/{id}:
+    get:
+      tags: [sequences]
+      operationId: getSequence
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: The Enrolment } }
+  /sequences/{id}/emails/{position}:
+    put:
+      tags: [sequences]
+      operationId: editSequenceEmail
+      summary: Edit an email not yet sent, before approval or while paused
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: position, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { subject: { type: string, maxLength: 200 }, body: { type: string, maxLength: 2000 } } }
+      responses: { '200': { description: The Enrolment }, '409': { description: Not editable now } }
+  /sequences/{id}/approve:
+    post:
+      tags: [sequences]
+      operationId: approveSequence
+      summary: Approve every email and schedule the sequence; step 1 goes at the next sending slot
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: version, in: query, schema: { type: integer } }
+      responses: { '200': { description: The Enrolment, ACTIVE }, '422': { description: An email still shows the template's instructions } }
+  /sequences/{id}/pause:
+    post: { tags: [sequences], operationId: pauseSequence, parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ], responses: { '200': { description: PAUSED } } }
+  /sequences/{id}/resume:
+    post: { tags: [sequences], operationId: resumeSequence, parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ], responses: { '200': { description: ACTIVE } } }
+  /sequences/{id}/stop:
+    post: { tags: [sequences], operationId: stopSequence, parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ], responses: { '200': { description: STOPPED; unsent emails skipped } } }
   /network/tracks:
     get:
       tags: [network]
