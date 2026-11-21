@@ -49,7 +49,7 @@ public class BdSnapshot {
                            String strategyExcerpt, List<Step> lifecycle,
                            List<FulfilmentQueries.RequirementStatus> requirements,
                            List<FulfilmentQueries.Candidate> candidates, List<NetworkQueries.Track> network,
-                           NetworkQueries.Counts networkCounts) {}
+                           NetworkQueries.Counts networkCounts, List<NetworkQueries.Overdue> networkTeam) {}
 
     static final int QUIET_DAYS = 14;
     static final int TARGETS = 5;
@@ -86,7 +86,7 @@ public class BdSnapshot {
             deals(me.id(), today), targets(me, team), events(me.id(), today), interviews(me.id()),
             teamWeek(team, today), strategy(), lifecycle(me.id()),
             fulfilment.requirements(me.id(), null, false), fulfilment.activeFor(me.id()),
-            network.due(me.id(), today).stream().limit(12).toList(), network.counts(me.id(), today));
+            network.due(me.id(), today).stream().limit(12).toList(), network.counts(me.id(), today), network.overdueByOwner(today));
     }
 
     static final java.util.Set<String> MESSAGE_CHANNELS = java.util.Set.of("LINKEDIN_MESSAGE", "INMAIL", "EMAIL", "CALL", "MEETING");

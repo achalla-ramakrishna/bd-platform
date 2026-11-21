@@ -51,10 +51,12 @@ class NetworkController {
     private final CurrentUserProvider currentUser;
     private final GmailSender gmail;
     private final ReplyChecker replies;
+    private final HandOvers handOvers;
 
     NetworkController(NetworkService network, NetworkQueries queries, Suggestions suggestions, TemplateService templates,
                       ConnectionQueries connections, GtnProperties gtn, CurrentUserProvider currentUser, GmailSender gmail,
-                      ReplyChecker replies) {
+                      ReplyChecker replies, HandOvers handOvers) {
+        this.handOvers = handOvers;
         this.gmail = gmail;
         this.replies = replies;
         this.network = network;
@@ -68,11 +70,11 @@ class NetworkController {
 
     /** Who to contact today, why, and the message (GTN FR-9.1). Runs the sweep first so nothing is stale. */
     @GetMapping("/today")
-    Today today(@RequestParam(required = false) Boolean everyone) {
+    Today today(@RequestParam(required = false) Boolean everyone, @RequestParam(required = false) Long ownerId) {
         CurrentUser user = currentUser.get();
         LocalDate today = network.today();
         network.sweep(today);
-        Long owner = Boolean.TRUE.equals(everyone) ? null : user.id();
+        Long owner = Boolean.TRUE.equals(everyone) ? null : ownerId != null ? ownerId : Long.valueOf(user.id());
         return new Today(suggestions.today(queries.due(owner, today), today, user), queries.counts(owner, today), rules());
     }
 
@@ -89,6 +91,16 @@ class NetworkController {
             throw new RuleViolationException(List.of("Choose a period that starts before it ends, within three years."));
         }
         return queries.dashboard(start, end, Boolean.TRUE.equals(mine) ? Long.valueOf(user.id()) : ownerId, source, today);
+    }
+
+    /** Per owner, for the Team tab (ADR-0021); last 30 days by default. */
+    @GetMapping("/team")
+    List<NetworkQueries.TeamRow> team(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                      @RequestParam(required = false) String source) {
+        currentUser.get();
+        LocalDate today = network.today();
+        LocalDate end = to == null ? today : to;
+        return queries.team(from == null ? end.minusDays(29) : from, end, source, today);
     }
 
     @GetMapping("/tracks")
@@ -157,6 +169,44 @@ class NetworkController {
     Checked checkReplies() {
         CurrentUser user = currentUser.get();
         return new Checked(replies.poll(user.id()));
+    }
+
+    record HandOverOne(Long toUserId, String note, Integer version) {}
+
+    record HandOverMany(List<Long> trackIds, Long toUserId, String note) {}
+
+    record HandOverAll(Long fromUserId, Long toUserId, String note) {}
+
+    /** Hand one contact to a teammate (owner or manager, ADR-0021). */
+    @PostMapping("/tracks/{id}/hand-over")
+    TrackPage handOver(@PathVariable long id, @RequestBody HandOverOne in) {
+        CurrentUser user = currentUser.get();
+        user.require(Role.PIPELINE_EDITORS);
+        if (in.toUserId() == null) {
+            throw new RuleViolationException(List.of("Choose who takes it over."));
+        }
+        handOvers.some(List.of(id), in.toUserId(), in.note(), user);
+        return page(id, user);
+    }
+
+    @PostMapping("/hand-over")
+    HandOvers.Result handOverMany(@RequestBody HandOverMany in) {
+        CurrentUser user = currentUser.get();
+        user.require(Role.PIPELINE_EDITORS);
+        if (in.toUserId() == null) {
+            throw new RuleViolationException(List.of("Choose who takes them over."));
+        }
+        return handOvers.some(in.trackIds(), in.toUserId(), in.note(), user);
+    }
+
+    /** Everything one person owns (e.g. they are leaving). Managers only. */
+    @PostMapping("/hand-over-all")
+    HandOvers.Result handOverAll(@RequestBody HandOverAll in) {
+        CurrentUser user = currentUser.get();
+        if (in.fromUserId() == null || in.toUserId() == null) {
+            throw new RuleViolationException(List.of("Choose whose contacts, and who takes them over."));
+        }
+        return handOvers.all(in.fromUserId(), in.toUserId(), in.note(), user);
     }
 
     @PatchMapping("/tracks/{id}")

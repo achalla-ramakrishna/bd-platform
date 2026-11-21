@@ -5,7 +5,7 @@ import {
   ApiError, COMMITMENT_LABELS, GTN_CHANNEL_LABELS, GTN_STAGES, GTN_STAGE_LABELS, STRENGTH_LABELS, WHY_HINTS, WHY_LABELS, api,
   canEditPipeline,
   type CommitmentKind, type Connection, type GtnNext, type GtnStage, type GtnSuggestion, type GtnTemplate, type GtnTrack,
-  type GoogleStatus, type GtnTrackPage, type ImportResult, type Me, type WhyReason,
+  type GoogleStatus, type GtnTrackPage, type HandOverResult, type ImportResult, type Me, type PersonOption, type WhyReason,
 } from '../lib/api';
 import { formatDate } from '../lib/format';
 import { today } from './ConversationsPage';
@@ -455,7 +455,7 @@ export function ImportConnections({ onDone }: { onDone: () => void }) {
 }
 
 /** Today's row: who, why, and the step, with the message ready. */
-export function TodayItem({ item }: { item: GtnNext }) {
+export function TodayItem({ item, canWork = true }: { item: GtnNext; canWork?: boolean }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const t = item.track;
@@ -479,7 +479,8 @@ export function TodayItem({ item }: { item: GtnNext }) {
           <StagePill stage={t.stage} /> <strong>{item.taskLabel}</strong>
           {t.askNow && <span className="pill accent">Visited your page{t.bestVideoPct ? ` · watched ${t.bestVideoPct}%` : ''}</span>}
           {item.overdueDays > 0 && <span className="pill bad">{item.overdueDays} day{item.overdueDays === 1 ? '' : 's'} overdue</span>}
-          <button type="button" className={open ? 'secondary' : ''} onClick={() => setOpen(!open)} aria-expanded={open}>{open ? 'Close' : 'Do it'}</button>
+          {canWork ? <button type="button" className={open ? 'secondary' : ''} onClick={() => setOpen(!open)} aria-expanded={open}>{open ? 'Close' : 'Do it'}</button>
+            : <span className="muted small">{t.ownerName}'s</span>}
         </div>
       </div>
       {!open && item.suggestion && <p className="muted small today-preview">{item.suggestion.body}</p>}
@@ -493,5 +494,36 @@ export function TodayItem({ item }: { item: GtnNext }) {
       )}
       {open && page.isPending && <p className="muted">Loading…</p>}
     </li>
+  );
+}
+
+/** Hand a contact (or several) to a teammate (ADR-0021). */
+export function HandOverForm({ trackIds, version, onDone, label = 'Hand over' }: {
+  trackIds: number[]; version?: number; onDone: (r: HandOverResult) => void; label?: string;
+}) {
+  const queryClient = useQueryClient();
+  const people = useQuery({ queryKey: ['users'], queryFn: () => api.get<PersonOption[]>('/users') });
+  const [to, setTo] = useState('');
+  const [note, setNote] = useState('');
+  const go = useMutation({
+    mutationFn: async () => trackIds.length === 1
+      ? api.post<GtnTrackPage>(`/network/tracks/${trackIds[0]}/hand-over`, { toUserId: Number(to), note, version })
+        .then((p) => ({ handedOver: 1, toName: p.detail.track.ownerName, skipped: [] }) as HandOverResult)
+      : api.post<HandOverResult>('/network/hand-over', { trackIds, toUserId: Number(to), note }),
+    onSuccess: (r) => {
+      queryClient.invalidateQueries({ queryKey: ['gtn'] });
+      onDone(r);
+    },
+  });
+  return (
+    <form className="inline-form" aria-label={label} onSubmit={(e) => { e.preventDefault(); go.mutate(); }}>
+      <select aria-label="Hand over to" value={to} onChange={(e) => setTo(e.target.value)}>
+        <option value="">Hand over to…</option>
+        {people.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+      </select>
+      <input aria-label="Hand-over note" placeholder="Note for them (optional)" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
+      <button type="submit" disabled={!to || go.isPending}>{label}{trackIds.length > 1 ? ` (${trackIds.length})` : ''}</button>
+      <ErrorNote error={go.error} />
+    </form>
   );
 }

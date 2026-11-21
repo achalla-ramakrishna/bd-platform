@@ -1,6 +1,6 @@
 # GTN (Go To Network): gap analysis and plan
 
-- Status: **Phases 1 to 3 built** (2026-11-21; ADR-0017 to ADR-0020). Phase 4 proposed.
+- Status: **Built** (2026-11-21; ADR-0017 to ADR-0021). The WhatsApp morning digest is not built (needs the WhatsApp Business API).
 - Date: 2026-11-21
 - Source: the team's *GTN (Go To Network) — Product Requirements Document* (2026-11-20). Requirement IDs
   below are that document's (FR-1.1 … FR-10.4), prefixed `GTN-` to keep them apart from the BRD's IDs.

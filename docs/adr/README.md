@@ -28,5 +28,6 @@ Status values: **Proposed** (under review), **Accepted**, **Superseded by ADR-nn
 | [0018](0018-gtn-touches-and-templates.md) | GTN touches are logged on the track; templates suggest every message | Accepted |
 | [0019](0019-gtn-profile-page.md) | GTN profile pages: public, per person, tracked by the page itself | Accepted |
 | [0020](0020-gtn-gmail-and-calendar.md) | GTN sends from each person's Gmail, spots replies, and books calls on their calendar | Accepted |
+| [0021](0021-gtn-team-use.md) | GTN for the whole team: owners act, managers oversee, contacts change hands | Accepted |
 
 Template: Context → Decision → Alternatives considered → Consequences.

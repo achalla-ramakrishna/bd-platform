@@ -2,15 +2,15 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import {
-  GTN_STAGES, GTN_STAGE_LABELS, WHY_LABELS, api, canEditPipeline,
+  GTN_STAGES, GTN_STAGE_LABELS, WHY_LABELS, api, canEditPipeline, canManageNetwork, canWorkTrack,
   type ConnectionPage, type GtnBoard, type GtnStage, type GtnTemplate, type GtnToday, type GtnTrack, type GtnTrackPage, type Me,
-  type WhyReason,
+  type GtnTeamRow, type HandOverResult, type PersonOption, type WhyReason,
 } from '../lib/api';
 import { formatDate } from '../lib/format';
-import { ErrorNote, ImportConnections, StagePill, StartGtn, TodayItem } from './gtn';
-import { DashboardTab, ProfileTab } from './GtnProfileAndDashboard';
+import { ErrorNote, HandOverForm, ImportConnections, StagePill, StartGtn, TodayItem } from './gtn';
+import { DashboardTab, ProfileTab, TeamTable } from './GtnProfileAndDashboard';
 
-type Tab = 'today' | 'board' | 'list' | 'dashboard' | 'profile' | 'templates';
+type Tab = 'today' | 'board' | 'list' | 'team' | 'dashboard' | 'profile' | 'templates';
 
 /**
  * GTN, Go To Network (ADR-0017): work the people who already know us from a first message to a warm commitment,
@@ -41,16 +41,17 @@ export function NetworkPage({ me }: { me: Me }) {
       {starting && <PickPerson onClose={() => setStarting(false)} />}
       {importing && <ImportConnections onDone={() => setImporting(false)} />}
       <div className="tabs" role="tablist">
-        {([['today', 'Today'], ['board', 'Board'], ['list', 'List'], ['dashboard', 'Dashboard'], ['profile', 'My profile page'],
+        {([['today', 'Today'], ['board', 'Board'], ['list', 'List'], ['team', 'Team'], ['dashboard', 'Dashboard'], ['profile', 'My profile page'],
           ['templates', 'Templates']] as [Tab, string][]).map(([k, label]) => (
           <button key={k} type="button" role="tab" aria-selected={tab === k} className={`tab${tab === k ? ' active' : ''}`} onClick={() => setTab(k)}>
             {label}
           </button>
         ))}
       </div>
-      {tab === 'today' && <TodayTab />}
+      {tab === 'today' && <TodayTab me={me} />}
       {tab === 'board' && <BoardTab editable={editable} />}
-      {tab === 'list' && <ListTab />}
+      {tab === 'list' && <ListTab me={me} />}
+      {tab === 'team' && <TeamTab me={me} />}
       {tab === 'dashboard' && <DashboardTab />}
       {tab === 'profile' && <ProfileTab editable={editable} />}
       {tab === 'templates' && <TemplatesTab editable={editable} />}
@@ -58,11 +59,14 @@ export function NetworkPage({ me }: { me: Me }) {
   );
 }
 
-function TodayTab() {
-  const [everyone, setEveryone] = useState(false);
+function TodayTab({ me }: { me: Me }) {
+  // Mine by default; everyone's, or one teammate's (ADR-0021).
+  const [whose, setWhose] = useState('');
+  const people = useQuery({ queryKey: ['users'], queryFn: () => api.get<PersonOption[]>('/users') });
+  const query = whose === 'all' ? '?everyone=true' : whose ? `?ownerId=${whose}` : '';
   const today = useQuery({
-    queryKey: ['gtn', 'today', everyone],
-    queryFn: () => api.get<GtnToday>(`/network/today${everyone ? '?everyone=true' : ''}`),
+    queryKey: ['gtn', 'today', whose],
+    queryFn: () => api.get<GtnToday>(`/network/today${query}`),
   });
   const c = today.data?.counts;
   return (
@@ -75,7 +79,11 @@ function TodayTab() {
         <div className="card"><div className="label">Unresponsive</div><div className="value">{c?.byStage.UNRESPONSIVE ?? '—'}</div></div>
       </div>
       <div className="toolbar">
-        <label className="inline-check"><input type="checkbox" checked={everyone} onChange={(e) => setEveryone(e.target.checked)} /> Everyone's, not only mine</label>
+        <select aria-label="Whose Today" value={whose} onChange={(e) => setWhose(e.target.value)}>
+          <option value="">My Today</option>
+          <option value="all">Everyone's</option>
+          {people.data?.filter((p) => p.id !== me.id).map((p) => <option key={p.id} value={p.id}>{p.name}'s</option>)}
+        </select>
         {today.data && <span className="muted small">No reply in {today.data.rules.unresponsiveDays} days → Unresponsive · nudges every
           {' '}{today.data.rules.nudgeSpacingDays} days, at most {today.data.rules.nudgeCap} · beeps every {today.data.rules.beepIntervalDays} days</span>}
       </div>
@@ -85,7 +93,7 @@ function TodayTab() {
         <p className="muted">Nothing due. Start someone new, or import your connections: no contact falls through the cracks.</p>
       )}
       <ol className="today-list">
-        {today.data?.items.map((item) => <TodayItem key={item.track.id} item={item} />)}
+        {today.data?.items.map((item) => <TodayItem key={item.track.id} item={item} canWork={canWorkTrack(me, item.track.ownerId)} />)}
       </ol>
     </>
   );
@@ -158,8 +166,10 @@ function BoardTab({ editable }: { editable: boolean }) {
   );
 }
 
-function ListTab() {
+function ListTab({ me }: { me: Me }) {
   const [f, setF] = useState({ q: '', stage: '', reason: '', source: '', mine: '', overdue: '' });
+  const [picked, setPicked] = useState<number[]>([]);
+  const [result, setResult] = useState<HandOverResult | null>(null);
   const board = useBoard(f);
   const sources = useQuery({ queryKey: ['connection-sources'], queryFn: () => api.get<string[]>('/connections/sources') });
   const [sort, setSort] = useState<'next' | 'name' | 'days'>('next');
@@ -191,11 +201,22 @@ function ListTab() {
         </select>
         <span className="muted">{rows.length} shown</span>
       </div>
+      {picked.length > 0 && <HandOverForm trackIds={picked} label="Hand over selected" onDone={(r) => { setResult(r); setPicked([]); }} />}
+      {result && (
+        <div className={result.skipped.length ? 'notice warn' : 'notice good'} role="status">
+          Handed {result.handedOver} over{result.toName ? ` to ${result.toName}` : ''}.
+          {result.skipped.length > 0 && <> Not handed over: {result.skipped.join('; ')}.</>}
+        </div>
+      )}
       <table className="table">
-        <thead><tr><th>Name</th><th>Company</th><th>Stage</th><th>Next action</th><th>Due</th><th>In stage</th><th>Source</th><th>Owner</th></tr></thead>
+        <thead><tr><th><input type="checkbox" aria-label="Select all I can hand over"
+          checked={picked.length > 0 && picked.length === rows.filter((t) => canWorkTrack(me, t.ownerId)).length}
+          onChange={(e) => setPicked(e.target.checked ? rows.filter((t) => canWorkTrack(me, t.ownerId)).map((t) => t.id) : [])} /></th><th>Name</th><th>Company</th><th>Stage</th><th>Next action</th><th>Due</th><th>In stage</th><th>Source</th><th>Owner</th></tr></thead>
         <tbody>
           {rows.map((t) => (
             <tr key={t.id} className={t.overdue ? 'overdue' : ''}>
+              <td>{canWorkTrack(me, t.ownerId) && <input type="checkbox" aria-label={`Select ${t.fullName}`} checked={picked.includes(t.id)}
+                onChange={(e) => setPicked(e.target.checked ? [...picked, t.id] : picked.filter((x) => x !== t.id))} />}</td>
               <td><Link to={`/network/${t.id}`}>{t.fullName}</Link></td>
               <td>{t.company ?? '—'}</td>
               <td><StagePill stage={t.stage} />{t.whyReason && <div className="muted small">{WHY_LABELS[t.whyReason]}</div>}</td>
@@ -206,9 +227,49 @@ function ListTab() {
               <td>{t.ownerName}</td>
             </tr>
           ))}
-          {board.data && rows.length === 0 && <tr><td colSpan={8} className="muted">Nobody matches.</td></tr>}
+          {board.data && rows.length === 0 && <tr><td colSpan={9} className="muted">Nobody matches.</td></tr>}
         </tbody>
       </table>
+    </>
+  );
+}
+
+/** Per owner: now and in the last 30 days; managers hand all of someone's contacts to a teammate (ADR-0021). */
+function TeamTab({ me }: { me: Me }) {
+  const queryClient = useQueryClient();
+  const team = useQuery({ queryKey: ['gtn', 'team'], queryFn: () => api.get<GtnTeamRow[]>('/network/team') });
+  const people = useQuery({ queryKey: ['users'], queryFn: () => api.get<PersonOption[]>('/users') });
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const all = useMutation({
+    mutationFn: () => api.post<HandOverResult>('/network/hand-over-all', { fromUserId: Number(from), toUserId: Number(to), note: 'Handed over by a manager' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gtn'] }),
+  });
+  return (
+    <>
+      <p className="muted small">Each person works their own contacts; anyone can see whose they are. Last 30 days for started, responded, warm,
+        commitments and beeps; a beep is on time when sent within 3 days of its date.</p>
+      {team.data && <TeamTable rows={team.data} />}
+      {canManageNetwork(me) && (
+        <form className="inline-form" aria-label="Hand over all" onSubmit={(e) => {
+          e.preventDefault();
+          if (window.confirm('Hand over all of their GTN contacts?')) all.mutate();
+        }}>
+          <span>Hand over all of</span>
+          <select aria-label="From" value={from} onChange={(e) => setFrom(e.target.value)}>
+            <option value="">…</option>
+            {team.data?.map((r) => <option key={r.userId} value={r.userId}>{r.name}{r.active ? '' : ' (inactive)'}</option>)}
+          </select>
+          <span>'s contacts to</span>
+          <select aria-label="To" value={to} onChange={(e) => setTo(e.target.value)}>
+            <option value="">…</option>
+            {people.data?.filter((p) => String(p.id) !== from).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <button type="submit" disabled={!from || !to || all.isPending}>Hand over all</button>
+          {all.data && <span className="muted small" role="status">Handed {all.data.handedOver} over to {all.data.toName}.</span>}
+        </form>
+      )}
+      <ErrorNote error={all.error} />
     </>
   );
 }

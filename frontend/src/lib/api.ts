@@ -647,7 +647,7 @@ export interface GtnDashboard {
   total: number;
   cohort: { started: number; responded: number; intro: number; call: number; warm: number };
   commitments: number;
-  reasons: { reason: WhyReason; total: number; replied: number; parked: number; stillQuiet: number }[];
+  reasons: { reason: WhyReason; total: number; replied: number; parked: number; stillQuiet: number; nudges: number }[];
   nudges: number;
   nudgedThenReplied: number;
   beepsSent: number;
@@ -655,6 +655,35 @@ export interface GtnDashboard {
   missedBeeps: number;
   profile: { links: number; visitors: number; watched75: number; ctaClicks: number; interested: number };
   sources: { source: string; started: number; responded: number; warm: number }[];
+  beepsOnTime: number;
+  team: GtnTeamRow[];
+}
+
+/** One owner's GTN (ADR-0021). */
+export interface GtnTeamRow {
+  userId: number;
+  name: string;
+  active: boolean;
+  onGtn: number;
+  due: number;
+  overdue: number;
+  started: number;
+  responded: number;
+  warm: number;
+  commitments: number;
+  beepsSent: number;
+  beepsOnTime: number;
+}
+
+export interface HandOverResult {
+  handedOver: number;
+  toName?: string | null;
+  skipped: string[];
+}
+
+export interface PersonOption {
+  id: number;
+  name: string;
 }
 
 export interface ImportResult {
@@ -723,6 +752,16 @@ export interface ReferenceData {
 }
 
 /** Roles that may change the pipeline and log activities. */
+/** May work any GTN contact, hand contacts over and see the team (ADR-0021); everyone else works their own. */
+export function canManageNetwork(me: Me): boolean {
+  return me.roles.some((r) => ['LEADERSHIP', 'BD_LEAD', 'ADMIN'].includes(r));
+}
+
+/** The owner, or a manager, works a GTN contact (ADR-0021). */
+export function canWorkTrack(me: Me, ownerId: number): boolean {
+  return canEditPipeline(me) && (ownerId === me.id || canManageNetwork(me));
+}
+
 export function canEditPipeline(me: Me): boolean {
   return me.roles.some((r) => ['LEADERSHIP', 'BD_LEAD', 'ACCOUNT_EXECUTIVE', 'SOLUTIONS', 'ADMIN'].includes(r));
 }

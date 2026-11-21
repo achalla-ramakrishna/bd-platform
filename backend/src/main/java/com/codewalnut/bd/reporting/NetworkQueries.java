@@ -163,7 +163,7 @@ public class NetworkQueries {
     public record Cohort(long started, long responded, long intro, long call, long warm) {}
 
     /** People given a Why? reason: replied after going quiet, parked in monthly beep, or still quiet. */
-    public record ReasonRow(String reason, long total, long replied, long parked, long stillQuiet) {}
+    public record ReasonRow(String reason, long total, long replied, long parked, long stillQuiet, long nudges) {}
 
     public record SourceRow(String source, long started, long responded, long warm) {}
 
@@ -171,7 +171,8 @@ public class NetworkQueries {
 
     public record Dashboard(LocalDate from, LocalDate to, Map<String, Long> byStage, long total, Cohort cohort,
                             long commitments, List<ReasonRow> reasons, long nudges, long nudgedThenReplied, long beepsSent,
-                            long overdue, long missedBeeps, ProfileStats profile, List<SourceRow> sources) {}
+                            long overdue, long missedBeeps, ProfileStats profile, List<SourceRow> sources, long beepsOnTime,
+                            List<TeamRow> team) {}
 
     private static final String SCOPE = " FROM network_track t JOIN connection n ON n.id = t.connection_id"
         + " WHERE (:owner IS NULL OR t.owner_user_id = :owner) AND (:source IS NULL OR n.source_tag = :source)";
@@ -211,19 +212,21 @@ public class NetworkQueries {
         String repliedAfterQuiet = "EXISTS (SELECT 1 FROM network_touch x WHERE x.track_id = t.id AND x.kind = 'REPLY' AND x.occurred_on >="
             + " (SELECT MIN(DATE(c.changed_at)) FROM network_stage_change c WHERE c.track_id = t.id AND c.to_stage = 'UNRESPONSIVE'))";
         List<ReasonRow> reasons = jdbc.sql("SELECT t.why_reason, COUNT(*), COALESCE(SUM(" + repliedAfterQuiet + "), 0),"
-                + " COALESCE(SUM(t.stage = 'MONTHLY_BEEP' AND NOT " + repliedAfterQuiet + "), 0), COALESCE(SUM(t.stage = 'UNRESPONSIVE'), 0)"
+                + " COALESCE(SUM(t.stage = 'MONTHLY_BEEP' AND NOT " + repliedAfterQuiet + "), 0), COALESCE(SUM(t.stage = 'UNRESPONSIVE'), 0),"
+                + " COALESCE(SUM((SELECT COUNT(*) FROM network_touch x WHERE x.track_id = t.id AND x.kind = 'NUDGE')), 0)"
                 + SCOPE + " AND t.why_reason IS NOT NULL GROUP BY t.why_reason"
                 + " ORDER BY FIELD(t.why_reason, 'NOT_SEEN', 'INERTIA', 'NOT_RIGHT_TIME')")
-            .params(p).query((rs, n) -> new ReasonRow(rs.getString(1), rs.getLong(2), rs.getLong(3), rs.getLong(4), rs.getLong(5)))
+            .params(p).query((rs, n) -> new ReasonRow(rs.getString(1), rs.getLong(2), rs.getLong(3), rs.getLong(4), rs.getLong(5), rs.getLong(6)))
             .list();
 
         long[] touches = jdbc.sql("SELECT COALESCE(SUM(x.kind = 'NUDGE'), 0), COALESCE(SUM(x.kind = 'BEEP'), 0),"
+                + " COALESCE(SUM(x.kind = 'BEEP' AND x.due_on IS NOT NULL AND x.occurred_on <= x.due_on + INTERVAL " + BEEP_GRACE_DAYS + " DAY), 0),"
                 + " COUNT(DISTINCT CASE WHEN x.kind = 'NUDGE' AND EXISTS (SELECT 1 FROM network_touch r WHERE r.track_id = x.track_id"
                 + " AND r.kind = 'REPLY' AND r.occurred_on >= x.occurred_on) THEN x.track_id END)"
                 + " FROM network_touch x JOIN network_track t ON t.id = x.track_id JOIN connection n ON n.id = t.connection_id"
                 + " WHERE (:owner IS NULL OR t.owner_user_id = :owner) AND (:source IS NULL OR n.source_tag = :source)"
                 + " AND x.occurred_on BETWEEN :fromDay AND :toDay")
-            .params(p).query((rs, n) -> new long[] {rs.getLong(1), rs.getLong(2), rs.getLong(3)}).single();
+            .params(p).query((rs, n) -> new long[] {rs.getLong(1), rs.getLong(2), rs.getLong(4), rs.getLong(3)}).single();
 
         long[] late = jdbc.sql("SELECT COALESCE(SUM(t.next_action_on < :today), 0),"
                 + " COALESCE(SUM(t.next_action_on < :today AND t.stage IN ('MONTHLY_BEEP', 'WARM_COMMITMENT')), 0)" + SCOPE)
@@ -247,7 +250,63 @@ public class NetworkQueries {
             .params(p).query((rs, n) -> new SourceRow(rs.getString(1), rs.getLong(2), rs.getLong(3), rs.getLong(4))).list();
 
         return new Dashboard(from, to, byStage, byStage.values().stream().mapToLong(Long::longValue).sum(), cohort, commitments,
-            reasons, touches[0], touches[2], touches[1], late[0], late[1], profile, sources);
+            reasons, touches[0], touches[2], touches[1], late[0], late[1], profile, sources, touches[3],
+            team(from, to, source, today));
+    }
+
+    // ---- team (ADR-0021) ----
+
+    /** One owner's GTN: now (on GTN, due, overdue) and in the period (started, responded, warm, commitments, beeps). */
+    public record TeamRow(long userId, String name, boolean active, long onGtn, long due, long overdue, long started,
+                          long responded, long warm, long commitments, long beepsSent, long beepsOnTime) {}
+
+    /** Days after its due date a beep still counts as sent on time. */
+    public static final int BEEP_GRACE_DAYS = 3;
+
+    public List<TeamRow> team(LocalDate from, LocalDate to, String source, LocalDate today) {
+        Map<String, Object> p = new LinkedHashMap<>();
+        p.put("source", source == null || source.isBlank() ? null : source.trim());
+        p.put("from", from.atStartOfDay());
+        p.put("to", to.plusDays(1).atStartOfDay());
+        p.put("fromDay", from);
+        p.put("toDay", to);
+        p.put("today", today);
+        String replied = "(EXISTS (SELECT 1 FROM network_touch x WHERE x.track_id = t.id AND x.kind = 'REPLY') OR "
+            + reached("'RESPONDED'") + ")";
+        String warm = "(" + reached("'WARM_COMMITMENT'") + " OR EXISTS (SELECT 1 FROM network_commitment m WHERE m.track_id = t.id))";
+        String inPeriod = "t.created_at >= :from AND t.created_at < :to";
+        Map<Long, long[]> commitments = new java.util.HashMap<>();
+        jdbc.sql("SELECT t.owner_user_id, COUNT(*) FROM network_commitment m JOIN network_track t ON t.id = m.track_id"
+                + " JOIN connection n ON n.id = t.connection_id WHERE (:source IS NULL OR n.source_tag = :source)"
+                + " AND m.recorded_at >= :from AND m.recorded_at < :to GROUP BY t.owner_user_id").params(p)
+            .query((rs, n) -> commitments.put(rs.getLong(1), new long[] {rs.getLong(2)})).list();
+        Map<Long, long[]> beeps = new java.util.HashMap<>();
+        jdbc.sql("SELECT x.user_id, COUNT(*), COALESCE(SUM(x.due_on IS NOT NULL AND x.occurred_on <= x.due_on + INTERVAL "
+                + BEEP_GRACE_DAYS + " DAY), 0) FROM network_touch x JOIN network_track t ON t.id = x.track_id"
+                + " JOIN connection n ON n.id = t.connection_id WHERE x.kind = 'BEEP' AND (:source IS NULL OR n.source_tag = :source)"
+                + " AND x.occurred_on BETWEEN :fromDay AND :toDay GROUP BY x.user_id").params(p)
+            .query((rs, n) -> beeps.put(rs.getLong(1), new long[] {rs.getLong(2), rs.getLong(3)})).list();
+        return jdbc.sql("SELECT u.id, u.full_name, u.active, COUNT(*), COALESCE(SUM(t.next_action_on <= :today), 0),"
+                + " COALESCE(SUM(t.next_action_on < :today), 0), COALESCE(SUM(" + inPeriod + "), 0),"
+                + " COALESCE(SUM(" + inPeriod + " AND " + replied + "), 0), COALESCE(SUM(" + inPeriod + " AND " + warm + "), 0)"
+                + " FROM network_track t JOIN connection n ON n.id = t.connection_id JOIN app_user u ON u.id = t.owner_user_id"
+                + " WHERE (:source IS NULL OR n.source_tag = :source) GROUP BY u.id, u.full_name, u.active ORDER BY u.full_name")
+            .params(p).query((rs, n) -> {
+                long id = rs.getLong(1);
+                long[] b = beeps.getOrDefault(id, new long[] {0, 0});
+                return new TeamRow(id, rs.getString(2), rs.getBoolean(3), rs.getLong(4), rs.getLong(5), rs.getLong(6), rs.getLong(7),
+                    rs.getLong(8), rs.getLong(9), commitments.getOrDefault(id, new long[] {0})[0], b[0], b[1]);
+            }).list();
+    }
+
+    /** Teammates with overdue GTN actions, for Walnut's brief. */
+    public record Overdue(String name, long overdue) {}
+
+    public List<Overdue> overdueByOwner(LocalDate today) {
+        return jdbc.sql("""
+                SELECT u.full_name, COUNT(*) FROM network_track t JOIN app_user u ON u.id = t.owner_user_id
+                WHERE t.next_action_on < :today GROUP BY u.id, u.full_name ORDER BY COUNT(*) DESC, u.full_name
+                """).param("today", today).query((rs, n) -> new Overdue(rs.getString(1), rs.getLong(2))).list();
     }
 
     private static Track map(java.sql.ResultSet rs, LocalDate today) throws java.sql.SQLException {

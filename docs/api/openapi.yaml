@@ -728,6 +728,36 @@ paths:
       summary: Look for replies in my Gmail threads now
       responses:
         '200': { description: '{ found }' }
+  /network/tracks/{id}/hand-over:
+    post:
+      tags: [network]
+      operationId: networkHandOver
+      summary: Hand a contact to a teammate { toUserId, note, version } (owner or GTN manager, ADR-0021)
+      responses:
+        '200': { description: The track page }
+        '403': { description: Someone else's contact }
+        '422': { description: Not an active pipeline user, or already theirs }
+  /network/hand-over:
+    post:
+      tags: [network]
+      operationId: networkHandOverMany
+      summary: Hand several contacts over { trackIds, toUserId, note }; ones this person may not hand over are skipped
+      responses:
+        '200': { description: '{ handedOver, toName, skipped }' }
+  /network/hand-over-all:
+    post:
+      tags: [network]
+      operationId: networkHandOverAll
+      summary: Hand all of one person's contacts over { fromUserId, toUserId, note } (GTN managers)
+      responses:
+        '200': { description: '{ handedOver, toName, skipped }' }
+  /network/team:
+    get:
+      tags: [network]
+      operationId: networkTeam
+      summary: Per owner, now and in a period (default last 30 days)
+      responses:
+        '200': { description: '[{ userId, name, active, onGtn, due, overdue, started, responded, warm, commitments, beepsSent, beepsOnTime }]' }
   /walnut/brief:
     post:
       tags: [walnut]
@@ -1649,3 +1679,5 @@ components:
 # Public booking (ADR-0020): GET /p/{token}/slots -> { available, minutes, zone, slots, needEmail };
 # POST /p/{token}/book { start, email } -> { start, when, meetLink } or 422 { problems }.
 # Track actions gain CONFIRM_REPLY { outcome, revisitOn, revisitReason }.
+# ADR-0021: track actions, edits, sends and stop need the owner or a GTN manager (403 otherwise);
+# GET /network/today takes ownerId for a teammate's Today; the dashboard adds beepsOnTime, team and nudges per reason.

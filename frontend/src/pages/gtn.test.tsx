@@ -76,9 +76,12 @@ describe('GTN dashboard (M10)', () => {
       from: '2026-10-23', to: '2026-11-21', total: 4,
       byStage: { INITIATE: 1, RESPONDED: 1, UNRESPONSIVE: 1, INTRO_MADE: 0, CALL_SCHEDULED: 0, WARM_COMMITMENT: 1, MONTHLY_BEEP: 0 },
       cohort: { started: 4, responded: 2, intro: 1, call: 1, warm: 1 }, commitments: 1,
-      reasons: [{ reason: 'INERTIA', total: 2, replied: 1, parked: 0, stillQuiet: 1 }],
+      reasons: [{ reason: 'INERTIA', total: 2, replied: 1, parked: 0, stillQuiet: 1, nudges: 3 }],
       nudges: 3, nudgedThenReplied: 1, beepsSent: 0, overdue: 2, missedBeeps: 0,
       profile: { links: 3, visitors: 2, watched75: 1, ctaClicks: 1, interested: 1 }, sources: [{ source: 'Alumni', started: 4, responded: 2, warm: 1 }],
+      beepsOnTime: 0,
+      team: [{ userId: 1, name: 'Engineer A', active: true, onGtn: 4, due: 2, overdue: 2, started: 4, responded: 2, warm: 1, commitments: 1,
+        beepsSent: 2, beepsOnTime: 1 }],
     };
     vi.stubGlobal('fetch', vi.fn(async (url: string) => new Response(JSON.stringify(url.includes('sources') ? ['Alumni'] : body),
       { status: 200, headers: { 'Content-Type': 'application/json' } })));
@@ -87,6 +90,7 @@ describe('GTN dashboard (M10)', () => {
     expect(started.parentElement!.textContent).toContain('Response rate50%'); // 2 of 4 responded
     expect(screen.getByText('Inertia to respond')).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Profile page' }).textContent).toContain('Watched 75%+ of the video1');
+    expect(screen.getByRole('region', { name: 'By owner' }).textContent).toContain('1 of 2'); // beeps on time
   });
 });
 
@@ -145,5 +149,29 @@ describe('GTN with Gmail (ADR-0020)', () => {
     await waitFor(() => expect(done).toHaveBeenCalled());
     const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
     expect(body).toMatchObject({ action: 'CONFIRM_REPLY', outcome: 'NOT_RIGHT_TIME', revisitReason: 'Next quarter', version: 3 });
+  });
+});
+
+describe('GTN hand-over (ADR-0021)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('hands several contacts to a teammate in one go', async () => {
+    const { HandOverForm } = await import('./gtn');
+    const fetchMock = vi.fn(async (url: string) => new Response(JSON.stringify(url.includes('/users')
+      ? [{ id: 2, name: 'Engineer B' }] : { handedOver: 2, toName: 'Engineer B', skipped: [] }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetchMock);
+    const done = vi.fn();
+    render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><HandOverForm trackIds={[5, 6]} onDone={done} /></MemoryRouter></QueryClientProvider>);
+    await screen.findByRole('option', { name: 'Engineer B' });
+    fireEvent.change(screen.getByLabelText('Hand over to'), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText('Hand-over note'), { target: { value: 'On leave' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Hand over (2)' }));
+    await waitFor(() => expect(done).toHaveBeenCalledWith({ handedOver: 2, toName: 'Engineer B', skipped: [] }));
+    const call = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/network/hand-over')) as unknown as [string, RequestInit];
+    expect(JSON.parse(call[1].body as string)).toEqual({ trackIds: [5, 6], toUserId: 2, note: 'On leave' });
   });
 });

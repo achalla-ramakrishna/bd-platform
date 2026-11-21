@@ -66,6 +66,13 @@ final class BriefWriter {
                 .forEach(t -> questions.add(t.fullName() + " hasn't replied. Not seen on LinkedIn, inertia, or not the right time?"));
         }
 
+        List<com.codewalnut.bd.reporting.NetworkQueries.Overdue> others = s.networkTeam().stream()
+            .filter(o -> !o.name().equals(s.me().name())).toList();
+        if (!others.isEmpty()) {
+            b.append("Team GTN, overdue: ").append(others.stream().map(o -> o.name().split("\\s+")[0] + " " + o.overdue())
+                .reduce((x, y) -> x + ", " + y).orElse("")).append(" ([team](/network?tab=team)).\n\n");
+        }
+
         if (!s.deals().isEmpty()) {
             b.append("## Deals to push\n");
             for (BdSnapshot.Deal d : s.deals()) {

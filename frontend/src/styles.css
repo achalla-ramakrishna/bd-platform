@@ -546,3 +546,7 @@ button.voice.listening { background: var(--bad); border-color: var(--bad); color
 .dash-panel .table { font-size: 14px; }
 .dash-panel th[scope="row"] { text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--fg); }
 .profile-link-url { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+/* GTN phase 4 (ADR-0021) */
+.table-scroll { overflow-x: auto; }
+.dash-panel.wide-panel { grid-column: 1 / -1; }
+.card .value .link-plain { font-size: 14px; font-weight: 500; }

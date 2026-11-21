@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
-  COMMITMENT_LABELS, GTN_CHANNEL_LABELS, GTN_STAGE_LABELS, WHY_HINTS, WHY_LABELS, api, canEditPipeline,
+  COMMITMENT_LABELS, GTN_CHANNEL_LABELS, GTN_STAGE_LABELS, WHY_HINTS, WHY_LABELS, api, canEditPipeline, canWorkTrack,
   type GtnTrackPage, type Me,
 } from '../lib/api';
 import { formatDate } from '../lib/format';
 import { PersonPhoto } from './PersonPhoto';
-import { ErrorNote, SendStep, StageActions, StagePill } from './gtn';
+import { ErrorNote, HandOverForm, SendStep, StageActions, StagePill } from './gtn';
 import { ProfileCard } from './GtnProfileAndDashboard';
 
 /** One person on GTN: where they are, what to do next with the message ready, and everything that happened. */
@@ -15,7 +15,7 @@ export function NetworkTrackPage({ me }: { me: Me }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const editable = canEditPipeline(me);
+  const [handing, setHanding] = useState(false);
   const page = useQuery({ queryKey: ['gtn', 'track', Number(id)], queryFn: () => api.get<GtnTrackPage>(`/network/tracks/${id}`) });
   const [editing, setEditing] = useState(false);
   const [next, setNext] = useState({ nextAction: '', nextActionOn: '', beepIntervalDays: 30 });
@@ -39,6 +39,8 @@ export function NetworkTrackPage({ me }: { me: Me }) {
   if (page.isPending) return <p className="muted">Loading…</p>;
   if (page.error) return <div className="notice bad">{page.error.message}</div>;
   const { track: t, touches, changes, commitments } = page.data.detail;
+  // The owner, or a manager, works the contact; everyone else reads (ADR-0021).
+  const editable = canWorkTrack(me, t.ownerId);
   const n = page.data.next;
   const timeline = [
     ...touches.map((x) => ({ key: `t${x.id}`, at: x.occurredOn, sort: x.createdAt, text: x.summary,
@@ -59,7 +61,10 @@ export function NetworkTrackPage({ me }: { me: Me }) {
             {' · '}<Link to={`/connections/${t.connectionId}`}>Connection</Link>
             {t.linkedinUrl && <> · <a href={t.linkedinUrl} target="_blank" rel="noreferrer">LinkedIn</a></>}
             {t.sourceTag && <> · <span className="pill">{t.sourceTag}</span></>}
-            {' · '}owned by {t.ownerName}</p>
+            {' · '}owned by {t.ownerName}
+            {editable && !handing && <> · <button type="button" className="link-plain" onClick={() => setHanding(true)}>Hand over</button></>}</p>
+          {handing && <HandOverForm trackIds={[t.id]} version={t.version} onDone={() => { setHanding(false); void page.refetch(); }} />}
+          {!editable && canEditPipeline(me) && <p className="muted small">This is {t.ownerName}'s contact. Ask them, or a manager, to hand it over to you.</p>}
         </div>
       </div>
 

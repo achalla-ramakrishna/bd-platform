@@ -208,7 +208,7 @@ Realising the business, not only winning it (ADR-0016):
   Started, or Rejected or Withdrawn; consent before a profile is shared.
 - Walnut's morning plan (and email) reminds about each step.
 
-## 12. GTN, Go To Network (Phases 1 to 3 built)
+## 12. GTN, Go To Network (Built: phases 1 to 4)
 
 Work our existing network through a fixed pipeline (Initiate → Responded →
 Intro made → Call scheduled → Warm commitment → Monthly beep), with a Why?
@@ -230,7 +230,14 @@ step, in one thread per person; replies in those threads are found every 10
 minutes and confirmed in Today; people book the owner's free times on the
 profile page, which creates the Google Calendar event with a Meet link and
 moves them to Call scheduled; after the call time Today asks how it went.
-Phase 4 (team use) is next.
+Phase 4 (ADR-0021) is built: the owner (or a GTN manager: Leadership, BD
+lead, Admin) works each contact and everyone else reads; contacts are handed
+over one at a time, several from the list, or all of someone's by a manager,
+with a timeline entry and an email to the new owner; Today shows mine,
+everyone's or a teammate's; a Team tab and the dashboard show each owner's
+numbers, beeps sent on time and nudges per Why? reason; Walnut's brief names
+teammates with overdue GTN actions. Not built: a WhatsApp digest (needs the
+WhatsApp Business API).
 
 ## Outside the platform
 

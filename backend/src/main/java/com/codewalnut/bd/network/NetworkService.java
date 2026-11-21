@@ -71,9 +71,12 @@ public class NetworkService {
                 .param("id", in.connectionId()).query(Integer.class).single() == 0) {
             throw new RuleViolationException(List.of("Choose someone from Connections."));
         }
-        if (jdbc.sql("SELECT COUNT(*) FROM network_track WHERE connection_id = :c").param("c", in.connectionId())
-                .query(Integer.class).single() > 0) {
-            throw new ConflictException("This person is already on GTN. Open their track instead.");
+        String owner = jdbc.sql("""
+                SELECT u.full_name FROM network_track t JOIN app_user u ON u.id = t.owner_user_id WHERE t.connection_id = :c
+                """).param("c", in.connectionId()).query(String.class).optional().orElse(null);
+        if (owner != null) {
+            throw new ConflictException("This person is already on GTN with " + owner + ". Open their track, or ask "
+                + Suggestions.firstName(owner) + " or a manager to hand them over.");
         }
         String channel = channel(in.channel(), problems);
         String summary = summary(in.summary(), "First message sent", problems);
@@ -104,6 +107,7 @@ public class NetworkService {
     @Transactional
     public void act(long id, Action in, CurrentUser user) {
         State s = lock(id, in.version());
+        requireWorker(id, user);
         String action = upper(in.action());
         LocalDate today = today();
         List<String> problems = new ArrayList<>();
@@ -219,6 +223,13 @@ public class NetworkService {
         }
         done(problems);
         touch(s.id(), user.id(), channel, "OUT", kind, in.templateId(), summary, today);
+        if ("NUDGE".equals(kind) || "BEEP".equals(kind)) {
+            // When it was due, so "sent on time" can be measured (ADR-0021).
+            jdbc.sql("""
+                    UPDATE network_touch SET due_on = (SELECT next_action_on FROM network_track WHERE id = :t)
+                    WHERE id = (SELECT id FROM (SELECT MAX(id) AS id FROM network_touch WHERE track_id = :t) x)
+                    """).param("t", s.id()).update();
+        }
         jdbc.sql("UPDATE network_track SET last_out_on = :today, last_channel = :ch, ask_now = FALSE WHERE id = :id")
             .param("today", today).param("ch", channel).param("id", s.id()).update();
         switch (s.stage()) {
@@ -305,6 +316,10 @@ public class NetworkService {
     @Transactional
     public void change(long id, Change in, CurrentUser user) {
         State s = lock(id, in.version());
+        requireWorker(id, user);
+        if (in.ownerId() != null) {
+            handOver(id, in.ownerId(), null, null, user);
+        }
         List<String> problems = new ArrayList<>();
         String what = in.nextAction() == null || in.nextAction().isBlank() ? null : in.nextAction().trim();
         if (what != null && what.length() > 200) {
@@ -323,11 +338,10 @@ public class NetworkService {
         done(problems);
         jdbc.sql("""
                 UPDATE network_track SET next_action = COALESCE(:what, next_action), next_action_on = COALESCE(:on, next_action_on),
-                    beep_interval_days = COALESCE(:beep, beep_interval_days), owner_user_id = COALESCE(:owner, owner_user_id),
-                    version = version + 1
+                    beep_interval_days = COALESCE(:beep, beep_interval_days), version = version + 1
                 WHERE id = :id
                 """).param("what", what).param("on", in.nextActionOn()).param("beep", in.beepIntervalDays())
-            .param("owner", in.ownerId()).param("id", s.id()).update();
+            .param("id", s.id()).update();
         audit.record("network_track", id, AuditLog.Action.UPDATE, Map.of("changed", true), user.id());
     }
 
@@ -335,6 +349,7 @@ public class NetworkService {
     @Transactional
     public void stop(long id, CurrentUser user) {
         lock(id, null);
+        requireWorker(id, user);
         jdbc.sql("DELETE FROM network_track WHERE id = :id").param("id", id).update();
         audit.record("network_track", id, AuditLog.Action.DELETE, Map.of(), user.id());
     }
@@ -362,6 +377,50 @@ public class NetworkService {
             moved++;
         }
         return moved;
+    }
+
+    // ---- team use (ADR-0021) ----
+
+    /** The owner works the track; managers may work any. Everyone else reads. */
+    void requireWorker(long trackId, CurrentUser user) {
+        long owner = jdbc.sql("SELECT owner_user_id FROM network_track WHERE id = :id").param("id", trackId).query(Long.class)
+            .optional().orElseThrow(() -> new NotFoundException("Network track", trackId));
+        if (owner != user.id() && !user.hasAnyRole(com.codewalnut.bd.shared.Role.NETWORK_MANAGERS)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                "This is someone else's contact. Ask them, or a manager, to hand it over to you.");
+        }
+    }
+
+    public record HandedOver(long trackId, long fromUserId, long toUserId, String toName) {}
+
+    /**
+     * Gives a contact to another active team member with a pipeline role (ADR-0021). The stage and history stay;
+     * the move is on the timeline and in the audit log.
+     */
+    @Transactional
+    public HandedOver handOver(long trackId, long toUserId, String note, Integer version, CurrentUser user) {
+        State s = lock(trackId, version);
+        requireWorker(trackId, user);
+        long from = jdbc.sql("SELECT owner_user_id FROM network_track WHERE id = :id").param("id", trackId).query(Long.class).single();
+        String toName = jdbc.sql("""
+                SELECT u.full_name FROM app_user u WHERE u.id = :id AND u.active
+                  AND EXISTS (SELECT 1 FROM user_role r WHERE r.user_id = u.id AND r.role IN (:roles))
+                """).param("id", toUserId).param("roles", com.codewalnut.bd.shared.Role.PIPELINE_EDITORS.stream().map(Enum::name).toList())
+            .query(String.class).optional()
+            .orElseThrow(() -> new RuleViolationException(List.of("Hand it to an active team member who works the pipeline.")));
+        if (from == toUserId) {
+            throw new RuleViolationException(List.of("They already own this contact."));
+        }
+        String fromName = jdbc.sql("SELECT full_name FROM app_user WHERE id = :id").param("id", from).query(String.class).single();
+        String text = note == null || note.isBlank() ? null : note.trim();
+        if (text != null && text.length() > 300) {
+            throw new RuleViolationException(List.of("Keep the hand-over note under 300 characters."));
+        }
+        jdbc.sql("UPDATE network_track SET owner_user_id = :to, version = version + 1 WHERE id = :id")
+            .param("to", toUserId).param("id", trackId).update();
+        change(trackId, s.stage(), s.stage(), user.id(), "Handed over from " + fromName + " to " + toName + (text == null ? "" : ": " + text));
+        audit.record("network_track", trackId, AuditLog.Action.UPDATE, Map.of("owner", toUserId, "from", from), user.id());
+        return new HandedOver(trackId, from, toUserId, toName);
     }
 
     // ---- Gmail and calendar (ADR-0020) ----

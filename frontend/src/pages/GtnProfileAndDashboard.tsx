@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   GTN_STAGES, GTN_STAGE_LABELS, WHY_LABELS, api,
-  type GtnDashboard, type ProfilePage, type ProfileStats,
+  type GtnDashboard, type GtnTeamRow, type ProfilePage, type ProfileStats,
 } from '../lib/api';
 import { formatDate } from '../lib/format';
 import { ErrorNote, useGoogleStatus } from './gtn';
@@ -229,6 +229,32 @@ export function ProfileCard({ trackId, editable }: { trackId: number; editable: 
 
 const pct = (n: number, of: number) => (of ? `${Math.round((n * 100) / of)}%` : '—');
 
+/** Per owner (ADR-0021). */
+export function TeamTable({ rows }: { rows: GtnTeamRow[] }) {
+  if (rows.length === 0) return <p className="muted">Nobody is working GTN contacts yet.</p>;
+  return (
+    <div className="table-scroll">
+      <table className="table">
+        <thead><tr><th>Owner</th><th className="num">On GTN</th><th className="num">Due</th><th className="num">Overdue</th>
+          <th className="num">Started</th><th className="num">Responded</th><th className="num">Warm</th><th className="num">Commitments</th>
+          <th className="num">Beeps on time</th></tr></thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.userId}>
+              <td>{r.name}{!r.active && <span className="muted small"> (inactive)</span>}</td>
+              <td className="num">{r.onGtn}</td><td className="num">{r.due}</td>
+              <td className={`num${r.overdue ? ' bad-text' : ''}`}>{r.overdue}</td>
+              <td className="num">{r.started}</td><td className="num">{r.responded} <span className="muted small">{pct(r.responded, r.started)}</span></td>
+              <td className="num">{r.warm}</td><td className="num">{r.commitments}</td>
+              <td className="num">{r.beepsSent ? `${r.beepsOnTime} of ${r.beepsSent}` : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 /** GTN dashboard (M10): funnel, conversion, Why? outcomes, what slips, and the profile page. */
 export function DashboardTab() {
   const [f, setF] = useState({ from: today(-29), to: today(), mine: false, source: '' });
@@ -267,6 +293,8 @@ export function DashboardTab() {
             <div className="card"><div className="label">Re-engaged after a nudge</div><div className="value">{data.nudgedThenReplied}</div>
               <div className="muted small">{data.nudges} nudge{data.nudges === 1 ? '' : 's'} sent</div></div>
             <div className={`card${data.overdue ? ' bad' : ''}`}><div className="label">Overdue actions</div><div className="value">{data.overdue}</div></div>
+            <div className="card"><div className="label">Beeps on time</div><div className="value">{pct(data.beepsOnTime, data.beepsSent)}</div>
+              <div className="muted small">within 3 days of their date</div></div>
             <div className={`card${data.missedBeeps ? ' bad' : ''}`}><div className="label">Missed beeps</div><div className="value">{data.missedBeeps}</div>
               <div className="muted small">{data.beepsSent} beep{data.beepsSent === 1 ? '' : 's'} sent</div></div>
           </div>
@@ -298,10 +326,10 @@ export function DashboardTab() {
               <h2>Why people went quiet, and what happened</h2>
               {data.reasons.length === 0 ? <p className="muted">Nobody diagnosed yet.</p> : (
                 <table className="table">
-                  <thead><tr><th>Reason</th><th className="num">People</th><th className="num">Replied</th><th className="num">Parked</th><th className="num">Still quiet</th></tr></thead>
+                  <thead><tr><th>Reason</th><th className="num">People</th><th className="num">Nudges</th><th className="num">Replied</th><th className="num">Parked</th><th className="num">Still quiet</th></tr></thead>
                   <tbody>
                     {data.reasons.map((r) => (
-                      <tr key={r.reason}><td>{WHY_LABELS[r.reason]}</td><td className="num">{r.total}</td><td className="num">{r.replied}</td>
+                      <tr key={r.reason}><td>{WHY_LABELS[r.reason]}</td><td className="num">{r.total}</td><td className="num">{r.nudges}</td><td className="num">{r.replied}</td>
                         <td className="num">{r.parked}</td><td className="num">{r.stillQuiet}</td></tr>
                     ))}
                   </tbody>
@@ -320,6 +348,12 @@ export function DashboardTab() {
                 </tbody>
               </table>
             </section>
+            {data.team.length > 0 && (
+              <section className="dash-panel wide-panel" aria-label="By owner">
+                <h2>By owner</h2>
+                <TeamTable rows={data.team} />
+              </section>
+            )}
             {data.sources.length > 0 && (
               <section className="dash-panel" aria-label="By source">
                 <h2>By source</h2>
