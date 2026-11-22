@@ -74,7 +74,7 @@ function renderList(items: Item[], from: number, to: number, appLink?: AppLink):
 
 function inline(text: string, appLink?: AppLink): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = /\*\*([^*]+)\*\*|\*([^*]+)\*|\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[A-Za-z0-9/_-]*)\)/g;
+  const re = /\*\*([^*]+)\*\*|\*([^*]+)\*|\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[A-Za-z0-9/_-]*(?:\?[A-Za-z0-9_=&-]*)?)\)/g;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {

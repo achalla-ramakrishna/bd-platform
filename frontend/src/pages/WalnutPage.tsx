@@ -45,7 +45,14 @@ export function WalnutPage() {
   const setThread = (add: WalnutMessage[]) => queryClient.setQueryData<WalnutMessage[]>(['walnut', 'messages'],
     (old) => [...(old ?? []).filter((m) => !add.some((a) => a.id === m.id)), ...add]);
 
-  const brief = useMutation({ mutationFn: () => api.post<WalnutMessage>('/walnut/brief', {}), onSuccess: (m) => setThread([m]) });
+  const brief = useMutation({
+    mutationFn: () => api.post<WalnutMessage>('/walnut/brief', {}),
+    onSuccess: (m) => {
+      setThread([m]);
+      // The new plan is shown first: bring it into view.
+      setTimeout(() => window.scrollTo?.({ top: 0, behavior: 'smooth' }), 0);
+    },
+  });
   const send = useMutation({
     mutationFn: (t: string) => api.post<WalnutMessage[]>('/walnut/messages', { text: t }),
     onMutate: (t) => setPending(t),
@@ -58,7 +65,11 @@ export function WalnutPage() {
   });
   const emailNow = useMutation({ mutationFn: () => api.post<{ sent: boolean }>('/walnut/brief/email', {}) });
 
-  useEffect(() => { end.current?.scrollIntoView?.({ block: 'end' }); }, [messages.data?.length, pending]);
+  // Chat replies appear under the plan; follow them only once there is a conversation since the plan.
+  const sinceLength = messages.data ? since(messages.data).length : 0;
+  useEffect(() => {
+    if (sinceLength > 0 || pending) end.current?.scrollIntoView?.({ block: 'end' });
+  }, [sinceLength, pending]);
 
   const submit = (t: string) => {
     if (!t.trim() || send.isPending) return;
@@ -80,6 +91,11 @@ export function WalnutPage() {
   }
   const thread = messages.data ?? [];
   const chatOff = status.data && !status.data.chatEnabled;
+  const planAt = latestPlanIndex(thread);
+  const plan = planAt >= 0 ? thread[planAt] : null;
+  const after = planAt >= 0 ? thread.slice(planAt + 1) : thread;
+  const earlier = planAt >= 0 ? thread.slice(0, planAt) : [];
+  const stale = plan != null && localIso(new Date(plan.createdAt)) !== localIso(new Date());
 
   return (
     <>
@@ -91,43 +107,26 @@ export function WalnutPage() {
           <button type="button" onClick={() => brief.mutate()} disabled={brief.isPending}>{brief.isPending ? 'Planning…' : 'Plan my day'}</button>
         </div>
       </div>
-      <p className="lead">
-        Every weekday at 8:30 Walnut writes your plan: who to follow up, which accounts to approach and who to connect
-        with there, who accepted and needs a first message, deals to push and questions for you. Reply here; it drafts
-        messages and proposes updates. Nothing is saved or sent until you press a button. Walnut works with{' '}
-        {status.data?.worksWith.join(' and ')}.
-      </p>
-      <div className="walnut-settings small">
-        {settings.data && (
-          <label className="inline-check">
-            <input type="checkbox" checked={settings.data.emailBrief} disabled={emailPref.isPending}
-              onChange={(e) => emailPref.mutate(e.target.checked)} />
-            Email me the morning plan ({settings.data.email})
-          </label>
-        )}
-        {settings.data && !settings.data.emailAvailable && <span className="muted"> · email is not set up yet (MAIL_API_KEY)</span>}
-        {settings.data?.emailAvailable && (
-          <button type="button" className="link-plain" disabled={emailNow.isPending} onClick={() => emailNow.mutate()}>
-            {emailNow.isSuccess ? 'Sent' : emailNow.isPending ? 'Sending…' : "Email me today's plan now"}
-          </button>
-        )}
-        {emailNow.error && <span role="alert" style={{ color: 'var(--bad)' }}> {problemText(emailNow.error)}</span>}
-      </div>
       {chatOff && (
         <div className="notice warn">Walnut writes your morning plan, but chatting needs <code>ANTHROPIC_API_KEY</code> to be set.</div>
       )}
+      {(send.error || brief.error) && <div className="notice bad" role="alert">{problemText(send.error ?? brief.error)}</div>}
 
       <div className="chat walnut" aria-live="polite">
         {messages.isPending && <p className="muted">Loading…</p>}
-        {!messages.isPending && thread.length === 0 && (
+        {brief.isPending && <div className="bubble ai muted">Walnut is planning your day…</div>}
+        {!messages.isPending && !plan && !brief.isPending && (
           <div className="chat-empty muted">
             <p>Hi, I'm Walnut. Press <strong>Plan my day</strong> for today's plan, or ask me something below.</p>
           </div>
         )}
-        {thread.map((m) => <Bubble key={m.id} m={m} />)}
+        {plan && stale && !brief.isPending && (
+          <p className="notice warn small" style={{ margin: 0 }}>This plan is from {formatDate(plan.createdAt)}. Press <strong>Plan my day</strong> for today's.</p>
+        )}
+        {plan && <Bubble m={plan} />}
+        {after.map((m) => <Bubble key={m.id} m={m} />)}
         {pending && <div className="bubble you"><p className="pre">{pending}</p></div>}
-        {(send.isPending || brief.isPending) && <div className="bubble ai muted">Walnut is thinking…</div>}
-        {(send.error || brief.error) && <div className="notice bad" role="alert">{problemText(send.error ?? brief.error)}</div>}
+        {send.isPending && <div className="bubble ai muted">Walnut is thinking…</div>}
         <div ref={end} />
       </div>
 
@@ -148,6 +147,39 @@ export function WalnutPage() {
           <span className="muted small">Enter to send · Shift+Enter for a new line</span>
         </div>
       </form>
+
+      {earlier.length > 0 && (
+        <details className="walnut-earlier">
+          <summary>Earlier plans and chats ({earlier.length})</summary>
+          <div className="chat walnut">{earlier.map((m) => <Bubble key={m.id} m={m} />)}</div>
+        </details>
+      )}
+
+      <details className="walnut-about">
+        <summary>How Walnut works, and email settings</summary>
+        <p className="lead">
+          Every weekday at 8:30 Walnut writes your plan: who to follow up, which accounts to approach and who to connect
+          with there, who accepted and needs a first message, deals to push and questions for you. Reply here; it drafts
+          messages and proposes updates. Nothing is saved or sent until you press a button. Walnut works with{' '}
+          {status.data?.worksWith.join(' and ')}.
+        </p>
+        <div className="walnut-settings small">
+          {settings.data && (
+            <label className="inline-check">
+              <input type="checkbox" checked={settings.data.emailBrief} disabled={emailPref.isPending}
+                onChange={(e) => emailPref.mutate(e.target.checked)} />
+              Email me the morning plan ({settings.data.email})
+            </label>
+          )}
+          {settings.data && !settings.data.emailAvailable && <span className="muted"> · email is not set up yet (MAIL_API_KEY)</span>}
+          {settings.data?.emailAvailable && (
+            <button type="button" className="link-plain" disabled={emailNow.isPending} onClick={() => emailNow.mutate()}>
+              {emailNow.isSuccess ? 'Sent' : emailNow.isPending ? 'Sending…' : "Email me today's plan now"}
+            </button>
+          )}
+          {emailNow.error && <span role="alert" style={{ color: 'var(--bad)' }}> {problemText(emailNow.error)}</span>}
+        </div>
+      </details>
     </>
   );
 }
@@ -222,4 +254,22 @@ function ActionButton({ a }: { a: WalnutAction }) {
       {apply.error && <span className="small" role="alert" style={{ color: 'var(--bad)' }}> {problemText(apply.error)}</span>}
     </div>
   );
+}
+
+/** Where the newest plan (morning or "Plan my day") is in the thread, or -1. */
+export function latestPlanIndex(thread: WalnutMessage[]): number {
+  for (let i = thread.length - 1; i >= 0; i--) {
+    if (thread[i].author === 'WALNUT' && thread[i].kind !== 'CHAT') return i;
+  }
+  return -1;
+}
+
+/** The conversation since the newest plan. */
+function since(thread: WalnutMessage[]): WalnutMessage[] {
+  const i = latestPlanIndex(thread);
+  return i >= 0 ? thread.slice(i + 1) : thread;
+}
+
+function localIso(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

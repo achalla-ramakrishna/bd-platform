@@ -579,3 +579,5 @@ button.voice.listening { background: var(--bad); border-color: var(--bad); color
 .sequence-email summary { cursor: pointer; }
 .sequence-email input, .sequence-email textarea, .queue-card input:not([type]), .queue-card > textarea { width: 100%; font: inherit; margin: 4px 0; }
 .queue-card > label.small { display: block; margin-top: 6px; }
+.walnut-earlier, .walnut-about { max-width: 860px; margin: 16px 0; }
+.walnut-earlier > summary, .walnut-about > summary { cursor: pointer; color: var(--muted); }

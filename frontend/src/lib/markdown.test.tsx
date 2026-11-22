@@ -42,3 +42,13 @@ describeApp('Markdown app links', () => {
     expectApp(appScreen.getByText('docs').getAttribute('href')).toBe('https://example-gcc.test/x');
   });
 });
+
+describe('Markdown app links with a query', () => {
+  it('links an app page with a tab, even in brackets', () => {
+    const { container } = render(<Markdown text={'Team GTN, overdue: Sales 1 ([team](/network?tab=team)).'} />);
+    const a = container.querySelector('a');
+    expect(a?.getAttribute('href')).toBe('/network?tab=team');
+    expect(a?.textContent).toBe('team');
+    expect(container.textContent).toBe('Team GTN, overdue: Sales 1 (team).');
+  });
+});

@@ -15,6 +15,14 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: '2026-11-22-walnut-plan-first',
+    date: '2026-11-22',
+    title: 'Walnut shows your newest plan first',
+    summary: 'No more scrolling: the latest plan is at the top of the Walnut page, with your chat about it below. Earlier plans, and the email setting, are folded away at the bottom.',
+    steps: ['Plan → Walnut → Plan my day: the new plan appears right under the button.'],
+    link: { to: '/walnut', label: 'Open Walnut' },
+  },
+  {
     id: '2026-11-22-bd-agent-call-prep',
     date: '2026-11-22',
     title: 'Call prep: a brief for every booked call, and the opportunity in one click',
