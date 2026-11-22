@@ -33,5 +33,6 @@ Status values: **Proposed** (under review), **Accepted**, **Superseded by ADR-nn
 | [0023](0023-prospecting-queue.md) | The daily prospecting queue: the agent picks and drafts, a person sends | Accepted |
 | [0024](0024-reply-agent.md) | The reply agent: reads replies, sorts them, drafts the answer; a person confirms | Accepted |
 | [0025](0025-email-sequences.md) | Email sequences: the agent writes, the owner approves once, the app sends within guardrails (sending off until legal review) | Accepted |
+| [0026](0026-call-prep-agent.md) | The ops agent: a call-prep brief and a draft opportunity when a call is booked | Accepted |
 
 Template: Context → Decision → Alternatives considered → Consequences.

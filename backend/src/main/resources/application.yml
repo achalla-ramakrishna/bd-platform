@@ -66,6 +66,8 @@ app:
     queue-research-per-person: ${AGENT_QUEUE_RESEARCH_PER_PERSON:5}
     # The reply agent (ADR-0024).
     replies-per-day: ${AGENT_REPLIES_PER_DAY:200}
+    # The ops agent: call prep (ADR-0026).
+    call-prep-per-day: ${AGENT_CALL_PREP_PER_DAY:50}
     # Email sequences (ADR-0025). Sending stays off until a legal review; see docs/deployment.md.
     email:
       sending: ${AGENT_EMAIL_SENDING:false}

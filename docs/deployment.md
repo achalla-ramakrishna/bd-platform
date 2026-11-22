@@ -228,3 +228,7 @@ connection (GTN → My profile page → Connect Google). Optional: `AGENT_EMAIL_
 `AGENT_EMAIL_WINDOW_START` and `AGENT_EMAIL_WINDOW_END` (hours, IST; default 9 and 18), `AGENT_EMAIL_DAYS` (default
 Monday to Friday), `AGENT_EMAIL_CONSENT_BASES` (default `EXISTING_RELATIONSHIP,CONSENTED,BUSINESS_CONTACT`; set
 what the legal review allows), `AGENT_EMAIL_RUN_MINUTES` (default 15).
+
+### Call prep (ADR-0026)
+
+Uses `ANTHROPIC_API_KEY`. Optional: `AGENT_CALL_PREP_PER_DAY` (default 50).

@@ -49,9 +49,12 @@ class ConversationService {
     private final ConversationQueries queries;
     private final OpportunityQueries opportunities;
     private final AuditLog audit;
+    private final org.springframework.context.ApplicationEventPublisher events;
 
     ConversationService(JdbcClient jdbc, ActivityService activities, ConversationQueries queries,
-                        OpportunityQueries opportunities, AuditLog audit) {
+                        OpportunityQueries opportunities, AuditLog audit,
+                        org.springframework.context.ApplicationEventPublisher events) {
+        this.events = events;
         this.jdbc = jdbc;
         this.activities = activities;
         this.queries = queries;
@@ -105,6 +108,7 @@ class ConversationService {
         activities.log(new ActivityService.Input(in.accountId(), in.contactId(), in.channel(), in.occurredOn(),
             in.summary(), in.outcome()), id, user);
         audit.record("conversation", id, AuditLog.Action.CREATE, Map.of("status", status), user.id());
+        booked(id, null, status, in.accountId(), in.contactId(), user.id(), in.nextStepDue());
         return id;
     }
 
@@ -131,6 +135,7 @@ class ConversationService {
             .param("status", status).param("next", trimOrNull(in.nextStep())).param("due", in.nextStepDue())
             .param("on", in.occurredOn()).param("id", id).update();
         audit.record("conversation", id, AuditLog.Action.UPDATE, Map.of("status", status, "touch", true), user.id());
+        booked(id, current.status(), status, current.accountId(), current.contactId(), current.ownerId(), in.nextStepDue());
     }
 
     @Transactional
@@ -171,6 +176,15 @@ class ConversationService {
             .param("status", status).param("next", trimOrNull(in.nextStep())).param("due", in.nextStepDue())
             .param("owner", in.ownerId()).param("opp", in.opportunityId()).param("id", id).update();
         audit.record("conversation", id, AuditLog.Action.UPDATE, Map.of("status", status), user.id());
+        booked(id, current.status(), status, current.accountId(), current.contactId(),
+            in.ownerId() == null ? current.ownerId() : in.ownerId(), in.nextStepDue());
+    }
+
+    /** Announces a meeting when the status becomes MEETING_BOOKED (ADR-0026). */
+    private void booked(long id, String from, String to, long accountId, Long contactId, long ownerId, LocalDate on) {
+        if ("MEETING_BOOKED".equals(to) && !"MEETING_BOOKED".equals(from)) {
+            events.publishEvent(new MeetingBooked(id, accountId, contactId, ownerId, on));
+        }
     }
 
     private ConversationQueries.Conversation lockAndCheck(long id, Integer version) {

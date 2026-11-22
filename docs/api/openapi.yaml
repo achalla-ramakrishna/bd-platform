@@ -793,6 +793,51 @@ paths:
     post: { tags: [sequences], operationId: resumeSequence, parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ], responses: { '200': { description: ACTIVE } } }
   /sequences/{id}/stop:
     post: { tags: [sequences], operationId: stopSequence, parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ], responses: { '200': { description: STOPPED; unsent emails skipped } } }
+  /call-prep:
+    get:
+      tags: [call-prep]
+      operationId: upcomingCalls
+      summary: My upcoming calls with their prep (ADR-0026; pipeline roles)
+      responses:
+        '200': { description: '[{ id, personType, personId, personName, accountId, accountName, conversationId, trackId, ownerName, callOn, status, prep: { goal, about, needs, recap, questions, concerns, nextStep }, draft: { verdict, name, type, need, roles }, opportunityId, opportunityName, error, createdAt }]' }
+    post:
+      tags: [call-prep]
+      operationId: prepareCall
+      summary: Prepare (or prepare again) for a call on a conversation or a GTN contact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { conversationId: { type: integer, format: int64 }, trackId: { type: integer, format: int64 }, again: { type: boolean } } }
+      responses:
+        '202': { description: The prep (RUNNING, or the existing one for the same call) }
+        '422': { description: Agent off, cap used, no contact, or neither/both targets }
+  /call-prep/conversation/{id}:
+    get:
+      tags: [call-prep]
+      operationId: conversationCallPrep
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: The newest prep }, '204': { description: None yet } }
+  /call-prep/track/{id}:
+    get:
+      tags: [call-prep]
+      operationId: trackCallPrep
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: The newest prep }, '204': { description: None yet } }
+  /call-prep/{id}/opportunity:
+    post:
+      tags: [call-prep]
+      operationId: createOpportunityFromPrep
+      summary: Create the opportunity from the (edited) draft at the person's account; links it to the conversation
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { name: { type: string }, type: { type: string, enum: [STAFF_AUGMENTATION, PROJECT] }, need: { type: string } } }
+      responses:
+        '201': { description: The prep, with opportunityId }
+        '409': { description: Created already }
+        '422': { description: No account linked, or the opportunity rules refused it }
   /network/tracks:
     get:
       tags: [network]

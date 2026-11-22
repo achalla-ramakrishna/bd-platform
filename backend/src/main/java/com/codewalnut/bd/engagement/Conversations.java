@@ -11,9 +11,11 @@ import com.codewalnut.bd.shared.CurrentUser;
 public class Conversations {
 
     private final ConversationService service;
+    private final com.codewalnut.bd.reporting.ConversationQueries queries;
 
-    Conversations(ConversationService service) {
+    Conversations(ConversationService service, com.codewalnut.bd.reporting.ConversationQueries queries) {
         this.service = service;
+        this.queries = queries;
     }
 
     /** Opens a conversation with a contact for a connection request the user sent today; follow up in 7 days. */
@@ -39,5 +41,11 @@ public class Conversations {
         String topic = subject.length() > 200 ? subject.substring(0, 200) : subject;
         return service.start(new ConversationService.Start(accountId, contactId, null, topic, "EMAIL", today, summary, "NO_REPLY",
             "Check for a reply", nextStepDue, null), user);
+    }
+
+    /** Links an opportunity created from a call prep (ADR-0026); the conversation moves to "opportunity". */
+    public void linkOpportunity(long conversationId, long opportunityId, CurrentUser user) {
+        var c = queries.get(conversationId);
+        service.change(conversationId, new ConversationService.Change(null, c.nextStep(), c.nextStepDue(), null, opportunityId, null), user);
     }
 }

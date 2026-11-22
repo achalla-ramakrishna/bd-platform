@@ -32,6 +32,14 @@ class AssistConfig {
     }
 
     @Bean
+    CallPrepWriter callPrepWriter(@Value("${app.ai.anthropic-api-key:}") String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return new DisabledCallPrepWriter();
+        }
+        return new ClaudeCallPrepWriter(client(apiKey));
+    }
+
+    @Bean
     SequenceWriter sequenceWriter(@Value("${app.ai.anthropic-api-key:}") String apiKey) {
         if (apiKey == null || apiKey.isBlank()) {
             return new DisabledSequenceWriter();

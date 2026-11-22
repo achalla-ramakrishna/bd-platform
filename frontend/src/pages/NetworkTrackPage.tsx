@@ -11,6 +11,7 @@ import { ErrorNote, HandOverForm, SendStep, StageActions, StagePill } from './gt
 import { ProfileCard } from './GtnProfileAndDashboard';
 import { ProspectBriefPanel } from './ProspectBrief';
 import { PasteReply } from './RepliesPage';
+import { CallPrepPanel } from './CallPrep';
 
 /** One person on GTN: where they are, what to do next with the message ready, and everything that happened. */
 export function NetworkTrackPage({ me }: { me: Me }) {
@@ -90,6 +91,7 @@ export function NetworkTrackPage({ me }: { me: Me }) {
       </div>
 
       <ProspectBriefPanel type="CONNECTION" id={t.connectionId} editable={canEditPipeline(me)} />
+      <CallPrepPanel trackId={t.id} editable={editable} />
       {editable && <PasteReply trackId={t.id} />}
 
       {editable && (

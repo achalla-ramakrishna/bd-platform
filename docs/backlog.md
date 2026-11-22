@@ -246,7 +246,7 @@ newest first, with how to try it and a link. The menu shows how many entries
 this browser hasn't seen; opening the page marks them seen. Entries live in
 `frontend/src/whatsNew.ts` and are added with each change (CLAUDE.md).
 
-## 14. BD agent (Steps 1 to 4 built; steps 5 and 6 proposed)
+## 14. BD agent (Steps 1 to 5 built; step 6 proposed)
 
 A workflow of small agents that do the thinking a BD person does, while people
 send every message (ADR-0022, `docs/bd-agent-plan.md`). Step 1, the research
@@ -261,8 +261,10 @@ contacting me" opts the person out at once. Step 4, email sequences
 (ADR-0025), is built with sending switched off: the agent writes a contact's
 emails from a team template, the owner approves once, and the app sends from
 their Gmail within caps, with one-click unsubscribe, stopping on a reply.
-**Before switching sending on**: a legal review (ADR-0025). Next: meeting prep
-(step 5) and evals and measured autonomy (step 6).
+**Before switching sending on**: a legal review (ADR-0025). Step 5, the ops agent
+(ADR-0026), is built: a booked call gets a call-prep brief and a draft
+opportunity, created in one click (Network → Calls). Next: evals and measured
+autonomy (step 6).
 
 ## Outside the platform
 

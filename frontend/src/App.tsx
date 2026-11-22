@@ -16,6 +16,7 @@ import { NetworkPage } from './pages/NetworkPage';
 import { ProspectingPage } from './pages/ProspectingPage';
 import { RepliesPage, useReplyInbox } from './pages/RepliesPage';
 import { SequencesPage } from './pages/SequencesPage';
+import { CallsPage } from './pages/CallPrep';
 import { WhatsNewPage, useUnseenCount } from './pages/WhatsNewPage';
 import { NetworkTrackPage } from './pages/NetworkTrackPage';
 import { NavLink, Navigate, Route, Routes } from 'react-router';
@@ -62,6 +63,7 @@ export function App() {
           {canEditPipeline(user) && <NavLink to="/prospecting">Prospecting</NavLink>}
           {canEditPipeline(user) && <RepliesLink />}
           {canEditPipeline(user) && <NavLink to="/sequences">Email sequences</NavLink>}
+          {canEditPipeline(user) && <NavLink to="/calls">Calls</NavLink>}
           <NavLink to="/assistant">Log with AI</NavLink>
           <NavLink to="/connections">Connections</NavLink>
           <NavLink to="/conversations">Conversations</NavLink>
@@ -123,6 +125,7 @@ export function App() {
           <Route path="/prospecting" element={<ProspectingPage me={user} />} />
           <Route path="/replies" element={<RepliesPage me={user} />} />
           <Route path="/sequences" element={<SequencesPage me={user} />} />
+          <Route path="/calls" element={<CallsPage me={user} />} />
           <Route path="/network" element={<NetworkPage me={user} />} />
           <Route path="/network/:id" element={<NetworkTrackPage me={user} />} />
           <Route path="/connections" element={<ConnectionsPage me={user} />} />

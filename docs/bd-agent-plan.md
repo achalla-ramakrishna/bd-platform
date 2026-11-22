@@ -1,7 +1,7 @@
 # The BD agent: plan
 
-- Status: **Agreed** (2026-11-21). Steps 1 to 4 built (step 4's sending is off until a legal review); steps 5–6 proposed.
-- Decisions: [ADR-0022](adr/0022-bd-agent.md), [ADR-0023](adr/0023-prospecting-queue.md), [ADR-0024](adr/0024-reply-agent.md), [ADR-0025](adr/0025-email-sequences.md). Builds on Walnut (ADR-0015), GTN (ADR-0017 to ADR-0021) and the
+- Status: **Agreed** (2026-11-21). Steps 1 to 5 built (step 4's sending is off until a legal review); step 6 proposed.
+- Decisions: [ADR-0022](adr/0022-bd-agent.md), [ADR-0023](adr/0023-prospecting-queue.md), [ADR-0024](adr/0024-reply-agent.md), [ADR-0025](adr/0025-email-sequences.md), [ADR-0026](adr/0026-call-prep-agent.md). Builds on Walnut (ADR-0015), GTN (ADR-0017 to ADR-0021) and the
   no-LinkedIn-automation rule (ADR-0005).
 
 ## 1. What we want
@@ -31,7 +31,7 @@ it can be sent automatically from our own mailboxes, within caps and consent rul
 | Email touches | Agent writes, person approves once, app sends within caps | **Built** (step 4); sending off until the legal review |
 | Classify replies, draft answers | Agent classifies and drafts; person approves | **Built** (step 3): the Replies page |
 | Book the meeting | Agent (calendar) | Built (GTN profile page) |
-| Create the opportunity, call-prep brief | Agent | Step 5 |
+| Create the opportunity, call-prep brief | Agent drafts, person creates in one click | **Built** (step 5): Network → Calls |
 
 ## 4. How it is built
 
@@ -70,7 +70,7 @@ it can be sent automatically from our own mailboxes, within caps and consent rul
    unsubscribe goes straight to do-not-contact.
 4. **Email sequences (built, ADR-0025; sending off until the legal review).** Follow-up emails the agent sends from the person's Gmail on a schedule, within caps,
    with an unsubscribe line, a do-not-contact check and consent recorded. Needs its own ADR and a legal review.
-5. **Ops agent.** A booked call drafts the opportunity at the account and writes a call-prep brief (the
+5. **Ops agent (built, ADR-0026).** A booked call drafts the opportunity at the account and writes a call-prep brief (the
    research, the conversation so far, questions to ask).
 6. **Measured autonomy.** Acceptance and reply rates per message version; a golden set of good messages to test
    prompt changes against; settings that let specific low-risk actions skip approval once the numbers support it

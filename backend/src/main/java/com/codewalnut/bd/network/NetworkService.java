@@ -147,6 +147,7 @@ public class NetworkService {
                 } else {
                     move(s, "CALL_SCHEDULED", "Hold the call", in.callOn(), user.id(), note(in, "Call booked for " + in.callOn()));
                 }
+                callBooked(id, in.callOn());
             }
             case "CALL_HELD" -> {
                 allowed(s, Set.of("CALL_SCHEDULED"), "Book the call first.", problems);
@@ -494,6 +495,13 @@ public class NetworkService {
         } else {
             move(s, "CALL_SCHEDULED", "Hold the call", day, null, "Call booked on the profile page");
         }
+        callBooked(trackId, day);
+    }
+
+    private void callBooked(long trackId, LocalDate on) {
+        var t = jdbc.sql("SELECT connection_id, owner_user_id FROM network_track WHERE id = :id").param("id", trackId)
+            .query((rs, n) -> new long[] {rs.getLong(1), rs.getLong(2)}).single();
+        events.publishEvent(new CallBooked(trackId, t[0], t[1], on));
     }
 
     // ---- helpers ----

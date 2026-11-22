@@ -15,6 +15,18 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: '2026-11-22-bd-agent-call-prep',
+    date: '2026-11-22',
+    title: 'Call prep: a brief for every booked call, and the opportunity in one click',
+    summary: 'When a call is booked (a conversation marked "meeting booked", or a GTN call), the agent writes the goal, what we know, questions to ask and likely concerns, and drafts the opportunity. Create it in one click.',
+    steps: [
+      'Book a call on a conversation or a GTN contact, or click "Prepare for the call" there.',
+      'Network → Calls: open the prep before the call.',
+      'Check the draft opportunity, edit the name or need, click "Create opportunity".',
+    ],
+    link: { to: '/calls', label: 'Open Calls' },
+  },
+  {
     id: '2026-11-21-bd-agent-sequences',
     date: '2026-11-21',
     title: 'Email sequences: the agent writes the follow-ups, you approve once',
